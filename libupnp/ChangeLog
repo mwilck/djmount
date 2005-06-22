@@ -1,0 +1,48 @@
+2005-06-09  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* ixml/src/element.c (ixmlElement_removeAttributeNode): 
+	  remove some compilation warning
+
+	* ixml/inc/ixml.h, ixml/src/document.c : 
+	  add some missing const's in public API 
+
+	* upnp/inc/upnptools.h, upnp/src/api/upnptools.c : 
+	  add missing const's in public API
+
+2005-05-28  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/inc/config.h: suppress HTTP_READ_BYTES (unused)
+	  and replace by DEFAULT_SOAP_CONTENT_LENGTH (previously in upnpapi.h)
+	
+	* upnp/inc/upnp.h, upnp/src/api/upnpapi.c : replace 
+	  UpnpSetContentLength (which was not using its Handle argument) 
+	  by global function UpnpSetMaxContentLength. 
+	  Remove "hard" limitation to 32K (not suitable for using in UPnP AV).
+	
+	* upnp/src/inc/upnpapi.h : removed DEFAULT_SOAP_CONTENT_LENGTH
+	  (moved to config.h) and MAX_SOAP_CONTENT_LENGTH (now unused)
+
+	* upnp/src/api/upnptools.c : add more error message strings
+
+	* upnp/src/genlib/net/http/httpreadwrite.c : return OUTOF_BOUNDS
+	  instead of BAD_HTTPMSG when allowed Content Length is exceeded.
+
+	* upnp/src/genlib/net/http/httpreadwrite.c : corrected an incorrect
+	  sprintf format
+	
+2005-05-27  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/makefile, upnp/src/makefile, 
+	  ixml/Makefile, ixml/src/Makefile, 
+	  threadutil/Makefile, threadutil/src/Makefile : 
+	  implement STATIC library support (from patch at 
+	  http://sourceforge.net/tracker/?group_id=7189&atid=307189 )
+
+2005-05-26  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/src/api/upnpapi.c, upnp/src/soap/soap_device.c,
+	  upnp/src/soap/makefile : 
+	  corrections for compilation with CLIENT=1 only
+	
+	* importing "libupnp-1.2.1a" as baseline
+	

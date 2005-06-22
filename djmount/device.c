@@ -1,0 +1,299 @@
+/* $Id$
+ *
+ * UPnP Device
+ * This file is part of djmount.
+ *
+ * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ *
+ * Part derived from libupnp example (upnp/sample/tvctrlpt/upnp_tv_ctrlpt.c)
+ * Copyright (c) 2000-2003 Intel Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#include "device.h"
+#include "service.h"
+#include "upnp_util.h"
+#include "xml_util.h"
+#include "log.h"
+
+#include <talloc.h>
+#include <stdbool.h>
+#include <upnp/upnp.h>
+#include <upnp/LinkedList.h>
+
+
+
+struct DeviceStruct {
+
+  IXML_Document* descDoc;
+  char*		 descDocURL;
+
+  char*		 udn;
+  char*		 deviceType;
+  char*		 friendlyName;
+  char*		 presURL;
+  
+  LinkedList	services; // Linked list of Service*
+
+};
+
+
+/*****************************************************************************
+ * @brief	Get serviceList from XML UPnP Device Description Document.
+ *
+ *       Given a DOM node representing a UPnP Device Description Document,
+ *       this routine parses the document and finds the first service list
+ *       (i.e., the service list for the root device).  The service list
+ *       is returned as a DOM node list. The NodeList must be freed using
+ *       NodeList_free.
+ *
+ * @param doc	The DOM document from which to extract the service list
+ *
+ *****************************************************************************/
+static IXML_NodeList*
+getFirstServiceList (IN IXML_Document* doc)
+{
+  IXML_NodeList* result = NULL;
+  
+  IXML_NodeList* servlistnodelist =
+    ixmlDocument_getElementsByTagName (doc, "serviceList");
+  if ( servlistnodelist && ixmlNodeList_length (servlistnodelist) ) {
+    
+    /*
+     * we only care about the first service list, from the root device 
+     */
+    IXML_Node* servlistnode = ixmlNodeList_item (servlistnodelist, 0);
+    
+    // Create as list of DOM nodes 
+    result = ixmlElement_getElementsByTagName ((IXML_Element*) servlistnode, 
+					       "service");
+  }
+  
+  if (servlistnodelist)
+    ixmlNodeList_free (servlistnodelist);
+  
+  return result;
+}
+
+
+/******************************************************************************
+ * destroy
+ *
+ * Description: 
+ *	Device destructor, automatically called by "talloc_free".
+ *
+ *****************************************************************************/
+static int
+destroy (void* ptr)
+{
+  if (ptr) {
+    Device* const dev = (Device*) ptr;
+
+    /* Delete list.
+     * Note that items are not destroyed : Service* are automatically
+     * deallocated by "talloc" when parent Device is detroyed.
+     */
+    ListDestroy (&dev->services, 0); 
+
+    // Delete description document
+    if (dev->descDoc) {
+      ixmlDocument_free (dev->descDoc);
+      dev->descDoc = 0;
+    }  
+
+    // Reset all pointers to NULL 
+    memset (dev, 0, sizeof(Device));
+    
+    // The "talloc'ed" strings will be deleted automatically 
+  }
+  return 0; // ok -> deallocate memory
+}
+
+
+/*****************************************************************************
+ * Device_Create
+ *****************************************************************************/
+
+Device* Device_Create (void* context, 
+		       UpnpClient_Handle ctrlpt_handle, 
+		       const char* descDocURL,
+		       IXML_Document* descDoc)
+{
+  Device* dev = talloc (context, Device);
+
+  if (dev == 0) {
+    Log_Print (LOG_ERROR, "Device_Create Out of Memory");
+    return 0; // ---------->
+  }
+  
+  *dev = (struct DeviceStruct) { }; // Initialize fields to empty values
+
+  dev->descDocURL = talloc_strdup (dev, descDocURL);
+
+  // TBD
+  // Copy description document internally
+  dev->descDoc = (IXML_Document*) ixmlNode_cloneNode ((IXML_Node*)descDoc, /* deep => */ true);
+  // TBD should not fail !!
+
+  /*
+   * Read key elements from description document 
+   */
+
+  dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN"));;
+  Log_Printf (LOG_DEBUG, "Device_Create : UDN = %s", dev->udn);
+
+  dev->deviceType = talloc_strdup (dev, Device_GetDescDocItem 
+				   (dev, "deviceType"));
+  Log_Printf (LOG_DEBUG, "Device_Create : type = %s", dev->deviceType);
+
+  dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
+				     (dev, "friendlyName"));
+
+  char* baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
+  char* relURL  = Device_GetDescDocItem (dev, "presentationURL");
+  
+  const char* const base = ( baseURL && baseURL[0] ) ? baseURL : descDocURL;
+  UpnpUtil_ResolveURL (dev, base, relURL, &dev->presURL);
+  
+  /*
+   * Find and parse services
+   */
+  ListInit (&dev->services, 0, 0);
+
+  IXML_NodeList* serviceList = getFirstServiceList (dev->descDoc);
+  const int length = ixmlNodeList_length (serviceList);
+
+  int i;
+  for (i = 0; i < length; i++ ) {
+    IXML_Element* const service = 
+      (IXML_Element *) ixmlNodeList_item (serviceList, i);
+    
+    Service* const servnode = Service_Create (dev, ctrlpt_handle, 
+					      service, base);
+    ListAddTail (&dev->services, servnode);
+  }
+  
+  if (serviceList) {
+    ixmlNodeList_free (serviceList);
+    serviceList = 0;
+  }  
+
+  // Register destructor
+  talloc_set_destructor (dev, destroy);
+
+  return dev;
+}
+
+
+/*****************************************************************************
+ * Device_GetDescDocItem
+ *****************************************************************************/
+char*
+Device_GetDescDocItem (const Device* dev, const char* item)
+{
+  if (dev && item)
+    return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, item);
+  else 
+    return 0;
+}
+
+
+
+/*****************************************************************************
+ * Device_GetService
+ *****************************************************************************/
+Service*
+Device_GetService (const Device* dev, int servnum)
+{
+  ListNode* node;
+  for (node = ListHead ((LinkedList*) &dev->services);
+       node != 0;
+       node = ListNext ((LinkedList*) &dev->services, node)) {
+    if (servnum == 0) 
+      return node->item; // ---------->
+    servnum--;
+  }
+  Log_Print (LOG_ERROR, "Bad parameter finding Service number");
+  return 0; // not found
+}
+
+
+Service*
+Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
+{  
+  if (ss) {
+    ListNode* node;
+    for (node = ListHead ((LinkedList*) &dev->services); 
+	 node != 0;
+	 node = ListNext ((LinkedList*) &dev->services, node)) {
+      const char* s = 0;
+      switch (from) {
+      case FROM_SID:		s = Service_GetSid (node->item); break;
+      case FROM_CONTROL_URL:	s = Service_GetControlURL (node->item); break;
+      case FROM_EVENT_URL:	s = Service_GetControlURL (node->item); break;
+      }
+      if (s && strcmp (ss, s) == 0)
+	return node->item; // ---------->
+    }
+  }
+  return 0;
+}
+
+
+
+/*****************************************************************************
+ * Device_GetStatusString
+ *****************************************************************************/
+char*
+Device_GetStatusString (const Device* dev)
+{
+  if (dev == 0)
+    return 0; // ---------->
+
+  char* p = talloc_strdup (dev, "");
+
+#define P talloc_asprintf_append 
+  p=P(p, "  Device\n");
+  p=P(p, "    |                   \n");
+  p=P(p, "    +- UDN            = %s\n", dev->udn);
+  p=P(p, "    +- DeviceType     = %s\n", dev->deviceType);
+  p=P(p, "    +- DescDocURL     = %s\n", dev->descDocURL);
+  p=P(p, "    +- FriendlyName   = %s\n", dev->friendlyName);
+  p=P(p, "    +- PresURL        = %s\n", dev->presURL);
+
+  ListNode* node;
+  for (node = ListHead ((LinkedList*) &dev->services); 
+       node != 0;
+       node = ListNext ((LinkedList*) &dev->services, node)) {
+    const Service* const serv = node->item;
+    const char* const spacer = 
+      (node == ListTail ((LinkedList*) &dev->services)) ? "     " : "    |";
+    p=P(p, "    |                  \n");
+    p=P(p, "    +- Service\n");
+    if (serv == 0) {
+      p=P(p, "%s    +- **ERROR** NULL Service\n", spacer);
+    } else {
+      char* s = Service_GetStatusString (serv, spacer);
+      p=P(p, "%s", s);
+      talloc_free (s);
+    }
+  }
+#undef P
+    
+  return p;
+}
+
+

@@ -1,0 +1,23 @@
+
+
+Credits
+-------
+
+djmount (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+
+
+
+* Miklos Szeredi <miklos AT szeredi.hu>
+  Author of the FUSE package ( http://fuse.sourceforge.net/ ),
+  a core component of djmount.
+
+
+* Part of djmount derived from the libupnp example files (libupnp/upnp/sample):
+  Copyright (c) 2000-2003 Intel Corporation
+
+
+* Andrew Tridgell <talloc AT tridgell.net>
+  he wrote the great "talloc" library ( http://talloc.samba.org/ ).
+
+
+

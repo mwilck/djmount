@@ -1,0 +1,21 @@
+
+0.10
+   implement read operations
+	status
+	browse
+   no write, no search
+
+0.20
+   add filessystem cache
+
+0.30
+   unicode file names handling
+
+0.xx
+   finer thread locking i.e. per service and device
+
+0.xx
+   add search operations
+
+
+

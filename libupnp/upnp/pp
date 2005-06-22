@@ -1,0 +1,112 @@
+diff -u -r1.1.1.1 makefile
+--- upnp/makefile	13 Feb 2003 16:19:01 -0000	1.1.1.1
++++ upnp/makefile	24 Mar 2005 23:34:09 -0000
+@@ -51,11 +51,13 @@
+ endif
+ 
+ ifeq ($(STATIC),1)
+-UPNP=$(OUTPATH)libupnp.a
++LIB_EXT = a
+ else
+-UPNP = $(OUTPATH)libupnp.so
++LIB_EXT = so
+ endif
+ 
++UPNP=$(OUTPATH)libupnp.$(LIB_EXT)
++
+ IXML_DIR = ../ixml
+ THREADUTIL_DIR = ../threadutil
+ 
+@@ -116,26 +118,26 @@
+ 	@cp $(IXML_DIR)/inc/*.h ./inc
+ 
+ ifeq ($(DEBUG),1)
+-	@if [ -f $(IXML_DIR)/bin/debug/$(DIR_PATH)libixml.so ]; then \
+-          cp $(IXML_DIR)/bin/debug/$(DIR_PATH)libixml.so \
++	@if [ -f $(IXML_DIR)/bin/debug/$(DIR_PATH)libixml.$(LIB_EXT) ]; then \
++          cp $(IXML_DIR)/bin/debug/$(DIR_PATH)libixml.$(LIB_EXT) \
+              ./bin/debug/$(DIR_PATH); \
+         fi
+ else
+-	@if [ -f $(IXML_DIR)/bin/$(DIR_PATH)libixml.so ]; then \
+-          cp $(IXML_DIR)/bin/$(DIR_PATH)libixml.so ./bin/$(DIR_PATH); \
++	@if [ -f $(IXML_DIR)/bin/$(DIR_PATH)libixml.$(LIB_EXT) ]; then \
++          cp $(IXML_DIR)/bin/$(DIR_PATH)libixml.$(LIB_EXT) ./bin/$(DIR_PATH); \
+         fi
+ endif
+ 	@$(MAKE) all DEBUG=$(DEBUG) all -C $(THREADUTIL_DIR)
+ 	@cp $(THREADUTIL_DIR)/inc/*.h ./inc
+ 
+ ifeq ($(DEBUG),1)
+-	@if [ -f $(THREADUTIL_DIR)/bin/debug/$(DIR_PATH)libthreadutil_dbg.so ]; then \
+-          cp $(THREADUTIL_DIR)/bin/debug/$(DIR_PATH)libthreadutil_dbg.so \
++	@if [ -f $(THREADUTIL_DIR)/bin/debug/$(DIR_PATH)libthreadutil_dbg.$(LIB_EXT) ]; then \
++          cp $(THREADUTIL_DIR)/bin/debug/$(DIR_PATH)libthreadutil_dbg.$(LIB_EXT) \
+              ./bin/debug/$(DIR_PATH); \
+         fi
+ else
+-	@if [ -f $(THREADUTIL_DIR)/bin/$(DIR_PATH)libthreadutil.so ]; then \
+-          cp $(THREADUTIL_DIR)/bin/$(DIR_PATH)libthreadutil.so \
++	@if [ -f $(THREADUTIL_DIR)/bin/$(DIR_PATH)libthreadutil.$(LIB_EXT) ]; then \
++          cp $(THREADUTIL_DIR)/bin/$(DIR_PATH)libthreadutil.$(LIB_EXT) \
+              ./bin/$(DIR_PATH); \
+         fi
+ endif
+@@ -171,34 +173,38 @@
+ 	@$(MAKE) -C $(THREADUTIL_DIR) clean
+ 
+ install: upnp
+-	@if [ ! -d $(PREFIX)/usr/include/upnp ]; then \
+-		install -d $(PREFIX)/usr/include/upnp; \
++	@if [ ! -d $(PREFIX)/usr/local/include/upnp ]; then \
++		install -d $(PREFIX)/usr/local/include/upnp; \
+ 	fi
+-	@if [ ! -d $(PREFIX)/usr/lib ]; then \
+-		install -d $(PREFIX)/usr/lib; \
++	@if [ ! -d $(PREFIX)/usr/local/lib ]; then \
++		install -d $(PREFIX)/usr/local/lib; \
+ 	fi
+ 	@if [ -f bin/$(DIR_PATH)upnp.jar ]; then \
+-		install bin/$(DIR_PATH)upnp.jar $(PREFIX)/usr/lib; \
++		install bin/$(DIR_PATH)upnp.jar $(PREFIX)/usr/local/lib; \
+ 	fi
+-	@install bin/$(DIR_PATH)libupnp.so $(PREFIX)/usr/lib/libupnp.so.$(VERSION)
+-	@ln -s $(PREFIX)/usr/lib/libupnp.so.$(VERSION) $(PREFIX)/usr/lib/libupnp.so
+-	@install inc/upnp.h $(PREFIX)/usr/include/upnp
+-	@install inc/config.h $(PREFIX)/usr/include/upnp
+-	@install inc/upnptools.h $(PREFIX)/usr/include/upnp
++ifeq ($(STATIC),1)
++	@install bin/$(DIR_PATH)libupnp.$(LIB_EXT) $(PREFIX)/usr/local/lib
++else
++	@install bin/$(DIR_PATH)libupnp.$(LIB_EXT) $(PREFIX)/usr/local/lib/libupnp.$(LIB_EXT).$(VERSION)
++	@ln -s libupnp.$(LIB_EXT).$(VERSION) $(PREFIX)/usr/local/lib/libupnp.$(LIB_EXT)
++endif
++	@install inc/upnp.h $(PREFIX)/usr/local/include/upnp
++	@install inc/config.h $(PREFIX)/usr/local/include/upnp
++	@install inc/upnptools.h $(PREFIX)/usr/local/include/upnp
+ 
+ uninstall:
+-	@rm -f $(PREFIX)/usr/include/upnp/upnp.h
+-	@rm -f $(PREFIX)/usr/include/upnp/config.h
+-	@rm -f $(PREFIX)/usr/include/upnp/upnptools.h
+-	@rm -f $(PREFIX)/usr/lib/libupnp.so
+-	@rm -f $(PREFIX)/usr/lib/libupnp.so.$(VERSION)
++	@rm -f $(PREFIX)/usr/local/include/upnp/upnp.h
++	@rm -f $(PREFIX)/usr/local/include/upnp/config.h
++	@rm -f $(PREFIX)/usr/local/include/upnp/upnptools.h
++	@rm -f $(PREFIX)/usr/local/lib/libupnp.$(LIB_EXT)
++	@rm -f $(PREFIX)/usr/local/lib/libupnp.$(LIB_EXT).$(VERSION)
+ 
+ test: upnp
+ 	if [ ! -d bin/tests ]; then mkdir -p bin/tests ; fi
+ 	if [ ! -d src/lib ]; then mkdir src/lib; fi
+-	cp bin/libupnp.so bin/tests/.
+-	cp ../ixml/bin/libixml.so bin/tests/.
+-	cp ../threadutil/bin/libthreadutil.so bin/tests/.
++	cp bin/libupnp.$(LIB_EXT) bin/tests/.
++	cp ../ixml/bin/libixml.$(LIB_EXT) bin/tests/.
++	cp ../threadutil/bin/libthreadutil.$(LIB_EXT) bin/tests/.
+ 	$(MAKE) -C BuildTest
+ 	cp BuildTest/Test bin/tests/.
+ 	$(MAKE) -C upnptest
+

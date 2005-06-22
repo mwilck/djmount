@@ -1,0 +1,119 @@
+
+djmount
+=======
+
+djmount - mount MediaServers content as a Linux filesystem.
+Created 23/04/2005, Rémi Turboult <r3mi@users.sourceforge.net>
+
+
+This project allows to mount as a Linux filesystem the content 
+of MediaServer devices compatible with the UPnP AV protocol.
+
+Djmount discovers automatically all UPnP AV Media Servers on the network,
+and make the content available in a directory tree.
+An Audio or Video file is rendered as a playlist (.m3u or .ram) which
+contains an URL for the file. Therefore only the address of the file
+is exported through djmount ; the actual content is streamed through
+HTTP when the playlist is accessed by your favorite media player.
+
+
+Example
+-------
+
+(the actual content listed depends on your AV files collection !)
+
+$ djmount /mnt/av
+
+$ cd /mnt/av
+
+$ ls -l
+dr-xr-xr-x  3 root root 512 jan  1  2000 SomeMediaServerDeviceName/
+dr-xr-xr-x  3 root root 512 jan  1  2000 AnotherMediaServerDeviceName/
+-r--r--r--  1 root root 114 jan  1  2000 devices
+
+$ cd SomeMediaServerDeviceName
+
+$ ls -l 
+dr-xr-xr-x  5 root root  512 jan  1  2000 browse/
+-r--r--r--  1 root root 1749 jan  1  2000 status
+
+$ ls -l browse/
+dr-xr-xr-x  14 root root 512 jan  1  2000 Music/
+dr-xr-xr-x   5 root root 512 jan  1  2000 Pictures/
+dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
+
+$ ls -l browse/Music/Artists/Tinariwen/
+-r--r--r--  1 root root  66 jan  1  2000 Chatma.m3u
+-r--r--r--  1 root root 722 jan  1  2000 Chatma.xml
+-r--r--r--  1 root root  73 jan  1  2000 Chet Boghassa.m3u
+-r--r--r--  1 root root 729 jan  1  2000 Chet Boghassa.xml
+
+$ cat browse/Music/Artists/Tinariwen/Chatma.m3u
+#EXTM3U
+#EXTINF:336,Chatma
+http://192.168.1.100:9000/disk/208.mp3
+
+$ fusermount -u /mnt/av
+
+
+Note: the FUSE  kernel module shall be loaded before running djmount 
+(otherwise you will get the error: 
+"fusermount: fuse device not found, try 'modprobe fuse' first").
+
+
+Installation
+------------
+
+1) Prerequisites for compilation:
+
+* the FUSE package : http://fuse.sourceforge.net/ 
+
+* the Intel Linux SDK for UPnP Devices : http://upnp.sourceforge.net/ 
+  The "libupnp" directory contains a copy with some mandatory patches.
+
+* the "talloc" library : http://talloc.samba.org/
+  A local copy is included in the "talloc" directory for convenience.
+
+2) Use 'make' in this top directory to compile.
+
+3) as root : 'modprobe fuse' to load the FUSE  kernel module
+
+4) To run, simply use the 'djmount/djmount' executable
+   (there is no 'make install' yet).
+
+
+
+Known Compatible Devices
+------------------------
+
+djmount has been tested successfully with the following UPnP AV 
+Devices / Media Servers :
+
+* TwonkyVision UPnP Music Server version 2.7.2 ( http://www.twonkyvision.de )
+
+
+Help is needed to test on additional devices.
+
+
+LIMITATION AND KNOWN BUGS :
+THERE IS NO CACHING DONE AT ALL YET, so performances might be slow
+when browsing large repositories.
+Playing files is not affected however : streaming is done through
+standard HTTP protocols. djmount is used only when browsing directories 
+and reading playlists.
+
+
+
+Implementation
+--------------
+
+This project uses the following main libraries :
+
+* the Linux SDK for UPnP Devices (libupnp), initialy created by Intel:
+  http://upnp.sourceforge.net/ .
+
+* the FUSE package ( http://fuse.sourceforge.net/ ), 
+
+
+The UPnP AV Architecture is described here : 
+http://www.upnp.org/standardizeddcps/mediaserver.asp

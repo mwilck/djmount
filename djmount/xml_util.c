@@ -1,0 +1,165 @@
+/* $Id$
+ *
+ * XML Utilities
+ * This file is part of djmount.
+ *
+ * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ *
+ * Part derived from libupnp example (upnp/sample/common/sample_util.c)
+ * Copyright (c) 2000-2003 Intel Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+
+#include "xml_util.h"
+#include "log.h"
+
+#include <upnp/ixml.h>
+#include <stdarg.h>	/* missing from "talloc.h" */
+#include <stdlib.h>	
+
+#include <talloc.h>
+
+
+
+
+/*****************************************************************************
+ * XMLUtil_GetElementValue
+ *****************************************************************************/
+
+char *
+XMLUtil_GetElementValue (IN IXML_Element* element)
+{
+  IXML_Node* child = ixmlNode_getFirstChild ((IXML_Node *) element );
+
+  char* res = NULL;
+
+  if ( child && ixmlNode_getNodeType (child) == eTEXT_NODE ) {
+    // The resulting string should be copied if necessary
+    res = ixmlNode_getNodeValue (child);
+  }
+  
+  return res;
+}
+
+
+
+/*****************************************************************************
+ * XMLUtil_GetFirstNodeValue
+ *****************************************************************************/
+char*
+XMLUtil_GetFirstNodeValue (IN const IXML_Node* node,
+			   IN const char* item)
+{
+  char* res = 0;
+
+  if (node == 0 || item == 0) {
+    Log_Printf (LOG_ERROR, "GetFirstNodeItem invalid NULL parameter");
+  } else {
+    //// TBD hack
+    //// TBD ixmlNode_getElementsByTagName isn't exported !!!
+    //// TBD to clean !!
+    IXML_NodeList* const nodeList = ixmlDocument_getElementsByTagName 
+      ((IXML_Document*) node, (char *) item);
+    if ( nodeList == 0 ) {
+      Log_Printf (LOG_ERROR, "Error finding %s item in XML Node", item);
+    } else {
+      IXML_Node* tmpNode = ixmlNodeList_item (nodeList, 0);
+      if (tmpNode == 0) {
+	Log_Printf (LOG_ERROR, "Error finding %s item in XML Node", item );
+      } else {
+	IXML_Node* textNode = ixmlNode_getFirstChild (tmpNode);
+  
+	/* Get the node value. This string will be preserved when the NodeList
+	 * is freed, but should be copied if the IXML_Element is to be 
+	 * destroyed.
+	 */
+	res = ixmlNode_getNodeValue (textNode);
+      }
+      ixmlNodeList_free (nodeList);
+    }
+  }
+  return res;
+}
+
+
+/*****************************************************************************
+ * XMLUtil_GetFirstNodeValueInteger
+ *****************************************************************************/
+intmax_t
+XMLUtil_GetFirstNodeValueInteger (IN const IXML_Node* node,
+				  IN const char* item,
+				  IN intmax_t error_value)
+{
+  intmax_t ret = error_value;
+  char* s = XMLUtil_GetFirstNodeValue (node, item);
+  if (s && *s) {
+    char* endptr = 0;
+    long val = strtoimax (s, &endptr, 10);
+    if (endptr && *endptr == '\0')
+      ret = val;
+  }
+  return ret;
+}
+
+
+/******************************************************************************
+ * XMLUtil_GetDocumentString
+ *****************************************************************************/
+char*
+XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
+{
+  // TBD XXX
+  // TBD prepend <?xml version="1.0"?> if not already done ???
+  // TBD XXX
+
+  char* ret = 0;
+  if (doc) {
+    DOMString s = ixmlPrintDocument (doc);
+    if (s) {
+      ret = talloc_strdup (context, s);
+      ixmlFreeDOMString (s);
+    } else {
+      ret = talloc_strdup (context, "(error)");
+    }
+  } else {
+    ret = talloc_strdup (context, "(null)");
+  }
+  return ret;
+}
+
+/******************************************************************************
+ * XMLUtil_GetNodeString
+ *****************************************************************************/
+char*
+XMLUtil_GetNodeString (void* context, IXML_Node* node)
+{
+  char* ret = 0;
+  if (node) {
+    DOMString s = ixmlPrintNode (node);
+    if (s) {
+      ret = talloc_strdup (context, s);
+      ixmlFreeDOMString (s);
+    } else {
+      ret = talloc_strdup (context, "(error)");
+    }
+  } else {
+    ret = talloc_strdup (context, "(null)");
+  }
+  return ret;
+}
+
+
