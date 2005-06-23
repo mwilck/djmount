@@ -351,8 +351,7 @@ HandleSubscribeUpdate (const char* eventURL,
  *       add it.  Otherwise, update its advertisement expiration timeout.
  *
  * Parameters:
- *   DescDoc -- The description document for the device
- *   location -- The location of the description document URL
+ *   descLocation -- The location of the description document URL
  *   expires -- The expiration time for this advertisement
  *
  *****************************************************************************/
@@ -360,11 +359,10 @@ HandleSubscribeUpdate (const char* eventURL,
 
 static void
 AddDevice (const char* deviceId,
-	   IXML_Document* descDoc,
-	   const char* location,
+	   const char* descLocation,
 	   int expires)
 {
-  ithread_mutex_lock( &DeviceListMutex );
+  ithread_mutex_lock (&DeviceListMutex);
 
   DeviceNode* devnode = 0;
   ListNode* node = GetDeviceListNodeFromId (deviceId);
@@ -379,14 +377,14 @@ AddDevice (const char* deviceId,
     devnode->expires = expires;
   } else {
     // Else create a new device
-    Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", NN(deviceId));
-
+    Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", 
+		NN(deviceId));
     void* context = NULL; // TBD should be parent talloc TBD XXX
-    
+      
     devnode = talloc (context, DeviceNode);
     *devnode = (struct DeviceNode) { }; // Initialize fields to empty values
-
-    devnode->d = Device_Create (devnode, g_ctrlpt_handle, location, descDoc);
+      
+    devnode->d = Device_Create (devnode, g_ctrlpt_handle, descLocation);
     if (devnode->d == 0) {
       Log_Printf (LOG_ERROR, "Can't create Device Id=%s", NN(deviceId));
       talloc_free (devnode);
@@ -399,10 +397,10 @@ AddDevice (const char* deviceId,
       char* name = make_device_name (NULL, base);
       talloc_set_name (devnode->d, "%s", name);
       talloc_free (name);
-
+      
       // Insert the new device node in the list
       ListAddTail (&GlobalDeviceList, devnode);
-
+      
       // Notify New Device Added, while the global list is locked
       NotifyUpdate (E_DEVICE_ADDED, devnode);
     }
@@ -429,8 +427,8 @@ AddDevice (const char* deviceId,
  *****************************************************************************/
 static int
 EventHandlerCallback (Upnp_EventType EventType,
-		      void *Event,
-		      void *Cookie )
+		      void* Event,
+		      void* Cookie)
 {
   UpnpUtil_PrintEvent (LOG_DEBUG, EventType, Event);
   
@@ -442,42 +440,24 @@ EventHandlerCallback (Upnp_EventType EventType,
   case UPNP_DISCOVERY_SEARCH_RESULT:
     {
       const struct Upnp_Discovery* const d_event =
-	( struct Upnp_Discovery * )Event;
+	(struct Upnp_Discovery *) Event;
 
-      if ( d_event->ErrCode != UPNP_E_SUCCESS ) {
+      if (d_event->ErrCode != UPNP_E_SUCCESS) {
 	Log_Printf (LOG_ERROR, "Error in Discovery Callback -- %d", 
 		    d_event->ErrCode);	
       }
       // TBD else ??
       
-      if ( d_event->DeviceType && d_event->DeviceType[0] ) { 
-	Log_Printf (LOG_INFO, "Discovery : found device type %s", 
+      if (d_event->DeviceType && d_event->DeviceType[0]) { 
+	Log_Printf (LOG_INFO, "Discovery : found device type '%s'", 
 		    d_event->DeviceType);
 	
-	/*
-	 * Download description document
-	 */
-	Log_Print (LOG_DEBUG, "Discovery : loading description document");
-	IXML_Document* descDoc = NULL;
-	// TBD not needed if device already exists !!!
-	int rc = UpnpDownloadXmlDoc (d_event->Location, &descDoc);
-	if ( rc != UPNP_E_SUCCESS ) {
-	  Log_Printf (LOG_ERROR,
-		      "Error obtaining device description from %s -- error=%d",
-		      d_event->Location, rc);
-	} else {
-	  Log_Printf (LOG_DEBUG, "Discovery : before AddDevice\n");
-	  AddDevice (d_event->DeviceId, descDoc, d_event->Location, 
-		     d_event->Expires);
-	  if (descDoc) {
-	    ixmlDocument_free (descDoc);
-	    descDoc = 0;
-	  }
-	  Log_Print (LOG_DEBUG, "Discovery: DeviceList after AddDevice =");
-	  DeviceList_PrintStatus (LOG_DEBUG);
-	}
+	Log_Printf (LOG_DEBUG, "Discovery : before AddDevice\n");
+	AddDevice (d_event->DeviceId, d_event->Location, d_event->Expires);
+	Log_Print (LOG_DEBUG, "Discovery: DeviceList after AddDevice =");
+	DeviceList_PrintStatus (LOG_DEBUG);
       }
-
+      
       break;
     }
     

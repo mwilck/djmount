@@ -59,14 +59,13 @@ typedef struct DeviceStruct Device;
  *
  * @param context        the talloc parent context
  * @param ctrlpt_handle  the UPnP client handle
- * @param location 	 the location of the description document 
- * @param descDoc 	 the description document (copied internally)
+ * @param descDocURL 	 the location of the description document 
+ *
  *****************************************************************************/
 Device* 
 Device_Create (void* context, 
 	       UpnpClient_Handle ctrlpt_handle, 
-	       const char* location, 
-	       IXML_Document* descDoc);
+	       const char* descDocURL);
 
 
 /** TBD 

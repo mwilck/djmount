@@ -111,7 +111,7 @@ destroy (void* ptr)
     // Delete description document
     if (dev->descDoc) {
       ixmlDocument_free (dev->descDoc);
-      dev->descDoc = 0;
+      dev->descDoc = NULL;
     }  
 
     // Reset all pointers to NULL 
@@ -129,24 +129,31 @@ destroy (void* ptr)
 
 Device* Device_Create (void* context, 
 		       UpnpClient_Handle ctrlpt_handle, 
-		       const char* descDocURL,
-		       IXML_Document* descDoc)
+		       const char* descDocURL)
 {
-  Device* dev = talloc (context, Device);
+  if (descDocURL == NULL)
+    return NULL; // ---------->
+  Log_Print (LOG_DEBUG, "Device_Create : loading description document");
+  IXML_Document* descDoc = NULL;
+  int rc = UpnpDownloadXmlDoc (descDocURL, &descDoc);
+  if (rc != UPNP_E_SUCCESS) {
+    Log_Printf (LOG_ERROR,
+		"Error obtaining device description from %s -- error = %d",
+		descDocURL, rc);
+    return NULL; // ---------->
+  }
 
-  if (dev == 0) {
+  Device* dev = talloc (context, Device);
+  if (dev == NULL) {
     Log_Print (LOG_ERROR, "Device_Create Out of Memory");
-    return 0; // ---------->
+    return NULL; // ---------->
   }
   
-  *dev = (struct DeviceStruct) { }; // Initialize fields to empty values
-
-  dev->descDocURL = talloc_strdup (dev, descDocURL);
-
-  // TBD
-  // Copy description document internally
-  dev->descDoc = (IXML_Document*) ixmlNode_cloneNode ((IXML_Node*)descDoc, /* deep => */ true);
-  // TBD should not fail !!
+  *dev = (struct DeviceStruct) { 
+    .descDocURL = talloc_strdup (dev, descDocURL),
+    .descDoc    = descDoc,
+    // Other fields to empty values
+  };
 
   /*
    * Read key elements from description document 
@@ -188,7 +195,7 @@ Device* Device_Create (void* context,
   
   if (serviceList) {
     ixmlNodeList_free (serviceList);
-    serviceList = 0;
+    serviceList = NULL;
   }  
 
   // Register destructor
@@ -207,7 +214,7 @@ Device_GetDescDocItem (const Device* dev, const char* item)
   if (dev && item)
     return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, item);
   else 
-    return 0;
+    return NULL;
 }
 
 
@@ -220,14 +227,14 @@ Device_GetService (const Device* dev, int servnum)
 {
   ListNode* node;
   for (node = ListHead ((LinkedList*) &dev->services);
-       node != 0;
+       node != NULL;
        node = ListNext ((LinkedList*) &dev->services, node)) {
     if (servnum == 0) 
       return node->item; // ---------->
     servnum--;
   }
   Log_Print (LOG_ERROR, "Bad parameter finding Service number");
-  return 0; // not found
+  return NULL; // not found
 }
 
 
@@ -237,9 +244,9 @@ Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
   if (ss) {
     ListNode* node;
     for (node = ListHead ((LinkedList*) &dev->services); 
-	 node != 0;
+	 node != NULL;
 	 node = ListNext ((LinkedList*) &dev->services, node)) {
-      const char* s = 0;
+      const char* s = NULL;
       switch (from) {
       case FROM_SID:		s = Service_GetSid (node->item); break;
       case FROM_CONTROL_URL:	s = Service_GetControlURL (node->item); break;
@@ -249,7 +256,7 @@ Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
 	return node->item; // ---------->
     }
   }
-  return 0;
+  return NULL;
 }
 
 
@@ -260,8 +267,8 @@ Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
 char*
 Device_GetStatusString (const Device* dev)
 {
-  if (dev == 0)
-    return 0; // ---------->
+  if (dev == NULL)
+    return NULL; // ---------->
 
   char* p = talloc_strdup (dev, "");
 
@@ -276,14 +283,14 @@ Device_GetStatusString (const Device* dev)
 
   ListNode* node;
   for (node = ListHead ((LinkedList*) &dev->services); 
-       node != 0;
+       node != NULL;
        node = ListNext ((LinkedList*) &dev->services, node)) {
     const Service* const serv = node->item;
     const char* const spacer = 
       (node == ListTail ((LinkedList*) &dev->services)) ? "     " : "    |";
     p=P(p, "    |                  \n");
     p=P(p, "    +- Service\n");
-    if (serv == 0) {
+    if (serv == NULL) {
       p=P(p, "%s    +- **ERROR** NULL Service\n", spacer);
     } else {
       char* s = Service_GetStatusString (serv, spacer);

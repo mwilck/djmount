@@ -1,0 +1,6 @@
+2005-06-23  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* download device description document only on device creation,
+	  not on every advertisement
+	
+
