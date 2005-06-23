@@ -68,7 +68,7 @@ int
 Service_SubscribeEventURL (Service* serv)
 {
   int rc;
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Printf (LOG_ERROR, "Service_SubscribeEventURL NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
@@ -82,7 +82,7 @@ Service_SubscribeEventURL (Service* serv)
       Log_Printf (LOG_DEBUG, "Subscribed to %s EventURL with SID=%s", 
 		  talloc_get_name (serv), serv->sid);
     } else {
-      serv->sid = 0;
+      serv->sid = NULL;
       Log_Printf (LOG_ERROR, "Error Subscribing to %s EventURL -- %d", 
 		  talloc_get_name (serv), rc);
     }
@@ -94,14 +94,14 @@ int
 Service_UnsubscribeEventURL (Service* serv)
 {
   int rc;
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Printf (LOG_ERROR, "Service_UnsubscribeEventURL NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
     /*
      * If we have a valid control SID, then unsubscribe 
      */
-    if (serv->sid == 0) {
+    if (serv->sid == NULL) {
       rc = UPNP_E_SUCCESS;
     } else {
       rc = UpnpUnSubscribe (serv->ctrlpt_handle, serv->sid);
@@ -160,9 +160,9 @@ Service_Create (void* context,
 {
   Service* serv = talloc (context, Service);
 
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Print (LOG_ERROR, "Service_Create Out of Memory");
-    return 0; // ---------->
+    return NULL; // ---------->
   }
 
   *serv = (struct ServiceStruct) { }; // Initialize fields to empty values
@@ -210,12 +210,12 @@ Service_SetSid (Service* serv, Upnp_SID sid)
 {
   int rc = UPNP_E_SUCCESS;
   
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Printf (LOG_ERROR, "Service_SetSid NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
     talloc_free (serv->sid);
-    serv->sid = (sid ? talloc_strdup (serv, sid) : 0);
+    serv->sid = (sid ? talloc_strdup (serv, sid) : NULL);
   }
   return rc;
 }
@@ -230,14 +230,14 @@ GetVariable (const Service* serv, const char* name)
   if (serv && name) {
     ListNode* node;
     for (node = ListHead ((LinkedList*) &serv->variables);
-	 node != 0;
+	 node != NULL;
 	 node = ListNext ((LinkedList*) &serv->variables, node)) {
       StringPair* const var = node->item;
       if (var && var->name && strcmp (var->name, name) == 0) 
 	return node; // ---------->
     }
   }
-  return 0;
+  return NULL;
 }
 
 /*****************************************************************************
@@ -248,7 +248,7 @@ Service_UpdateState (Service* serv, IXML_Document* changedVariables)
 {
   int rc = UPNP_E_SUCCESS;
 
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Printf (LOG_ERROR, "Service_UpdateState NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
@@ -332,7 +332,7 @@ MakeAction (const char* actionName, const char* serviceType,
   IXML_Document* res = NULL;
     
   if (nb_params > 0 && params == NULL) 
-    return 0; // ---------->
+    return NULL; // ---------->
 
   int i;
   for (i = 0; i < nb_params; i++) {
@@ -344,7 +344,7 @@ MakeAction (const char* actionName, const char* serviceType,
 		  NN(params[i].name), NN(params[i].value) );   
       if (res) 
 	ixmlDocument_free (res);
-      return 0; // ----------> 
+      return NULL; // ----------> 
     }
   }
      
@@ -368,14 +368,14 @@ Service_SendActionAsync (const Service* serv,
   int rc = UPNP_E_SUCCESS;
   Log_Printf (LOG_DEBUG, "Service_SendActionAsync '%s'", NN(actionName));
   
-  if (serv == 0) {
+  if (serv == NULL) {
     Log_Printf (LOG_ERROR, "Service_SendActionAsync NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
 
     IXML_Document* actionNode = MakeAction (actionName, serv->serviceType, 
 					    nb_params, params);
-    if (actionNode == 0) {
+    if (actionNode == NULL) {
       rc = UPNP_E_INVALID_PARAM;
     } else {
       // Send action request
@@ -386,7 +386,7 @@ Service_SendActionAsync (const Service* serv,
 	Log_Printf (LOG_ERROR, "Error in UpnpSendActionAsync -- %d", rc);
       
       ixmlDocument_free (actionNode);
-      actionNode = 0;
+      actionNode = NULL;
     }
   }
   return rc;
@@ -453,10 +453,10 @@ Service_SendAction (const Service* serv,
 char*
 Service_GetStatusString (const Service* serv, const char* spacer) 
 {
-  if (serv == 0)
-    return 0; // ----------> 
+  if (serv == NULL)
+    return NULL; // ----------> 
   
-  if (spacer == 0)
+  if (spacer == NULL)
     spacer = "";
   
   char* p = talloc_strdup (serv, "");
@@ -474,7 +474,7 @@ Service_GetStatusString (const Service* serv, const char* spacer)
   // Print variables
   ListNode* node;
   for (node = ListHead ((LinkedList*) &serv->variables);
-       node != 0;
+       node != NULL;
        node = ListNext ((LinkedList*) &serv->variables, node)) {
     StringPair* const var = node->item;
     p=P(p, "%s         +- %-10s = %.150s%s\n", spacer, 
