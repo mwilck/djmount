@@ -93,7 +93,7 @@ static const struct CommandStruct CMDLIST[] = {
   { "browse", 	CMD_BROWSE, 3, "<devname> <objectId>"},
   { "metadata", CMD_METADATA, 3, "<devname> <objectId>"},
   { "ls", 	CMD_LS, 3, "<devname> <path>"},
-  { "action", 	CMD_ACTION, 4, "<devname> <servnum> <actionName>"},
+  { "action", 	CMD_ACTION, 4, "<devname> <serviceId> <actionName>"},
   { "exit", 	CMD_EXIT, 1, ""}
 };
 
@@ -265,13 +265,7 @@ process_command (const char* cmdline)
     break;
 
   case CMD_ACTION:
-    {
-      int servnum;
-      if (sscanf (strarg2, "%d", &servnum) == 1)
-	rc = DeviceList_SendActionAsync (strarg1, servnum, strarg3, 0, NULL);
-      else
-	invalidargs++;
-    }
+    rc = DeviceList_SendActionAsync (strarg1, strarg2, strarg3, 0, NULL);
     break;
     
   case CMD_PRINTDEV:

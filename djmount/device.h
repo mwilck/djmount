@@ -78,22 +78,24 @@ Device_GetDescDocItem (const Device* dev, const char* item);
 
 
 
-/**
- * @brief returns the pointer to a given Service.
- * 	Given a list number, returns the pointer to the service
- *      node at that position in the device. Note
- *      that this function is not thread safe.  It must be called 
+/******************************************************************************
+ * @fn	    Device_GetServiceFrom
+ * @brief   returns the pointer to a given Service.
+ * 	Given a service name, returns the pointer to the matching 
+ *	service. The service can be identified from various strings.
+ *	Note that this function is not thread safe.  It must be called 
  *      from a function that has locked the global device list.
  *
- * @param servnum   The service number (order in the list, starting with 0)
- */
-struct ServiceStruct* 
-Device_GetService (const Device* dev, int servnum);
+ * @param dev	    the parent device
+ * @param servname  the service name
+ * @param from      the kind of service name
+ *
+ *****************************************************************************/
 
-// TBD
-enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL };
+enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL, FROM_SERVICE_ID };
 struct ServiceStruct* 
-Device_GetServiceFrom (const Device* dev, const char*, enum GetFrom);
+Device_GetServiceFrom (const Device* dev, 
+		       const char* servname, enum GetFrom from);
 
 
 /******************************************************************************

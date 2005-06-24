@@ -86,13 +86,13 @@ DeviceList_RefreshAll (const char* target);
  *	  (asynchronous call).
  *
  * @param deviceName    the device name
- * @param servnum	The service number (order in the list, starting with 0)
- * @param actionName    The name of the action.
+ * @param serviceId	the service identifier
+ * @param actionName    the name of the action
  * @param nb_params	Number of pairs (names + values)
  * @param params	List of pairs : names + values 
  *****************************************************************************/
 int 
-DeviceList_SendActionAsync (const char* deviceName, int servnum,
+DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 			    const char* actionName, 
 			    int nb_params, const StringPair* params);
 
@@ -102,13 +102,13 @@ DeviceList_SendActionAsync (const char* deviceName, int servnum,
  *	  (asynchronous call).
  *
  * @param deviceName    the device name
- * @param servnum	The service number (order in the list, starting with 0)
- * @param actionName    The name of the action.
+ * @param serviceId	the service identifier
+ * @param actionName    the name of the action
  * @param ...		List of Name / Value pairs.
  *			This list shall be terminated by NULL / NULL.
  *****************************************************************************/
 int 
-DeviceList_SendActionAsyncVa (const char* deviceName, int servnum,
+DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
 			      const char* actionName, ...);
 
 
@@ -117,15 +117,15 @@ DeviceList_SendActionAsyncVa (const char* deviceName, int servnum,
  *	  (synchronous call).
  *
  * @param deviceName    the device name
- * @param servnum	The service number (order in the list, starting with 0)
- * @param actionName    The name of the action.
+ * @param serviceId	the service identifier
+ * @param actionName    the name of the action
  * @param nb_params	Number of pairs (names + values)
  * @param params	List of pairs : names + values 
  * @return              the DOM document for the response. Allocated
  *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
 IXML_Document* 
-DeviceList_SendAction (const char* deviceName, int servnum,
+DeviceList_SendAction (const char* deviceName, const char* serviceId,
 		       const char* actionName, 
 		       int nb_params, const StringPair* params);
   
@@ -135,15 +135,15 @@ DeviceList_SendAction (const char* deviceName, int servnum,
  *	  (synchronous call).
  *
  * @param deviceName    the device name
- * @param servnum	The service number (order in the list, starting with 0)
- * @param actionName    The name of the action.
+ * @param serviceId	the service identifier
+ * @param actionName    the name of the action
  * @param ...		List of Name / Value pairs.
  *			This list shall be terminated by NULL / NULL.
  * @return              the DOM document for the response. Allocated
  *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
 IXML_Document* 
-DeviceList_SendActionVa (const char* deviceName, int servnum,
+DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
 			 const char* actionName, ...);
   
 
@@ -152,14 +152,15 @@ DeviceList_SendActionVa (const char* deviceName, int servnum,
 }; // extern "C"
 
 template<class T>
-int	DeviceList_SendAction1 (const char* deviceName, int servnum,
+int	DeviceList_SendAction1 (const char* deviceName, const char* serviceId,
 				const std::string& actionName,
 				const std::string& paramName,
 				T paramValue)
 {
   std::stringstream o;
   o << paramValue;
-  return DeviceList_SendActionAsyncVa (deviceName, servnum, actionName.c_str(),
+  return DeviceList_SendActionAsyncVa (deviceName, serviceId, 
+				       actionName.c_str(),
 				       paramName.c_str(), o.str().c_str(), 
 				       (char*) NULL, (char*) NULL);
 }

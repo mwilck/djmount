@@ -28,6 +28,10 @@
 
 
 
+#define CONTENT_DIRECTORY_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
+
+
+
 /******************************************************************************
  * DestroyObject
  *
@@ -106,11 +110,8 @@ CDS_BrowseId (void* result_context, const char* deviceName,
   UpnpSetMaxContentLength (1024 * 1024); // 1 Mbytes
   // TBD XXX
 
-  // TBD
-  const int cds_serv_num = 0; // TBD
-
   IXML_Document* doc = DeviceList_SendActionVa
-    (deviceName, cds_serv_num, "Browse", 
+    (deviceName, CONTENT_DIRECTORY_SERVICE_ID, "Browse", 
      "ObjectID", 	objectId,
      "BrowseFlag", 	(metadata ? "BrowseMetadata" : "BrowseDirectChildren"),
      "Filter", 	      	"*",

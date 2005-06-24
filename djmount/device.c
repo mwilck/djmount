@@ -222,6 +222,7 @@ Device_GetDescDocItem (const Device* dev, const char* item)
 /*****************************************************************************
  * Device_GetService
  *****************************************************************************/
+// TBD to be deleted
 Service*
 Device_GetService (const Device* dev, int servnum)
 {
@@ -239,9 +240,10 @@ Device_GetService (const Device* dev, int servnum)
 
 
 Service*
-Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
+Device_GetServiceFrom (const Device* dev, 
+		       const char* servname, enum GetFrom from)
 {  
-  if (ss) {
+  if (servname) {
     ListNode* node;
     for (node = ListHead ((LinkedList*) &dev->services); 
 	 node != NULL;
@@ -251,8 +253,9 @@ Device_GetServiceFrom (const Device* dev, const char* ss, enum GetFrom from)
       case FROM_SID:		s = Service_GetSid (node->item); break;
       case FROM_CONTROL_URL:	s = Service_GetControlURL (node->item); break;
       case FROM_EVENT_URL:	s = Service_GetControlURL (node->item); break;
+      case FROM_SERVICE_ID:	s = Service_GetServiceId (node->item); break;
       }
-      if (s && strcmp (ss, s) == 0)
+      if (s && strcmp (servname, s) == 0)
 	return node->item; // ---------->
     }
   }

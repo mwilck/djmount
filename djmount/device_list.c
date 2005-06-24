@@ -592,7 +592,7 @@ EventHandlerCallback (Upnp_EventType EventType,
  * DeviceList_SendActionAsyncVa
  *****************************************************************************/
 int	
-DeviceList_SendActionAsyncVa (const char* deviceName, int servnum,
+DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
 			      const char* actionName, ...)
 {
   // Some reasonable number
@@ -610,7 +610,7 @@ DeviceList_SendActionAsyncVa (const char* deviceName, int servnum,
   va_end (ap);
   Log_Printf (LOG_DEBUG, "DeviceList_SendActionAsyncVa : %d pairs found", nb);
   
-  return DeviceList_SendActionAsync (deviceName, servnum, actionName, 
+  return DeviceList_SendActionAsync (deviceName, serviceId, actionName, 
 				     nb, params);
 }
 
@@ -618,7 +618,7 @@ DeviceList_SendActionAsyncVa (const char* deviceName, int servnum,
  * DeviceList_SendActionAsync
  *****************************************************************************/
 int	
-DeviceList_SendActionAsync (const char* deviceName, int servnum,
+DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 			    const char* actionName, 
 			    int nb_params, const StringPair* params)
 {
@@ -626,15 +626,16 @@ DeviceList_SendActionAsync (const char* deviceName, int servnum,
 
   ithread_mutex_lock (&DeviceListMutex);
   
-  Log_Printf (LOG_DEBUG, "SendActionAsync '%s' for device '%s' service %d",
-	      NN(actionName), NN(deviceName), servnum);
+  Log_Printf (LOG_DEBUG, "SendActionAsync '%s' for device '%s' service '%s'",
+	      NN(actionName), NN(deviceName), NN(serviceId));
   
   const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
   if (devnode == 0) {
     rc = UPNP_E_INVALID_DEVICE;
   } else {
     
-    const Service* const servnode = Device_GetService (devnode->d, servnum);
+    const Service* const servnode = 
+      Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
     if (servnode == 0) {
       rc = UPNP_E_INVALID_SID;
     } else {
@@ -653,7 +654,7 @@ DeviceList_SendActionAsync (const char* deviceName, int servnum,
  * DeviceList_SendActionVa
  *****************************************************************************/
 IXML_Document*
-DeviceList_SendActionVa (const char* deviceName, int servnum,
+DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
 			 const char* actionName, ...)
 {
   // Some reasonable number
@@ -671,14 +672,14 @@ DeviceList_SendActionVa (const char* deviceName, int servnum,
   va_end (ap);
   Log_Printf (LOG_DEBUG, "DeviceList_SendActionVa : %d pairs found", nb);
   
-  return DeviceList_SendAction (deviceName, servnum, actionName, nb, params);
+  return DeviceList_SendAction (deviceName, serviceId, actionName, nb, params);
 }
 
 /*****************************************************************************
  * DeviceList_SendAction
  *****************************************************************************/
 IXML_Document*
-DeviceList_SendAction (const char* deviceName, int servnum,
+DeviceList_SendAction (const char* deviceName, const char* serviceId,
 		       const char* actionName, 
 		       int nb_params, const StringPair* params)
 {
@@ -686,12 +687,13 @@ DeviceList_SendAction (const char* deviceName, int servnum,
 
   ithread_mutex_lock (&DeviceListMutex);
   
-  Log_Printf (LOG_DEBUG, "SendAction '%s' for device '%s' service %d",
-	      NN(actionName), NN(deviceName), servnum);
+  Log_Printf (LOG_DEBUG, "SendAction '%s' for device '%s' service '%s'",
+	      NN(actionName), NN(deviceName), NN(serviceId));
   
   const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
   if (devnode) {
-    const Service* const servnode = Device_GetService (devnode->d, servnum);
+    const Service* const servnode = 
+      Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
     if (servnode) {
       int rc = Service_SendAction (servnode, actionName, 
 				   nb_params, params, &res);

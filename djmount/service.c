@@ -508,3 +508,10 @@ Service_GetControlURL (const Service* serv)
 {
   return (serv ? serv->controlURL : NULL);
 }
+
+const char*
+Service_GetServiceId (const Service* serv)
+{
+  return (serv ? serv->serviceId : NULL);
+}
+

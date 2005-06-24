@@ -139,6 +139,7 @@ Service_GetStatusString (const Service* serv, const char* spacer);
 const char*	Service_GetSid (const Service* serv);
 const char*	Service_GetEventURL (const Service* serv);
 const char*	Service_GetControlURL (const Service* serv);
+const char*	Service_GetServiceId (const Service* serv);
 
 int		Service_SetSid (Service* serv, Upnp_SID sid);
 
