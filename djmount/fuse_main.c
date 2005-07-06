@@ -102,7 +102,7 @@ enum FileMode {
   
 };
 
-typedef struct FileHandle {
+typedef struct _FileHandle {
     
   enum FileMode mode;
   
@@ -362,14 +362,14 @@ fs_open (const char* path, struct fuse_file_info* fi)
   } 
 
   void* context = NULL; // TBD
-  struct FileHandle* fh = talloc (context, FileHandle);
+  FileHandle* fh = talloc (context, FileHandle);
   if (fh == NULL) 
     return -ENOMEM; // ---------->
   
   char* content = NULL;
   int rc = DJFS_Browse (path, NULL, NULL, NULL, fh, &content);
   if (rc == 0) {
-    *fh = (struct FileHandle) { 
+    *fh = (struct _FileHandle) { 
       .mode   = FILE_READ_STRING,
       .string = content,
       .length = content ? strlen (content) : 0
