@@ -62,8 +62,7 @@ DJFS_Browse (const char* path,
  *	for testing purposes.
  *
  *****************************************************************************/
-struct CDS_BrowseResultStruct;
-struct CDS_BrowseResultStruct*
+struct _ContentDirectory_BrowseResult*
 DJFS_BrowseCDS (void* result_context, 
 		const char* deviceName, const char* path,
 		size_t* nb_char_matched);

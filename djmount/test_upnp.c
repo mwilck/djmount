@@ -26,7 +26,7 @@
 
 #include "device_list.h"
 #include "log.h"
-#include "cds.h"
+#include "content_directory.h"
 #include "djfs.h"
 #include "log.h"
 
@@ -229,9 +229,12 @@ process_command (const char* cmdline)
 
   case CMD_BROWSE:
     {
-      CDS_BrowseResult* res = CDS_BrowseChildren (tmp_ctx, strarg1, strarg2);
+      ContentDirectory_BrowseResult* res = NULL;
+      DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIRECTORY_SERVICE_ID,
+				ContentDirectory, BrowseChildren, 
+				tmp_ctx, strarg2);
       if (res) {
-	CDS_Object* o = res->children;
+	ContentDirectory_Object* o = res->children;
 	while (o) {
 	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
 	  o = o->next;
@@ -242,7 +245,10 @@ process_command (const char* cmdline)
 
   case CMD_METADATA:
     {
-      CDS_Object* o = CDS_BrowseMetadata (tmp_ctx, strarg1, strarg2);
+      ContentDirectory_Object* o = NULL;
+      DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIRECTORY_SERVICE_ID,
+				ContentDirectory, BrowseMetadata,
+				tmp_ctx, strarg2);
       if (o) {
 	Log_Printf (LOG_MAIN, "  %s", NN(o->title));
       }
@@ -252,10 +258,10 @@ process_command (const char* cmdline)
   case CMD_LS:
     {
       size_t nb_matched = 0;
-      CDS_BrowseResult* res = DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, 
-					      &nb_matched);
+      ContentDirectory_BrowseResult* res = 
+	DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, &nb_matched);
       if (res) {
-	CDS_Object* o = res->children;
+	ContentDirectory_Object* o = res->children;
 	while (o) {
 	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
 	  o = o->next;

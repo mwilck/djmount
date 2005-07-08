@@ -56,12 +56,12 @@ static ithread_mutex_t DeviceListMutex;
  * The global device list
  */
 
-struct DeviceNode {
+struct _DeviceNode {
   char*    deviceId; // as reported by the discovery callback
   Device*  d;
   int      expires; 
 };
-typedef struct DeviceNode DeviceNode;
+typedef struct _DeviceNode DeviceNode;
 
 
 //
@@ -382,7 +382,7 @@ AddDevice (const char* deviceId,
     void* context = NULL; // TBD should be parent talloc TBD XXX
       
     devnode = talloc (context, DeviceNode);
-    *devnode = (struct DeviceNode) { }; // Initialize fields to empty values
+    *devnode = (struct _DeviceNode) { }; // Initialize fields to empty values
       
     devnode->d = Device_Create (devnode, g_ctrlpt_handle, descLocation);
     if (devnode->d == 0) {
@@ -587,10 +587,47 @@ EventHandlerCallback (Upnp_EventType EventType,
 }
 
 
+/*****************************************************************************
+ * _DeviceList_LockService
+ *****************************************************************************/
+Service*
+_DeviceList_LockService (const char* deviceName, const char* serviceId)
+{
+  Service* serv = NULL;
+
+  Log_Printf (LOG_DEBUG, "LockService : device '%s' service '%s'",
+	      NN(deviceName), NN(serviceId));
+
+  // coarse implementation : lock the whole device list, not only the service
+  ithread_mutex_lock (&DeviceListMutex);
+  
+  const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
+  if (devnode) 
+    serv = Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
+  
+  if (serv == NULL)
+    ithread_mutex_unlock (&DeviceListMutex);
+
+  return serv;
+}
+
+
+/*****************************************************************************
+ * _DeviceList_UnlockService
+ *****************************************************************************/
+inline void
+_DeviceList_UnlockService (Service* serv)
+{
+  if (serv)
+    ithread_mutex_unlock (&DeviceListMutex);
+}
+
 
 /*****************************************************************************
  * DeviceList_SendActionAsyncVa
  *****************************************************************************/
+#if 0
+// TBD to be deleted
 int	
 DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
 			      const char* actionName, ...)
@@ -613,10 +650,26 @@ DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
   return DeviceList_SendActionAsync (deviceName, serviceId, actionName, 
 				     nb, params);
 }
+#endif
 
 /*****************************************************************************
  * DeviceList_SendActionAsync
  *****************************************************************************/
+#if 1
+int
+DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
+			    const char* actionName, 
+			    int nb_params, const StringPair* params)
+{
+  int rc = UPNP_E_INTERNAL_ERROR;
+  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId,
+			    Service, SendActionAsync,
+			    EventHandlerCallback, actionName, 
+			    nb_params, params);
+  return rc;
+}
+#else
+// TBD to be deleted
 int	
 DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 			    const char* actionName, 
@@ -648,11 +701,14 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
   
   return rc;  
 }
+#endif
 
 
 /*****************************************************************************
  * DeviceList_SendActionVa
  *****************************************************************************/
+#if 0
+// TBD to be deleted
 IXML_Document*
 DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
 			 const char* actionName, ...)
@@ -674,10 +730,25 @@ DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
   
   return DeviceList_SendAction (deviceName, serviceId, actionName, nb, params);
 }
+#endif
 
 /*****************************************************************************
  * DeviceList_SendAction
  *****************************************************************************/
+#if 1
+IXML_Document*
+DeviceList_SendAction (const char* deviceName, const char* serviceId,
+		       const char* actionName, 
+		       int nb_params, const StringPair* params)
+{
+  IXML_Document* res = NULL;
+  int rc = UPNP_E_INTERNAL_ERROR;
+  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId, Service, SendAction,
+			    &res, actionName, nb_params, params);
+  return (rc == UPNP_E_SUCCESS ? res : NULL);
+}
+#else
+// TBD to be deleted
 IXML_Document*
 DeviceList_SendAction (const char* deviceName, const char* serviceId,
 		       const char* actionName, 
@@ -695,8 +766,8 @@ DeviceList_SendAction (const char* deviceName, const char* serviceId,
     const Service* const servnode = 
       Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
     if (servnode) {
-      int rc = Service_SendAction (servnode, actionName, 
-				   nb_params, params, &res);
+      int rc = Service_SendAction (servnode, &res, actionName, 
+				   nb_params, params);
       if (rc != UPNP_E_SUCCESS) {
 	if (res) {
 	  DOMString s = ixmlDocumenttoString (res);
@@ -713,6 +784,7 @@ DeviceList_SendAction (const char* deviceName, const char* serviceId,
   
   return res;  
 }
+#endif
 
 
 /*****************************************************************************
@@ -807,7 +879,7 @@ DeviceList_GetDeviceStatusString (void* context, const char* deviceName)
   
   DeviceNode* devnode = GetDeviceNodeFromName (deviceName, true);
   if (devnode) { 
-    char* s = Device_GetStatusString (devnode->d);
+    char* s = Device_GetStatusString (devnode->d, NULL);
     ret = talloc_asprintf (context, 
 			   "Device \"%s\" (expires in %d seconds)\n%s",
 			   deviceName, devnode->expires, s);

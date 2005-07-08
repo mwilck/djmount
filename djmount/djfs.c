@@ -31,7 +31,7 @@
 #include <talloc.h>
 
 #include "log.h"
-#include "cds.h"
+#include "content_directory.h"
 #include "device_list.h"
 #include "xml_util.h"
 
@@ -85,7 +85,7 @@ match_start_of_path (const char* path, const char* name)
 /******************************************************************************
  * DJFS_BrowseCDS
  *****************************************************************************/
-CDS_BrowseResult*
+ContentDirectory_BrowseResult*
 DJFS_BrowseCDS (void* result_context, 
 		const char* deviceName, const char* const path, 
 		size_t* nb_char_matched)
@@ -100,13 +100,16 @@ DJFS_BrowseCDS (void* result_context,
   const char* ptr = path;
   while (*ptr == '/')
     ptr++;
-  CDS_BrowseResult* current = CDS_BrowseChildren (result_context,
-						  deviceName, "0");
+
+  ContentDirectory_BrowseResult* current = NULL;
+  DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIRECTORY_SERVICE_ID,
+			    ContentDirectory, BrowseChildren,
+			    result_context, "0");
 
   // Walk path, or until error
   while (*ptr && current) {
     // Find current directory
-    CDS_Object* o = current->children;
+    ContentDirectory_Object* o = current->children;
     while (o) {
       if (o->is_container) {
 	const char* const p = match_start_of_path (ptr, o->title);
@@ -123,7 +126,10 @@ DJFS_BrowseCDS (void* result_context,
     } else {
       char* id = talloc_steal (tmp_ctx, o->id);
       talloc_free (current);
-      current = CDS_BrowseChildren (result_context, deviceName, id);
+      DEVICE_LIST_CALL_SERVICE (current, deviceName,
+				CONTENT_DIRECTORY_SERVICE_ID,
+				ContentDirectory, BrowseChildren,
+				result_context, id);
     }
   }
 
@@ -176,7 +182,8 @@ const struct {
 };
   
 static char*
-object_to_file (void* talloc_context, const CDS_Object* o, enum GetMode get)
+object_to_file (void* talloc_context, 
+		const ContentDirectory_Object* o, enum GetMode get)
 {
   char* str = NULL;
   IXML_NodeList *reslist = ixmlElement_getElementsByTagName(o->element, "res");
@@ -335,8 +342,8 @@ DJFS_Browse (const char* path,
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    size_t nb_matched = 0;
-	    CDS_BrowseResult* res = DJFS_BrowseCDS (tmp_ctx, 
-						    devName, ptr, &nb_matched);
+	    ContentDirectory_BrowseResult* const res = 
+	      DJFS_BrowseCDS (tmp_ctx, devName, ptr, &nb_matched);
 	    if (res) {
 	      char* dirname = talloc_strndup (tmp_ctx, ptr, nb_matched);
 	      Log_Printf (LOG_DEBUG, "dirname = '%s'", dirname);
@@ -344,7 +351,7 @@ DJFS_Browse (const char* path,
 		goto skip_dir;
 	      DIR_BEGIN (dirname) {
 	      skip_dir: ;
-		CDS_Object* o = res->children;
+		ContentDirectory_Object* o = res->children;
 		while (o) {
 		  if (o->is_container) {
 		    DIR_BEGIN (o->title) {

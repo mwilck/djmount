@@ -36,7 +36,7 @@
 
 
 
-struct DeviceStruct {
+struct _Device {
 
   IXML_Document* descDoc;
   char*		 descDocURL;
@@ -49,6 +49,37 @@ struct DeviceStruct {
   LinkedList	services; // Linked list of Service*
 
 };
+
+
+
+/*****************************************************************************
+ * @fn	ServiceFactory
+ *	Creates a Service object, whose class depends on the service type.
+ *****************************************************************************/
+
+#include "service.h"
+#include "content_directory.h"
+
+static Service* 
+ServiceFactory (Device* dev,
+		UpnpClient_Handle ctrlpt_handle, 
+		IXML_Element* serviceDesc, 
+		const char* base_url)
+{
+  Service* serv = NULL;
+  /*
+   * Simple implementation, hardcoding the 2 possible classes.
+   */
+  const char* const serviceId = 
+    XMLUtil_GetFirstNodeValue ((IXML_Node*) serviceDesc, "serviceId");
+  if (serviceId && strcmp (serviceId, CONTENT_DIRECTORY_SERVICE_ID) == 0) {
+    serv = (Service*) ContentDirectory_Create (dev, ctrlpt_handle, 
+					       serviceDesc, base_url);
+  } else {
+    serv = Service_Create (dev, ctrlpt_handle, serviceDesc, base_url);
+  }
+  return serv;
+}
 
 
 /*****************************************************************************
@@ -149,7 +180,7 @@ Device* Device_Create (void* context,
     return NULL; // ---------->
   }
   
-  *dev = (struct DeviceStruct) { 
+  *dev = (struct _Device) { 
     .descDocURL = talloc_strdup (dev, descDocURL),
     .descDoc    = descDoc,
     // Other fields to empty values
@@ -185,12 +216,11 @@ Device* Device_Create (void* context,
 
   int i;
   for (i = 0; i < length; i++ ) {
-    IXML_Element* const service = 
+    IXML_Element* const serviceDesc = 
       (IXML_Element *) ixmlNodeList_item (serviceList, i);
-    
-    Service* const servnode = Service_Create (dev, ctrlpt_handle, 
-					      service, base);
-    ListAddTail (&dev->services, servnode);
+    Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
+					  serviceDesc, base);
+    ListAddTail (&dev->services, serv);
   }
   
   if (serviceList) {
@@ -268,12 +298,15 @@ Device_GetServiceFrom (const Device* dev,
  * Device_GetStatusString
  *****************************************************************************/
 char*
-Device_GetStatusString (const Device* dev)
+Device_GetStatusString (const Device* dev, void* result_context)
 {
   if (dev == NULL)
     return NULL; // ---------->
 
-  char* p = talloc_strdup (dev, "");
+  char* p = talloc_strdup (result_context, "");
+  
+  // Create a working context for temporary strings
+  void* const tmp_ctx = talloc_new (p);
 
 #define P talloc_asprintf_append 
   p=P(p, "  Device\n");
@@ -292,17 +325,17 @@ Device_GetStatusString (const Device* dev)
     const char* const spacer = 
       (node == ListTail ((LinkedList*) &dev->services)) ? "     " : "    |";
     p=P(p, "    |                  \n");
-    p=P(p, "    +- Service\n");
     if (serv == NULL) {
-      p=P(p, "%s    +- **ERROR** NULL Service\n", spacer);
+      p=P(p, "    +- **ERROR** NULL Service\n");
     } else {
-      char* s = Service_GetStatusString (serv, spacer);
-      p=P(p, "%s", s);
-      talloc_free (s);
+      p=P(p, "%s", Service_GetStatusString (serv, tmp_ctx, "    +- ", spacer));
     }
   }
 #undef P
-    
+      
+  // Delete all temporary strings
+  talloc_free (tmp_ctx);
+
   return p;
 }
 

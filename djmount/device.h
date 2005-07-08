@@ -27,14 +27,11 @@
 #include <upnp/upnp.h>
 #include <upnp/ixml.h>
 
+#include "service.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-// Forward declaration
-struct ServiceStruct;
 
 
 /******************************************************************************
@@ -48,8 +45,8 @@ struct ServiceStruct;
  *
  *****************************************************************************/
 
-struct DeviceStruct;
-typedef struct DeviceStruct Device;
+struct _Device;
+typedef struct _Device Device;
 
 
 /******************************************************************************
@@ -93,7 +90,7 @@ Device_GetDescDocItem (const Device* dev, const char* item);
  *****************************************************************************/
 
 enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL, FROM_SERVICE_ID };
-struct ServiceStruct* 
+Service* 
 Device_GetServiceFrom (const Device* dev, 
 		       const char* servname, enum GetFrom from);
 
@@ -103,7 +100,7 @@ Device_GetServiceFrom (const Device* dev,
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/
 char*
-Device_GetStatusString (const Device* dev);
+Device_GetStatusString (const Device* dev, void* result_context);
 
 
 

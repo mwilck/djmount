@@ -29,6 +29,7 @@
 
 #include "log.h"		// import Log_Level
 #include "string_util.h"	// import StringArray
+#include "service.h"
 
 
 #ifdef __cplusplus
@@ -64,21 +65,52 @@ typedef void (*DeviceList_EventCallback) (DeviceList_EventType type,
 
 
 
+  // TBD
 int	
 DeviceList_RemoveAll (void);
 
 
-/**
+/*****************************************************************************
  * @fn 	  DeviceList_RefreshAll
  * @brief Clear the current global device list and issue new search
  *	  requests to build it up again from scratch.
  *
  * @param target    the search target as defined in the UPnP Device 
  *                  Architecture v1.0 specification e.g. "ssdp:all" for all.
- */
+ *****************************************************************************/
 int 
 DeviceList_RefreshAll (const char* target);
 
+
+/*****************************************************************************
+ * @fn	  DEVICE_LIST_CALL_SERVICE
+ * @brief Finds a Service in the global device list, and calls the specified
+ *	  methods on it (the method shall check for NULL Service).
+ *
+ * Example:
+ *	int rc;
+ *	DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId, 
+ *				  Service, SendAction,
+ *	       		          actionName, nb_params, params);
+ * will call:
+ *	rc = Service_SendAction (the_service, actionName, nb_params, params);
+ *
+ *****************************************************************************/
+#define TBD_DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVID,METHOD,...)	\
+  do {								\
+    Service* __serv = _DeviceList_LockService(DEVNAME,SERVID);	\
+    RET = METHOD(__serv, __VA_ARGS__);				\
+    _DeviceList_UnlockService(__serv);				\
+  } while (0)								
+
+
+#define DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVID,SERVTYPE,METHOD,...) \
+  do {									\
+    Service* __serv = _DeviceList_LockService(DEVNAME,SERVID);		\
+    RET = SERVTYPE ## _ ## METHOD					\
+      (OBJECT_DYNAMIC_CAST(__serv, SERVTYPE), __VA_ARGS__);		\
+    _DeviceList_UnlockService(__serv);					\
+  } while (0)								
 
 
 /*****************************************************************************
@@ -107,9 +139,12 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
  * @param ...		List of Name / Value pairs.
  *			This list shall be terminated by NULL / NULL.
  *****************************************************************************/
+// TBD to be deleted
+#if 0
 int 
 DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
 			      const char* actionName, ...);
+#endif
 
 
 /*****************************************************************************
@@ -142,9 +177,12 @@ DeviceList_SendAction (const char* deviceName, const char* serviceId,
  * @return              the DOM document for the response. Allocated
  *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
+// TBD to be deleted
+#if 0
 IXML_Document* 
 DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
 			 const char* actionName, ...);
+#endif
   
 
 
@@ -243,6 +281,17 @@ DeviceList_Start (const char* target,
  *****************************************************************************/
 int 
 DeviceList_Stop (void);
+
+
+
+/*****************************************************************************
+ * Internal methods, do not use directly
+ *****************************************************************************/
+Service*
+_DeviceList_LockService (const char* deviceName, const char* serviceId);
+
+void
+_DeviceList_UnlockService (Service* serv);
 
 
 

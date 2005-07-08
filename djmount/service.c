@@ -35,34 +35,18 @@
 #include <talloc.h>
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
-#include <upnp/LinkedList.h>
+
+#include "service_p.h"
 
 
+// Some reasonable number for number of vararg parameters to SendAction
+#define MAX_VA_PARAMS	64
 
 
-struct ServiceStruct {
-  
-  char* serviceId;
-  char* serviceType;
-  char* eventURL;
-  char* controlURL;
-  char* sid;
-
-  // TBD XXX to replace by hashtable XXX
-  LinkedList	variables;
-
-  UpnpClient_Handle ctrlpt_handle;
-
-  // TBD to implement
-  struct Operations {
-
-    void (*update_variable) (Service*, const char* name, const char* value);
-
-  } *ops;
-};
-
-
-
+/******************************************************************************
+ * Service_SubscribeEventURL
+ * Service_UnsubscribeEventURL
+ *****************************************************************************/
 
 int
 Service_SubscribeEventURL (Service* serv)
@@ -72,17 +56,18 @@ Service_SubscribeEventURL (Service* serv)
     Log_Printf (LOG_ERROR, "Service_SubscribeEventURL NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
-    Log_Printf (LOG_DEBUG, "Subscribing to EventURL %s", NN(serv->eventURL));
+    Log_Printf (LOG_DEBUG, "Subscribing to EventURL %s", NN(serv->m.eventURL));
     int timeout = SERVICE_DEFAULT_TIMEOUT;    
     Upnp_SID sid;
-    rc = UpnpSubscribe (serv->ctrlpt_handle, serv->eventURL, &timeout, sid);
-    talloc_free (serv->sid);
+    rc = UpnpSubscribe (serv->m.ctrlpt_handle, serv->m.eventURL, 
+			&timeout, sid);
+    talloc_free (serv->m.sid);
     if ( rc == UPNP_E_SUCCESS ) {
-      serv->sid = talloc_strdup (serv, sid);
+      serv->m.sid = talloc_strdup (serv, sid);
       Log_Printf (LOG_DEBUG, "Subscribed to %s EventURL with SID=%s", 
-		  talloc_get_name (serv), serv->sid);
+		  talloc_get_name (serv), serv->m.sid);
     } else {
-      serv->sid = NULL;
+      serv->m.sid = NULL;
       Log_Printf (LOG_ERROR, "Error Subscribing to %s EventURL -- %d", 
 		  talloc_get_name (serv), rc);
     }
@@ -101,13 +86,13 @@ Service_UnsubscribeEventURL (Service* serv)
     /*
      * If we have a valid control SID, then unsubscribe 
      */
-    if (serv->sid == NULL) {
+    if (serv->m.sid == NULL) {
       rc = UPNP_E_SUCCESS;
     } else {
-      rc = UpnpUnSubscribe (serv->ctrlpt_handle, serv->sid);
+      rc = UpnpUnSubscribe (serv->m.ctrlpt_handle, serv->m.sid);
       if ( UPNP_E_SUCCESS == rc ) {
 	Log_Printf (LOG_DEBUG, "Unsubscribed from %s EventURL with SID=%s",
-		    talloc_get_name (serv), serv->sid);
+		    talloc_get_name (serv), serv->m.sid);
       } else {
 	Log_Printf (LOG_ERROR, "Error unsubscribing to %s EventURL -- %d",
 		    talloc_get_name (serv), rc);
@@ -119,88 +104,29 @@ Service_UnsubscribeEventURL (Service* serv)
 
 
 /******************************************************************************
- * destroy
+ * finalize
  *
  * Description: 
- *	Service destructor, automatically called by "talloc_free".
+ *	Service destructor
  *
  *****************************************************************************/
-static int
-destroy (void* ptr)
+static void
+finalize (Object* obj)
 {
-  if (ptr) {
-    Service* const serv = (Service*) ptr;
+  Service* const serv = (Service*) obj;
 
-    /* If we have a valid control SID, then unsubscribe */
-    Service_UnsubscribeEventURL (serv);
+  /* If we have a valid control SID, then unsubscribe */
+  Service_UnsubscribeEventURL (serv);
    
-    /* Delete variable list.
-     * Note that items are not destroyed : they are talloc'ed and
-     * automatically deallocated when parent Service is detroyed.
-     */
-    ListDestroy (&serv->variables, /*freeItem=>*/ 0);
-
-    // Reset all pointers to NULL 
-    memset (serv, 0, sizeof(Service));
-    
-    // The "talloc'ed" strings will be deleted automatically 
-  }
-  return 0; // ok -> deallocate memory
-}
-
-
-/*****************************************************************************
- * Service_Create
- *****************************************************************************/
-Service* 
-Service_Create (void* context, 
-		UpnpClient_Handle ctrlpt_handle, 
-		IXML_Element* serviceDesc, 
-		const char* base_url)
-{
-  Service* serv = talloc (context, Service);
-
-  if (serv == NULL) {
-    Log_Print (LOG_ERROR, "Service_Create Out of Memory");
-    return NULL; // ---------->
-  }
-
-  *serv = (struct ServiceStruct) { }; // Initialize fields to empty values
-
-  serv->ctrlpt_handle = ctrlpt_handle;
-
-  const IXML_Node* const node = (IXML_Node*) serviceDesc;
-
-  serv->serviceType = talloc_strdup (serv, XMLUtil_GetFirstNodeValue
-				     (node, "serviceType"));
-  Log_Printf (LOG_INFO, "Service_Create: %s", NN(serv->serviceType));
-
-  serv->serviceId = talloc_strdup (serv, XMLUtil_GetFirstNodeValue
-				   (node, "serviceId"));
-  Log_Printf (LOG_DEBUG, "serviceId: %s", NN(serv->serviceId));
-
-  if (serv->serviceId) {
-    const char* const p = strrchr (serv->serviceId, ':');
-    talloc_set_name (serv, "%s", (p ? p+1 : serv->serviceId));
-  }
-
-  char* relcontrolURL = XMLUtil_GetFirstNodeValue (node, "controlURL");
-  UpnpUtil_ResolveURL (serv, base_url, relcontrolURL, &serv->controlURL);
-
-  char* releventURL = XMLUtil_GetFirstNodeValue (node, "eventSubURL");
-  UpnpUtil_ResolveURL (serv, base_url, releventURL, &serv->eventURL);
+  /* Delete variable list.
+   * Note that items are not destroyed : they are talloc'ed and
+   * automatically deallocated when parent Service is detroyed.
+   */
+  ListDestroy (&serv->m.variables, /*freeItem=>*/ 0);
   
-  // Subscribe to events 
-  Service_SubscribeEventURL (serv);
-
-  // Initialise list of variables
-  ListInit (&serv->variables, 0, 0);
-
-  // Register destructor
-  talloc_set_destructor (serv, destroy);
-
-  return serv;
+  /* The "talloc'ed" strings will be deleted automatically : nothing to do */
 }
+
 
 /*****************************************************************************
  * Service_SetSid 
@@ -214,8 +140,8 @@ Service_SetSid (Service* serv, Upnp_SID sid)
     Log_Printf (LOG_ERROR, "Service_SetSid NULL Service");
     rc = UPNP_E_INVALID_SERVICE;
   } else {
-    talloc_free (serv->sid);
-    serv->sid = (sid ? talloc_strdup (serv, sid) : NULL);
+    talloc_free (serv->m.sid);
+    serv->m.sid = (sid ? talloc_strdup (serv, sid) : NULL);
   }
   return rc;
 }
@@ -229,9 +155,9 @@ GetVariable (const Service* serv, const char* name)
 {
   if (serv && name) {
     ListNode* node;
-    for (node = ListHead ((LinkedList*) &serv->variables);
+    for (node = ListHead ((LinkedList*) &serv->m.variables);
 	 node != NULL;
-	 node = ListNext ((LinkedList*) &serv->variables, node)) {
+	 node = ListNext ((LinkedList*) &serv->m.variables, node)) {
       StringPair* const var = node->item;
       if (var && var->name && strcmp (var->name, name) == 0) 
 	return node; // ---------->
@@ -304,10 +230,10 @@ Service_UpdateState (Service* serv, IXML_Document* changedVariables)
 		var = talloc (serv, StringPair);
 		var->name  = talloc_strdup (var, name);
 		var->value = talloc_strdup (var, value);
-		ListAddTail (&serv->variables, var);
+		ListAddTail (&serv->m.variables, var);
 	      }
-	      if (serv->ops && serv->ops->update_variable)
-		serv->ops->update_variable (serv, var->name, var->value);
+	      if (serv->isa && serv->isa->m.update_variable)
+		serv->isa->m.update_variable (serv, var->name, var->value);
 	    }
 	  }
 	}
@@ -373,14 +299,14 @@ Service_SendActionAsync (const Service* serv,
     rc = UPNP_E_INVALID_SERVICE;
   } else {
 
-    IXML_Document* actionNode = MakeAction (actionName, serv->serviceType, 
+    IXML_Document* actionNode = MakeAction (actionName, serv->m.serviceType, 
 					    nb_params, params);
     if (actionNode == NULL) {
       rc = UPNP_E_INVALID_PARAM;
     } else {
       // Send action request
-      rc = UpnpSendActionAsync (serv->ctrlpt_handle, serv->controlURL,
-				serv->serviceType, NULL, actionNode,
+      rc = UpnpSendActionAsync (serv->m.ctrlpt_handle, serv->m.controlURL,
+				serv->m.serviceType, NULL, actionNode,
 				callback, /* cookie => */ serv);
       if (rc != UPNP_E_SUCCESS) 
 	Log_Printf (LOG_ERROR, "Error in UpnpSendActionAsync -- %d", rc);
@@ -392,15 +318,38 @@ Service_SendActionAsync (const Service* serv,
   return rc;
 }
 
+/*****************************************************************************
+ * Service_SendActionAsyncVa
+ *****************************************************************************/
+int	
+Service_SendActionAsyncVa (const Service* serv,
+			   Upnp_FunPtr callback,
+			   const char* actionName, ...)
+{
+  // Get names+values
+  StringPair params [MAX_VA_PARAMS];
+  va_list ap;
+  va_start (ap, actionName);
+  int nb = 0;
+  while ( (params[nb].name = va_arg (ap, char*)) && (nb < MAX_VA_PARAMS) ) {
+    params[nb].value = va_arg (ap, char*); // TBD should be "const char*"
+    nb++;
+  }
+  va_end (ap);
+  Log_Printf (LOG_DEBUG, "Service_SendActionAsyncVa : %d pairs found", nb);
+  
+  return Service_SendActionAsync (serv, callback, actionName, nb, params);
+}
+
 
 /*****************************************************************************
  * Service_SendAction
  *****************************************************************************/
 int
 Service_SendAction (const Service* serv,
+		    IXML_Document** response,
 		    const char* actionName,
-		    int nb_params, const StringPair* params,
-		    IXML_Document** response)
+		    int nb_params, const StringPair* params)
 {
   int rc = UPNP_E_SUCCESS;
   Log_Printf (LOG_DEBUG, "Service_SendAction '%s'", NN(actionName));
@@ -413,20 +362,23 @@ Service_SendAction (const Service* serv,
     rc = UPNP_E_INVALID_PARAM;
   } else {
 
-    IXML_Document* actionNode = MakeAction (actionName, serv->serviceType, 
+    IXML_Document* actionNode = MakeAction (actionName, serv->m.serviceType, 
 					    nb_params, params);
     if (actionNode == NULL) {
       rc = UPNP_E_INVALID_PARAM;
     } else {
       // Send action request
       *response = NULL;
-      rc = UpnpSendAction (serv->ctrlpt_handle, serv->controlURL,
-			   serv->serviceType, NULL, actionNode,
+      rc = UpnpSendAction (serv->m.ctrlpt_handle, serv->m.controlURL,
+			   serv->m.serviceType, NULL, actionNode,
 			   response);
       if (rc != UPNP_E_SUCCESS) {
 	Log_Printf (LOG_ERROR, "Error in UpnpSendAction -- %d (%s)", rc,
 		    UpnpGetErrorMessage (rc));
 	if (*response) { 
+	  DOMString s = ixmlDocumenttoString (response);
+	  Log_Printf (LOG_DEBUG, "Error in UpnpSendAction, response = %s", s);
+	  ixmlFreeDOMString (s);
 	  // rc > 0 : SOAP-protocol error
 	  Log_Printf 
 	    (LOG_ERROR, 
@@ -446,44 +398,80 @@ Service_SendAction (const Service* serv,
 }
 
 
+/*****************************************************************************
+ * Service_SendActionVa
+ *****************************************************************************/
+int
+Service_SendActionVa (const Service* serv,
+		      IXML_Document** response,
+		      const char* actionName, ...)
+{
+  // Get names+values
+  StringPair params [MAX_VA_PARAMS];
+  va_list ap;
+  va_start (ap, actionName);
+  int nb = 0;
+  while ( (params[nb].name = va_arg (ap, char*)) && (nb < MAX_VA_PARAMS) ) {
+    params[nb].value = va_arg (ap, char*); // TBD should be "const char*"
+    nb++;
+  }
+  va_end (ap);
+  Log_Printf (LOG_DEBUG, "Service_SendActionVa : %d pairs found", nb);
+  
+  return Service_SendAction (serv, response, actionName, nb, params);
+}
+
 
 /*****************************************************************************
  * Service_GetStatusString
  *****************************************************************************/
-char*
-Service_GetStatusString (const Service* serv, const char* spacer) 
+static char*
+get_status_string (const Service* serv, 
+		   void* result_context, 
+		   const char* spacer1, const char* spacer) 
 {
-  if (serv == NULL)
-    return NULL; // ----------> 
-  
   if (spacer == NULL)
     spacer = "";
   
-  char* p = talloc_strdup (serv, "");
+  char* p = talloc_asprintf (result_context, "%sService\n",
+			     (spacer1 ? spacer1 : ""));
   
 #define P talloc_asprintf_append 
-  p=P(p, "%s    +- Internal Name   = %s\n", spacer, talloc_get_name(serv));
-  p=P(p, "%s    +- ServiceId       = %s\n", spacer, NN(serv->serviceId));
-  p=P(p, "%s    +- ServiceType     = %s\n", spacer, NN(serv->serviceType));
-  p=P(p, "%s    +- EventURL        = %s\n", spacer, NN(serv->eventURL));
-  p=P(p, "%s    +- ControlURL      = %s\n", spacer, NN(serv->controlURL));
-  p=P(p, "%s    +- SID             = %s\n", spacer, NN(serv->sid));
-  p=P(p, "%s    +- ServiceStateTable\n", spacer);
+  p=P(p, "%s  +- C Class         = %s\n", spacer, 
+      NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
+  p=P(p, "%s  +- C Name          = %s\n", spacer, talloc_get_name(serv));
+  p=P(p, "%s  +- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
+  p=P(p, "%s  +- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
+  p=P(p, "%s  +- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
+  p=P(p, "%s  +- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
+  p=P(p, "%s  +- SID             = %s\n", spacer, NN(serv->m.sid));
+  p=P(p, "%s  +- ServiceStateTable\n", spacer);
 
 
   // Print variables
   ListNode* node;
-  for (node = ListHead ((LinkedList*) &serv->variables);
+  for (node = ListHead ((LinkedList*) &serv->m.variables);
        node != NULL;
-       node = ListNext ((LinkedList*) &serv->variables, node)) {
+       node = ListNext ((LinkedList*) &serv->m.variables, node)) {
     StringPair* const var = node->item;
-    p=P(p, "%s         +- %-10s = %.150s%s\n", spacer, 
+    p=P(p, "%s       +- %-10s = %.150s%s\n", spacer, 
 	NN(var->name), NN(var->value), 
 	(var->value && strlen(var->value) > 150) ? "..." : "");
   }
 
 #undef P
   return p;
+}
+
+char*
+Service_GetStatusString (const Service* serv,  
+			 void* result_context, 
+			 const char* spacer1, const char* spacer) 
+{
+  if (serv && serv->isa && serv->isa->m.get_status_string)
+    return serv->isa->m.get_status_string (serv, result_context,
+					   spacer1, spacer);
+  return NULL;
 }
 
 
@@ -494,24 +482,122 @@ Service_GetStatusString (const Service* serv, const char* spacer)
 const char*
 Service_GetSid (const Service* serv)
 {
-  return (serv ? serv->sid : NULL);
+  return (serv ? serv->m.sid : NULL);
 }
 
 const char*
 Service_GetEventURL (const Service* serv)
 {
-  return (serv ? serv->eventURL : NULL);
+  return (serv ? serv->m.eventURL : NULL);
 }
 
 const char*
 Service_GetControlURL (const Service* serv)
 {
-  return (serv ? serv->controlURL : NULL);
+  return (serv ? serv->m.controlURL : NULL);
 }
 
 const char*
 Service_GetServiceId (const Service* serv)
 {
-  return (serv ? serv->serviceId : NULL);
+  return (serv ? serv->m.serviceId : NULL);
 }
 
+
+/*****************************************************************************
+ * _ServiceClass_Get
+ *****************************************************************************/
+
+const ServiceClass* OBJECT_CLASS_PTR(Service)
+{
+  static ServiceClass the_class = { .o.size = 0 };
+  static const Service the_default_object = { .isa = &the_class };
+
+  // Initialize non-const fields on first call 
+  if (the_class.o.size == 0) {
+  
+    _ObjectClass_Lock();
+
+    // 1. Copy superclass methods
+    const ObjectClass* super = OBJECT_CLASS_PTR(Object);
+    the_class.m._ = *super;
+
+    // 2. Initialize specific fields
+    the_class.o = (ObjectClass) {
+      .magic		= super->magic,
+      .name 		= "Service",
+      .super		= super,
+      .size	        = sizeof (Service),
+      .initializer 	= &the_default_object,
+      .finalize 	= finalize,
+    };
+    the_class.m.update_variable	  = NULL;
+    the_class.m.get_status_string = get_status_string;
+
+    _ObjectClass_Unlock();
+  }
+
+  return &the_class;
+}
+
+
+/*****************************************************************************
+ * _Service_Initialize
+ *****************************************************************************/
+int
+_Service_Initialize (Service* serv,
+		     UpnpClient_Handle ctrlpt_handle, 
+		     IXML_Element* serviceDesc, 
+		     const char* base_url)
+{
+  if (serv == NULL)
+    return UPNP_E_INVALID_SERVICE; // ---------->
+
+  serv->m.ctrlpt_handle = ctrlpt_handle;
+
+  const IXML_Node* const node = (IXML_Node*) serviceDesc;
+
+  serv->m.serviceType = talloc_strdup (serv, XMLUtil_GetFirstNodeValue
+				     (node, "serviceType"));
+  Log_Printf (LOG_INFO, "Service_Create: %s", NN(serv->m.serviceType));
+
+  serv->m.serviceId = talloc_strdup (serv, XMLUtil_GetFirstNodeValue
+				   (node, "serviceId"));
+  Log_Printf (LOG_DEBUG, "serviceId: %s", NN(serv->m.serviceId));
+
+  char* relcontrolURL = XMLUtil_GetFirstNodeValue (node, "controlURL");
+  UpnpUtil_ResolveURL (serv, base_url, relcontrolURL, &serv->m.controlURL);
+
+  char* releventURL = XMLUtil_GetFirstNodeValue (node, "eventSubURL");
+  UpnpUtil_ResolveURL (serv, base_url, releventURL, &serv->m.eventURL);
+
+  serv->m.sid = NULL;
+  
+  // Subscribe to events 
+  Service_SubscribeEventURL (serv);
+
+  // Initialise list of variables
+  ListInit (&serv->m.variables, 0, 0);
+
+  return UPNP_E_SUCCESS;
+}
+
+
+/*****************************************************************************
+ * Service_Create
+ *****************************************************************************/
+Service* 
+Service_Create (void* talloc_context, 
+		UpnpClient_Handle ctrlpt_handle, 
+		IXML_Element* serviceDesc, 
+		const char* base_url)
+{
+  Service* serv = _OBJECT_TALLOC (talloc_context, Service);
+  if (serv) {
+    int rc = _Service_Initialize (serv, ctrlpt_handle, serviceDesc, base_url);
+    if (rc)
+      // TBD leak
+      serv = NULL; // don't try to call talloc_free if partial init 
+  }
+  return serv;
+}

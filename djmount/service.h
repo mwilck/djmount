@@ -30,6 +30,7 @@
 #include <upnp/ixml.h>
 
 #include "string_util.h"	// for StringPair
+#include "object.h"
 
 
 #ifdef __cplusplus
@@ -45,7 +46,7 @@ extern "C" {
 /******************************************************************************
  * @var Service
  *
- *	This opaque type encapsulates access to the UPnP service.
+ *	This opaque type encapsulates access to a generic UPnP service.
  *	
  *      NOTE THAT THE FUNCTION API IS NOT THREAD SAFE. Function should 
  *      be called through the global functions in "devicelist.h", 
@@ -53,16 +54,14 @@ extern "C" {
  *
  *****************************************************************************/
 
-struct ServiceStruct;
-typedef struct ServiceStruct Service;
+OBJECT_DECLARE_CLASS(Service, Object);
 
 
 
 /*****************************************************************************
- * @brief Create a new service.
- *	This routine finds the services in a DOM representation
- *	of a description document and parses them.  
- *	The returned Service* can be destroyed with "talloc_free".
+ * @brief Create a new generic service.
+ *	This routine parses the DOM service description.
+ *	The returned object can be destroyed with "talloc_free".
  *
  * @param context        the talloc parent context
  * @param ctrlpt_handle  the UPnP client handle
@@ -94,19 +93,53 @@ Service_SendActionAsync (const Service* serv, Upnp_FunPtr callback,
 
 /*****************************************************************************
  * @brief Send an Action request to the specified service of a device
+ *	  (asynchronous call).
+ *
+ * @param serv      	the service object
+ * @param callback      the callback to receive the results
+ * @param actionName    the name of the action
+ * @param ...		list of Name / Value pairs.
+ *			This list shall be terminated by NULL / NULL.
+ *****************************************************************************/
+int 
+Service_SendActionAsyncVa (const Service* serv,Upnp_FunPtr callback,
+			   const char* actionName, ...);
+
+
+/*****************************************************************************
+ * @brief Send an Action request to the specified service of a device
  *	  (synchronous call).
  *
  * @param serv         the service object
+ * @param response     the DOM document for the response. Allocated
+ *		       by the SDK ; the caller needs to free it.
  * @param actionName   the name of the action
  * @param nb_params    number of pairs (names + values)
  * @param params       list of pairs : names + values 
- * @param response     the DOM document for the response. Allocated
- *		       by the SDK ; the caller needs to free it.
  *****************************************************************************/
 int 
-Service_SendAction (const Service* serv, const char* actionName,
-		    int nb_params, const StringPair* params,
-		    OUT IXML_Document** response);
+Service_SendAction (const Service* serv, 
+		    OUT IXML_Document** response,
+		    const char* actionName,
+		    int nb_params, const StringPair* params);
+
+
+/*****************************************************************************
+ * @brief Send an Action request to the specified service of a device
+ *	  (synchronous call).
+ *
+ * @param deviceName    the device name
+ * @param serviceId	the service identifier
+ * @param actionName    the name of the action
+ * @param ...		List of Name / Value pairs.
+ *			This list shall be terminated by NULL / NULL.
+ * @return              the DOM document for the response. Allocated
+ *		        by the SDK ; the caller needs to free it.
+ *****************************************************************************/
+int
+Service_SendActionVa (const Service* serv,
+		      OUT IXML_Document** response,
+		      const char* actionName, ...);
 
 
 
@@ -130,7 +163,9 @@ Service_UpdateState (IN Service* serv,
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/
 char*
-Service_GetStatusString (const Service* serv, const char* spacer);
+Service_GetStatusString (const Service* serv, 
+			 void* result_context,
+			 const char* spacer1, const char* spacern);
 
 
 /*****************************************************************************
