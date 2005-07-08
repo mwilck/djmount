@@ -9,7 +9,7 @@
    add filessystem cache
 
 0.30
-   unicode file names handling
+   i18n / unicode file names handling
 
 0.xx
    finer thread locking i.e. per service and device
