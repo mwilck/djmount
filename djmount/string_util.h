@@ -44,7 +44,7 @@ extern "C" {
  * StringArray
  *****************************************************************************/
 
-typedef struct StringArrayStruct {
+typedef struct _StringArray {
   
   int    nb;
   char*  str[]; // struct hack, aka C99 "Flexible array member"
@@ -60,7 +60,7 @@ typedef struct StringArrayStruct {
  * StringPair
  *****************************************************************************/
 
-typedef struct StringPairStruct {
+typedef struct _StringPair {
 
   char* name;
   char* value;
