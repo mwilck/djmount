@@ -51,49 +51,8 @@
 
 
 /*****************************************************************************
- * CONFIGURATION
+ * Types for operations on open files
  *****************************************************************************/
-
-
-
-
-
-// TBD in StringUtil.h
-
-// Returned struct must be deallocated with "talloc_free"
-static StringArray*
-split_path (void* context, const char* path)
-{
-  if ( path == 0 || path[0] != '/' ) {
-    return 0; // ---------->
-    
-  } else {
-    // Parse the path
-    // 1) find maximum number of components
-    //    (may be one or two less if begining or ending /)
-    int nb_max = 0;
-    const char* p = path;
-    while (*p) {
-      if (*p++ == '/')
-	nb_max++;
-    }
-    StringArray* ret = StringArray_talloc (context, nb_max);
-    
-    // 2) find components
-    char* path_copy = talloc_strdup (ret, path); // overwritten by "strtok"
-    char* tokptr = 0;
-    char* s;
-    for (s = strtok_r (path_copy, "/", &tokptr); s != 0; 
-	 s = strtok_r (0, "/", &tokptr)) {
-      if (*s) { // Keep only non-empty components
-	ret->str[ret->nb++] = s; 
-      }
-    }
-    return ret; // ---------->
-  }
-}
-
-
 
 enum FileMode {
     
@@ -110,8 +69,6 @@ typedef struct _FileHandle {
   size_t length;
   
 } FileHandle;
-
-
 
 
 
