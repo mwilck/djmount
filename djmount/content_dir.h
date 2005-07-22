@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef CONTENT_DIRECTORY_H_INCLUDED
-#define CONTENT_DIRECTORY_H_INCLUDED
+#ifndef CONTENT_DIR_H_INCLUDED
+#define CONTENT_DIR_H_INCLUDED
 
 
 #ifdef __cplusplus
@@ -36,15 +36,19 @@ extern "C" {
 
 
 // ContentDirectory Service types
-typedef uint_fast32_t ContentDirectory_Count;
+typedef uint_fast32_t ContentDir_Count;
 
+// ContentDirectory ServiceType
+#define CONTENT_DIR_SERVICE_TYPE \
+  "urn:schemas-upnp-org:service:ContentDirectory:1"
 
 // ContentDirectory ServiceId
-#define CONTENT_DIRECTORY_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
+#define CONTENT_DIR_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
+
 
 
 /******************************************************************************
- * @var ContentDirectory
+ * @var ContentDir
  *
  *	This opaque type encapsulates access to a UPnP Content Directory
  *	service. 
@@ -53,7 +57,7 @@ typedef uint_fast32_t ContentDirectory_Count;
  *	
  *****************************************************************************/
 
-OBJECT_DECLARE_CLASS(ContentDirectory, Service);
+OBJECT_DECLARE_CLASS(ContentDir, Service);
 
 
 
@@ -63,7 +67,7 @@ OBJECT_DECLARE_CLASS(ContentDirectory, Service);
  */
 // TBD rename to CDS_DIDLObject ?
 
-typedef struct _ContentDirectory_Object {
+typedef struct _ContentDir_Object {
 
   bool  is_container; // else is_item
 
@@ -82,9 +86,9 @@ typedef struct _ContentDirectory_Object {
    */
   IXML_Element* element;
 
-  struct _ContentDirectory_Object* next;
+  struct _ContentDir_Object* next;
 
-} ContentDirectory_Object;
+} ContentDir_Object;
 
 
 
@@ -95,13 +99,27 @@ typedef struct _ContentDirectory_Object {
 /**
  * Linked list of DIDL-object, returned by Browse functions
  */
-typedef struct _ContentDirectory_BrowseResult {
+typedef struct _ContentDir_Children {
 
-  ContentDirectory_Count   nb_containers;
-  ContentDirectory_Count   nb_items;
-  ContentDirectory_Object* children;
+  ContentDir_Count   nb_containers;
+  ContentDir_Count   nb_items;
+  ContentDir_Object* objects;
   
-} ContentDirectory_BrowseResult;
+} ContentDir_Children;
+
+
+/**
+ * Result returned by Browse functions
+ * (extra level of indirection regarding Children is needed internally
+ *  for cache management)
+ */
+typedef struct _ContentDir_BrowseResult {
+
+  ContentDir*	        cds;
+  ContentDir_Children*  children;
+  
+} ContentDir_BrowseResult;
+
 
 
 /*****************************************************************************
@@ -114,11 +132,11 @@ typedef struct _ContentDirectory_BrowseResult {
  * @param serviceDesc    the DOM service description document
  * @param base_url       the base url of the device description document
  *****************************************************************************/
-ContentDirectory* 
-ContentDirectory_Create (void* context,
-			 UpnpClient_Handle ctrlpt_handle, 
-			 IXML_Element* serviceDesc, 
-			 const char* base_url);
+ContentDir* 
+ContentDir_Create (void* context,
+		   UpnpClient_Handle ctrlpt_handle, 
+		   IXML_Element* serviceDesc, 
+		   const char* base_url);
 
 /*****************************************************************************
  * Content Directory Service Actions
@@ -126,22 +144,29 @@ ContentDirectory_Create (void* context,
  * see UPnP documentation : ContentDirectory:1 Service Template Version 1.01
  *****************************************************************************/
 
-/** Browse Action, BrowseFlag = BrowseDirectChildren */
-ContentDirectory_BrowseResult*
-ContentDirectory_BrowseChildren (const ContentDirectory* cds,
-				 void* result_context, 
-				 const char* objectId);
+/**
+ * Browse Action, BrowseFlag = BrowseDirectChildren.
+ * Result should be freed using "talloc_free" when finished.
+ */
+const ContentDir_BrowseResult*
+ContentDir_BrowseChildren (ContentDir* cds,
+			   void* result_context, 
+			   const char* objectId);
 
-/** Browse Action, BrowseFlag = BrowseMetadata */
-ContentDirectory_Object*
-ContentDirectory_BrowseMetadata (const ContentDirectory* cds,
-				 void* result_context, 
-				 const char* objectId);
+
+/**
+ * Browse Action, BrowseFlag = BrowseMetadata.
+ * Result should be freed using "talloc_free" when finished.
+ */
+ContentDir_Object*
+ContentDir_BrowseMetadata (const ContentDir* cds,
+			   void* result_context, 
+			   const char* objectId);
 
 /** Search Action */
 // TBD TBD not implemented yet
 int
-ContentDirectory_Search (const ContentDirectory* cds, const char* objectId);
+ContentDir_Search (const ContentDir* cds, const char* objectId);
 
 
 
@@ -150,6 +175,6 @@ ContentDirectory_Search (const ContentDirectory* cds, const char* objectId);
 #endif 
 
 
-#endif // CONTENT_DIRECTORY_H_INCLUDED
+#endif // CONTENT_DIR_H_INCLUDED
 
 

@@ -91,9 +91,12 @@ String_CleanFileName (void* talloc_context, const char* s);
 
 
 /*****************************************************************************
- * Hash a string
+ * @fn 		String_Hash
+ * @brief	Hash a string
  *****************************************************************************/
-uint32_t
+typedef uint32_t String_HashType;
+
+String_HashType
 String_Hash (const char* str);
 
 

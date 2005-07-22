@@ -49,7 +49,7 @@ DJFS_Browse (const char* path,
 
 
 /*****************************************************************************
- * @fn		DJFS_BrowseCDS
+ * @fn		_DJFS_BrowseCDS
  * @brief	browse the ContentDirectory service associated to a UPnP device
  *
  *	path must be an absolute, canonical, path.
@@ -58,14 +58,16 @@ DJFS_Browse (const char* path,
  *	so this function returns when the current path part matches an item,
  *	or does not match anything.
  *
+ * 	Result should be freed using "talloc_free" when finished.
+ *
  *	Note: this function is used internaly by "djfs" ; it is exported 
- *	for testing purposes.
+ *	for testing purposes only.
  *
  *****************************************************************************/
-struct _ContentDirectory_BrowseResult*
-DJFS_BrowseCDS (void* result_context, 
-		const char* deviceName, const char* path,
-		size_t* nb_char_matched);
+const struct _ContentDir_BrowseResult*
+_DJFS_BrowseCDS (void* result_context,
+		 const char* deviceName, const char* path,
+		 size_t* nb_char_matched);
 
 
 

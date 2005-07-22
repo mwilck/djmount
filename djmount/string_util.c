@@ -68,15 +68,14 @@ String_CleanFileName (void* talloc_context, const char* s)
  *	http://burtleburtle.net/bob/hash/doobs.html
  *****************************************************************************/
 
-#define HASH_TYPE 	uint32_t
 #define HASH_ALGO_SDBM	1
 
-HASH_TYPE
+String_HashType
 String_Hash (const char* str)
 {
 #if HASH_ALGO_SDBM
   // This is a SDBM hash algo. 
-  register HASH_TYPE hash = 0;
+  register String_HashType hash = 0;
   unsigned char c;
 
   while ((c = *str++)) {
@@ -84,14 +83,14 @@ String_Hash (const char* str)
   }
 #elif HASH_ALGO_DJB2
   // This is a DJB2 hash algo. 
-  register HASH_TYPE hash = 5381;
+  register String_HashType hash = 5381;
   unsigned char c;
 
   while ((c = *str++)) {
     hash = ((hash << 5) + hash) + c; // hash * 33 + c 
   }
 #elif HASH_ALGO_DJB2_XOR
-  register HASH_TYPE hash = 5381; 
+  register String_HashType hash = 5381; 
   unsigned char c; 
 
   while ((c = *str++)) {

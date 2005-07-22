@@ -141,7 +141,7 @@ _Object_IsA (const Object* const obj, const ObjectClass* searched_class)
 }
 
 /*****************************************************************************
- * _ObjectClass_Get
+ * OBJECT_CLASS_PTR(Object)
  *****************************************************************************/
 
 const ObjectClass* OBJECT_CLASS_PTR(Object)

@@ -38,6 +38,7 @@ clean:
 	$(MAKE) -C libupnp/upnp clean
 	-$(MAKE) -C talloc clean
 	cd talloc && rm -f lib*.a
+	-rm -f IUpnpErrFile.txt IUpnpInfoFile.txt
 
 
 .PHONY: dist

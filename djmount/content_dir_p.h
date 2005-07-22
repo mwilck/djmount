@@ -20,8 +20,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "content_directory.h"
+#ifndef CONTENT_DIR_P_INCLUDED
+#define CONTENT_DIR_P_INCLUDED 1
+
+#include "content_dir.h"
 #include "service_p.h"
+#include <upnp/ithread.h>
 
 
 /******************************************************************************
@@ -30,7 +34,7 @@
  *
  *****************************************************************************/
 
-union _ContentDirectoryClass {
+union _ContentDirClass {
 
   ObjectClass o;
 
@@ -43,17 +47,23 @@ union _ContentDirectoryClass {
 };
 
 
+struct _ContentDir_CacheEntry;
 
-
-union _ContentDirectory {
+union _ContentDir {
   
-  const ContentDirectoryClass* isa;
+  const ContentDirClass* isa;
 
   struct {
     // Inherit parent fields
     Service _; 
 
-    // No additional fields
+    // Additional fields
+    struct _ContentDir_CacheEntry* 	cache;
+    ithread_mutex_t 			cache_mutex;
+
   } m;
 };
+
+#endif /* CONTENT_DIR_P_INCLUDED */
+
 

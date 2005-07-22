@@ -26,7 +26,7 @@
 
 #include "device_list.h"
 #include "log.h"
-#include "content_directory.h"
+#include "content_dir.h"
 #include "djfs.h"
 #include "log.h"
 
@@ -44,6 +44,7 @@
 #    include <readline/readline.h>
 #    include <readline/history.h>
 #endif
+
 
 // UPnP search target
 #define UPNP_TARGET	"ssdp:all"
@@ -229,12 +230,12 @@ process_command (const char* cmdline)
 
   case CMD_BROWSE:
     {
-      ContentDirectory_BrowseResult* res = NULL;
-      DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIRECTORY_SERVICE_ID,
-				ContentDirectory, BrowseChildren, 
+      const ContentDir_BrowseResult* res = NULL;
+      DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIR_SERVICE_ID,
+				ContentDir, BrowseChildren, 
 				tmp_ctx, strarg2);
       if (res) {
-	ContentDirectory_Object* o = res->children;
+	const ContentDir_Object* o = res->children->objects;
 	while (o) {
 	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
 	  o = o->next;
@@ -245,9 +246,9 @@ process_command (const char* cmdline)
 
   case CMD_METADATA:
     {
-      ContentDirectory_Object* o = NULL;
-      DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIRECTORY_SERVICE_ID,
-				ContentDirectory, BrowseMetadata,
+      const ContentDir_Object* o = NULL;
+      DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIR_SERVICE_ID,
+				ContentDir, BrowseMetadata,
 				tmp_ctx, strarg2);
       if (o) {
 	Log_Printf (LOG_MAIN, "  %s", NN(o->title));
@@ -258,10 +259,10 @@ process_command (const char* cmdline)
   case CMD_LS:
     {
       size_t nb_matched = 0;
-      ContentDirectory_BrowseResult* res = 
-	DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, &nb_matched);
+      const ContentDir_BrowseResult* res = 
+	_DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, &nb_matched);
       if (res) {
-	ContentDirectory_Object* o = res->children;
+	const ContentDir_Object* o = res->children->objects;
 	while (o) {
 	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
 	  o = o->next;

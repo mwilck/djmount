@@ -58,7 +58,7 @@ struct _Device {
  *****************************************************************************/
 
 #include "service.h"
-#include "content_directory.h"
+#include "content_dir.h"
 
 static Service* 
 ServiceFactory (Device* dev,
@@ -72,9 +72,9 @@ ServiceFactory (Device* dev,
    */
   const char* const serviceId = 
     XMLUtil_GetFirstNodeValue ((IXML_Node*) serviceDesc, "serviceId");
-  if (serviceId && strcmp (serviceId, CONTENT_DIRECTORY_SERVICE_ID) == 0) {
-    serv = (Service*) ContentDirectory_Create (dev, ctrlpt_handle, 
-					       serviceDesc, base_url);
+  if (serviceId && strcmp (serviceId, CONTENT_DIR_SERVICE_ID) == 0) {
+    serv = (Service*) ContentDir_Create (dev, ctrlpt_handle, 
+					 serviceDesc, base_url);
   } else {
     serv = Service_Create (dev, ctrlpt_handle, serviceDesc, base_url);
   }

@@ -43,6 +43,7 @@
 #include "upnp_util.h"
 #include "string_util.h"
 #include "djfs.h"
+#include "content_dir.h"
 
 
 #define MY_FUSE_VERSION (FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
@@ -658,8 +659,7 @@ main (int argc, char *argv[])
    * Initialise UPnP Control point and starts FUSE file system
    */
 
-  rc = DeviceList_Start ("urn:schemas-upnp-org:service:ContentDirectory:1",
-			 NULL);
+  rc = DeviceList_Start (CONTENT_DIR_SERVICE_TYPE, NULL);
   if (rc != UPNP_E_SUCCESS) {
     Log_Printf (LOG_ERROR, "Error starting UPnP Control Point");
     exit (rc); // ---------->

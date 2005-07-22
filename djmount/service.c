@@ -115,16 +115,18 @@ finalize (Object* obj)
 {
   Service* const serv = (Service*) obj;
 
-  /* If we have a valid control SID, then unsubscribe */
-  Service_UnsubscribeEventURL (serv);
-   
-  /* Delete variable list.
-   * Note that items are not destroyed : they are talloc'ed and
-   * automatically deallocated when parent Service is detroyed.
-   */
-  ListDestroy (&serv->m.variables, /*freeItem=>*/ 0);
-  
-  /* The "talloc'ed" strings will be deleted automatically : nothing to do */
+  if (serv) {
+    /* If we have a valid control SID, then unsubscribe */
+    Service_UnsubscribeEventURL (serv);
+    
+    /* Delete variable list.
+     * Note that items are not destroyed : they are talloc'ed and
+     * automatically deallocated when parent Service is detroyed.
+     */
+    ListDestroy (&serv->m.variables, /*freeItem=>*/ 0);
+    
+    /* The "talloc'ed" strings will be deleted automatically : nothing to do */
+  }
 }
 
 
@@ -505,7 +507,7 @@ Service_GetServiceId (const Service* serv)
 
 
 /*****************************************************************************
- * _ServiceClass_Get
+ * OBJECT_CLASS_PTR(Service)
  *****************************************************************************/
 
 const ServiceClass* OBJECT_CLASS_PTR(Service)
@@ -593,11 +595,18 @@ Service_Create (void* talloc_context,
 		const char* base_url)
 {
   Service* serv = _OBJECT_TALLOC (talloc_context, Service);
-  if (serv) {
-    int rc = _Service_Initialize (serv, ctrlpt_handle, serviceDesc, base_url);
-    if (rc)
-      // TBD leak
-      serv = NULL; // don't try to call talloc_free if partial init 
-  }
+  if (serv == NULL) 
+    goto error; // ---------->
+
+  int rc = _Service_Initialize (serv, ctrlpt_handle, serviceDesc, base_url);
+  if (rc) 
+    goto error; // ---------->
+
   return serv;
+  
+ error:
+  Log_Print (LOG_ERROR, "Service_Create error");
+  // TBD there might be a leak here,
+  // TBD but don't try to call talloc_free on partialy initialized object
+  return NULL;
 }

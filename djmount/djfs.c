@@ -31,7 +31,7 @@
 #include <talloc.h>
 
 #include "log.h"
-#include "content_directory.h"
+#include "content_dir.h"
 #include "device_list.h"
 #include "xml_util.h"
 
@@ -83,12 +83,12 @@ match_start_of_path (const char* path, const char* name)
 
 
 /******************************************************************************
- * DJFS_BrowseCDS
+ * _DJFS_BrowseCDS
  *****************************************************************************/
-ContentDirectory_BrowseResult*
-DJFS_BrowseCDS (void* result_context, 
-		const char* deviceName, const char* const path, 
-		size_t* nb_char_matched)
+const ContentDir_BrowseResult*
+_DJFS_BrowseCDS (void* result_context,
+		 const char* deviceName, const char* const path, 
+		 size_t* nb_char_matched)
 {
   if (path == NULL)
     return NULL; // ---------->
@@ -101,15 +101,15 @@ DJFS_BrowseCDS (void* result_context,
   while (*ptr == '/')
     ptr++;
 
-  ContentDirectory_BrowseResult* current = NULL;
-  DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIRECTORY_SERVICE_ID,
-			    ContentDirectory, BrowseChildren,
-			    result_context, "0");
+  const ContentDir_BrowseResult* current = NULL;
+  DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIR_SERVICE_ID,
+			    ContentDir, BrowseChildren,
+			    tmp_ctx, "0");
 
   // Walk path, or until error
-  while (*ptr && current) {
+  while (*ptr && current && current->children) {
     // Find current directory
-    ContentDirectory_Object* o = current->children;
+    const ContentDir_Object* o = current->children->objects;
     while (o) {
       if (o->is_container) {
 	const char* const p = match_start_of_path (ptr, o->title);
@@ -124,20 +124,22 @@ DJFS_BrowseCDS (void* result_context,
       Log_Printf (LOG_DEBUG, "browse '%s' stops at '%s'", path, ptr);
       goto cleanup; // ---------->
     } else {
-      char* id = talloc_steal (tmp_ctx, o->id);
-      talloc_free (current);
+      char* id = o->id; // valid as long as tmp_ctx is not deallocated
       DEVICE_LIST_CALL_SERVICE (current, deviceName,
-				CONTENT_DIRECTORY_SERVICE_ID,
-				ContentDirectory, BrowseChildren,
-				result_context, id);
+				CONTENT_DIR_SERVICE_ID,
+				ContentDir, BrowseChildren,
+				tmp_ctx, id);
     }
   }
 
  cleanup:
-  if (current == NULL)
+  
+  if (current)
+    current = talloc_steal (result_context, current);
+  else
     Log_Printf (LOG_ERROR, "CDS can't browse '%s' for path='%s'",
 		deviceName, path); 
-  
+
   // Delete all temporary storage
   talloc_free (tmp_ctx);
   tmp_ctx = NULL;
@@ -183,7 +185,7 @@ const struct {
   
 static char*
 object_to_file (void* talloc_context, 
-		const ContentDirectory_Object* o, enum GetMode get)
+		const ContentDir_Object* o, enum GetMode get)
 {
   char* str = NULL;
   IXML_NodeList *reslist = ixmlElement_getElementsByTagName(o->element, "res");
@@ -342,16 +344,16 @@ DJFS_Browse (const char* path,
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    size_t nb_matched = 0;
-	    ContentDirectory_BrowseResult* const res = 
-	      DJFS_BrowseCDS (tmp_ctx, devName, ptr, &nb_matched);
-	    if (res) {
+	    const ContentDir_BrowseResult* const res = 
+	      _DJFS_BrowseCDS (tmp_ctx, devName, ptr, &nb_matched);
+	    if (res && res->children) {
 	      char* dirname = talloc_strndup (tmp_ctx, ptr, nb_matched);
 	      Log_Printf (LOG_DEBUG, "dirname = '%s'", dirname);
 	      if (*dirname == NUL)
 		goto skip_dir;
 	      DIR_BEGIN (dirname) {
 	      skip_dir: ;
-		ContentDirectory_Object* o = res->children;
+		const ContentDir_Object* o = res->children->objects;
 		while (o) {
 		  if (o->is_container) {
 		    DIR_BEGIN (o->title) {
