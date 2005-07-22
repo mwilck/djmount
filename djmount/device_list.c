@@ -990,7 +990,7 @@ DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
   
   gStateUpdateFun = eventCallback;
 
-  ithread_mutex_init (&DeviceListMutex, 0);
+  ithread_mutex_init (&DeviceListMutex, NULL);
 
   ListInit (&GlobalDeviceList, 0, 0);
 
