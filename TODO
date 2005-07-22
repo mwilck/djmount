@@ -6,17 +6,16 @@
    no write, no search
 
 0.20
-   add filessystem cache
+   add cache for network browse requests
 
 0.30
    i18n / unicode file names handling
 
-0.xx
-   finer thread locking i.e. per service and device
-
-0.xx
+0.50
    add search operations
 
+0.xx
+   finer thread locking i.e. per service and device
 
 0.xx
    add extended attributes

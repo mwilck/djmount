@@ -95,14 +95,6 @@ Devices / Media Servers :
 Help is needed to test on additional devices.
 
 
-LIMITATION AND KNOWN BUGS :
-THERE IS NO CACHING DONE AT ALL YET, so performances might be slow
-when browsing large repositories.
-Playing files is not affected however : streaming is done through
-standard HTTP protocols. djmount is used only when browsing directories 
-and reading playlists.
-
-
 
 Implementation
 --------------

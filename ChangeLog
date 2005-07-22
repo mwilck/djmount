@@ -1,5 +1,7 @@
 2005-07-22  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* version 0.20
+
 	* content_dir : add cache for BrowseChildren
 
 2005-07-06  Rémi Turboult  <r3mi@users.sourceforge.net>
