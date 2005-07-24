@@ -53,6 +53,8 @@ $ cat browse/Music/Artists/Tinariwen/Chatma.m3u
 #EXTINF:336,Chatma
 http://192.168.1.100:9000/disk/208.mp3
 
+$ xmms browse/Music/Artists/Tinariwen/Chatma.m3u
+
 $ fusermount -u /mnt/av
 
 
@@ -68,11 +70,6 @@ Installation
 
 * the FUSE package : http://fuse.sourceforge.net/ 
 
-* the Intel Linux SDK for UPnP Devices : http://upnp.sourceforge.net/ 
-  The "libupnp" directory contains a copy with some mandatory patches.
-
-* the "talloc" library : http://talloc.samba.org/
-  A local copy is included in the "talloc" directory for convenience.
 
 2) Use 'make' in this top directory to compile.
 
@@ -89,10 +86,11 @@ Known Compatible Devices
 djmount has been tested successfully with the following UPnP AV 
 Devices / Media Servers :
 
-* TwonkyVision UPnP Music Server version 2.7.2 ( http://www.twonkyvision.de )
+* TwonkyVision UPnP Music Server version 2.7.2 on Linux
+  ( http://www.twonkyvision.de )
 
-
-Help is needed to test on additional devices.
+Altough it should work with other UPnP AV compliant devices, help is needed 
+to test on additional devices.
 
 
 
@@ -101,10 +99,14 @@ Implementation
 
 This project uses the following main libraries :
 
-* the Linux SDK for UPnP Devices (libupnp), initialy created by Intel:
-  http://upnp.sourceforge.net/ .
-
 * the FUSE package ( http://fuse.sourceforge.net/ ), 
+
+* the Linux SDK for UPnP Devices (libupnp), initially created by Intel:
+  http://upnp.sourceforge.net/ .
+  The "libupnp" directory contains a copy with some mandatory patches.
+
+* the "talloc" library : http://talloc.samba.org/
+  A local copy is included in the "talloc" directory for convenience.
 
 
 The UPnP AV Architecture is described here : 
