@@ -184,6 +184,11 @@ ContentDir_BrowseId (const ContentDir* cds,
     XMLUtil_GetFirstNodeValueInteger ((IXML_Node*) doc, "NumberReturned", 0);
     
   if (nb < nb_total) {
+    // This is not normal : "RequestedCount" == 0 means to request all entries
+    // according to ContentDirectory specification.
+    //
+    //   TBD workaround : loop to get all result ? especially if nb == 0 ?
+    //
     Log_Printf (LOG_ERROR, 
 		"ContentDir_BrowseId ObjectId=%s : got %d results, "
 		"expected %d in doc=%s",
