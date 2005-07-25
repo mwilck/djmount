@@ -37,6 +37,8 @@ extern "C" {
 
 // ContentDirectory Service types
 typedef uint_fast32_t ContentDir_Count;
+typedef uint_fast32_t ContentDir_Index;
+
 
 // ContentDirectory ServiceType
 #define CONTENT_DIR_SERVICE_TYPE \
@@ -101,8 +103,7 @@ typedef struct _ContentDir_Object {
  */
 typedef struct _ContentDir_Children {
 
-  ContentDir_Count   nb_containers;
-  ContentDir_Count   nb_items;
+  ContentDir_Count   nb_objects;
   ContentDir_Object* objects;
   
 } ContentDir_Children;
@@ -146,6 +147,7 @@ ContentDir_Create (void* context,
 
 /**
  * Browse Action, BrowseFlag = BrowseDirectChildren.
+ * Return NULL if error, or an object list if ok (can be empty).
  * Result should be freed using "talloc_free" when finished.
  */
 const ContentDir_BrowseResult*
@@ -156,6 +158,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
 
 /**
  * Browse Action, BrowseFlag = BrowseMetadata.
+ * Return NULL if error, or a DIDL-object if ok.
  * Result should be freed using "talloc_free" when finished.
  */
 ContentDir_Object*

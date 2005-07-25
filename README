@@ -89,6 +89,9 @@ Devices / Media Servers :
 * TwonkyVision UPnP Music Server version 2.7.2 on Linux
   ( http://www.twonkyvision.de )
 
+* GMediaServer version 0.4.0 on Linux ( http://www.nongnu.org/gmediaserver/ )
+
+
 Altough it should work with other UPnP AV compliant devices, help is needed 
 to test on additional devices.
 

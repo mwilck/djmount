@@ -24,6 +24,7 @@
 #include "device_list.h"
 #include "xml_util.h"
 #include <string.h>
+#include <inttypes.h>
 #include <upnp/upnp.h>
 #include "service_p.h"
 
@@ -53,6 +54,8 @@
 // Shortcuts
 #define BrowseResult	ContentDir_BrowseResult
 #define Children	ContentDir_Children
+#define Count		ContentDir_Count
+#define Index		ContentDir_Index
 
 
 enum BrowseFlag {
@@ -132,29 +135,55 @@ CreateObject (IN void* talloc_context, IN IXML_Element* elem,
        "new ContentDir_Object : %s : id='%s' title='%s' class='%s'",
        (is_container ? "container" : "item"), 
        NN(o->id), NN(o->title), NN(o->cds_class));
+    
+    // Register destructor
+    talloc_set_destructor (o, DestroyObject);
   }
-
-  // Register destructor
-  talloc_set_destructor (o, DestroyObject);
-
   return o;
 }
 
 
 /******************************************************************************
- * ContentDir_BrowseId
+ * int_to_string
+ *
+ * 	Note: when finished, result should not be freed directly. instead,
+ *	parent context "result_context" should be freed using "talloc_free".
+ *	
  *****************************************************************************/
-static ContentDir_Children*
-ContentDir_BrowseId (const ContentDir* cds,
-		     void* result_context, 
-		     const char* objectId, 
-		     enum BrowseFlag metadata)
+static char*
+int_to_string (void* result_context, intmax_t val)
+{
+  // hardcode some common values for "BrowseAction"
+  switch (val) {
+  case 0:	return "0";
+  case 1:	return "1";
+  default:	return talloc_asprintf (result_context, "%" PRIdMAX, val);
+  }
+}
+
+
+/******************************************************************************
+ * BrowseAction
+ *****************************************************************************/
+static int
+BrowseAction (const ContentDir* cds,
+	      void* result_context, 
+	      const char* objectId, 
+	      enum BrowseFlag metadata,
+	      Index starting_index,
+	      Count requested_count,
+	      Count* nb_matched,
+	      Count* nb_returned,
+	      ContentDir_Object** objects)
 {
   if (cds == NULL || objectId == NULL) {
-    Log_Printf (LOG_ERROR, "ContentDir_BrowseId NULL parameter");
-    return NULL; // ---------->
+    Log_Printf (LOG_ERROR, "ContentDir_BrowseAction NULL parameter");
+    return UPNP_E_INVALID_PARAM; // ---------->
   }
-  
+
+  // Create a working context for temporary allocations
+  void* tmp_ctx = talloc_new (NULL);
+
   IXML_Document* doc = NULL;
   int rc = Service_SendActionVa
     (SUPER_CAST(cds), &doc, "Browse", 
@@ -162,97 +191,77 @@ ContentDir_BrowseId (const ContentDir* cds,
      "BrowseFlag", 	( (metadata == BROWSE_METADATA) ? 
 			  "BrowseMetadata" : "BrowseDirectChildren"),
      "Filter", 	      	"*",
-     "StartingIndex", 	"0",
-     "RequestedCount", 	"0", // 0 = all
+     "StartingIndex", 	int_to_string (tmp_ctx, starting_index),
+     "RequestedCount", 	int_to_string (tmp_ctx, requested_count),
      "SortCriteria", 	"",
      NULL, 		NULL);
-  
-  if (rc != UPNP_E_SUCCESS || doc == NULL) {
-    Log_Printf (LOG_ERROR, "ContentDir_BrowseId ObjectId='%s'",
+  if (doc == NULL)
+    rc = UPNP_E_BAD_RESPONSE;
+  if (rc != UPNP_E_SUCCESS) {
+    Log_Printf (LOG_ERROR, "ContentDir_BrowseAction ObjectId='%s'",
 		NN(objectId));
-    return NULL; // ---------->
+    goto cleanup; // ---------->
   }
-
-  ContentDir_Children* result = NULL;
-    
-  // Create a working context for temporary allocations
-  void* tmp_ctx = talloc_new (NULL);
-
-  ContentDir_Count nb_total = 
+  
+  *nb_matched = 
     XMLUtil_GetFirstNodeValueInteger ((IXML_Node*) doc, "TotalMatches", 0);
-  ContentDir_Count nb = 
+  *nb_returned = 
     XMLUtil_GetFirstNodeValueInteger ((IXML_Node*) doc, "NumberReturned", 0);
     
-  if (nb < nb_total) {
-    // This is not normal : "RequestedCount" == 0 means to request all entries
-    // according to ContentDirectory specification.
-    //
-    //   TBD workaround : loop to get all result ? especially if nb == 0 ?
-    //
-    Log_Printf (LOG_ERROR, 
-		"ContentDir_BrowseId ObjectId=%s : got %d results, "
-		"expected %d in doc=%s",
-	        objectId, nb, nb_total,
-		XMLUtil_GetDocumentString (tmp_ctx, doc));
-  }
   Log_Printf (LOG_DEBUG, "+++BROWSE RESULT+++\n%s\n", 
 	      XMLUtil_GetDocumentString (tmp_ctx, doc));
   
   char* const resstr = XMLUtil_GetFirstNodeValue ((IXML_Node*)doc, "Result");
   if (resstr == NULL) {
-    Log_Printf 
-      (LOG_ERROR, 		  
-       "ContentDir_BrowseId ObjectId=%s : can't get 'Result' in doc=%s",
-       objectId, XMLUtil_GetDocumentString (tmp_ctx, doc));
-  } else {
-    IXML_Document* subdoc = ixmlParseBuffer (resstr);
-    if (subdoc == NULL) {
-      Log_Printf 
-	(LOG_ERROR, 		  
-	 "ContentDir_BrowseId ObjectId=%s : can't parse 'Result'=%s",
-	 objectId, resstr);
-    } else {
-      IXML_NodeList* containers =
-	ixmlDocument_getElementsByTagName (subdoc, "container"); 
-      ContentDir_Count const nb_containers = ixmlNodeList_length (containers);
-      IXML_NodeList* items =
-	ixmlDocument_getElementsByTagName (subdoc, "item"); 
-      ContentDir_Count const nb_items = ixmlNodeList_length (items);
-      if (nb_containers + nb_items != nb) {
-	Log_Printf (LOG_ERROR, 
-		    "ContentDir_BrowseId ObjectId=%s got %d containers "
-		    "+ %d items, expected %d",
-		    objectId, nb_containers, nb_items, nb);
-	nb = nb_containers + nb_items;
-      }
-      
-      result = talloc (result_context, ContentDir_Children);
-      *result = (struct _ContentDir_Children) { 
-	.nb_containers 	= 0,
-	.nb_items 	= 0,
-	.objects 	= NULL
-      };
-      ContentDir_Count i; 
-      for (i = 0; i < nb; i++) {
-	bool const is_container = (i < nb_containers);
-	IXML_Element* const elem = (IXML_Element*)
-	  ixmlNodeList_item (is_container ? containers : items, 
-			     is_container ? i : i - nb_containers);
-	ContentDir_Object* o = CreateObject (result, elem, is_container);
-	if (o) {
-	  o->next = result->objects;
-	  result->objects = o;
-	  is_container ? result->nb_containers++ : result->nb_items++;
-	}
-      }
-      
-      if (containers)
-	ixmlNodeList_free (containers);
-      if (items)
-	ixmlNodeList_free (items);
-      ixmlDocument_free (subdoc);
-    }
+    Log_Printf (LOG_ERROR,        
+		"BrowseAction ObjectId=%s : can't get 'Result' in doc=%s",
+		objectId, XMLUtil_GetDocumentString (tmp_ctx, doc));
+    rc = UPNP_E_BAD_RESPONSE;
+    goto cleanup; // ---------->
   }
+
+  IXML_Document* subdoc = ixmlParseBuffer (resstr);
+  if (subdoc == NULL) {
+    Log_Printf (LOG_ERROR, 		  
+		"BrowseAction ObjectId=%s : can't parse 'Result'=%s",
+		objectId, resstr);
+    rc = UPNP_E_BAD_RESPONSE;
+  } else {
+    IXML_NodeList* containers =
+      ixmlDocument_getElementsByTagName (subdoc, "container"); 
+    ContentDir_Count const nb_containers = ixmlNodeList_length (containers);
+    IXML_NodeList* items =
+      ixmlDocument_getElementsByTagName (subdoc, "item"); 
+    ContentDir_Count const nb_items = ixmlNodeList_length (items);
+    if (nb_containers + nb_items != *nb_returned) {
+      Log_Printf (LOG_ERROR, 
+		  "BrowseAction ObjectId=%s got %d containers + %d items, "
+		  "expected %d", objectId, (int) nb_containers, (int) nb_items,
+		  (int) *nb_returned);
+      *nb_returned = nb_containers + nb_items;
+    }
+    
+    ContentDir_Count i; 
+    for (i = 0; i < *nb_returned; i++) {
+      bool const is_container = (i < nb_containers);
+      IXML_Element* const elem = (IXML_Element*)
+	ixmlNodeList_item (is_container ? containers : items, 
+			   is_container ? i : i - nb_containers);
+      ContentDir_Object* o = CreateObject (result_context, elem, is_container);
+      if (o) {
+	o->next = *objects;
+	*objects = o;
+      }
+    }
+      
+    if (containers)
+      ixmlNodeList_free (containers);
+    if (items)
+      ixmlNodeList_free (items);
+    ixmlDocument_free (subdoc);
+  }
+
+ cleanup:
 
   ixmlDocument_free (doc);
   doc = NULL;
@@ -261,6 +270,76 @@ ContentDir_BrowseId (const ContentDir* cds,
   talloc_free (tmp_ctx);
   tmp_ctx = NULL;
 
+  if (rc != UPNP_E_SUCCESS)
+    *nb_returned = *nb_matched = 0;
+  
+  return rc;
+}
+
+
+/******************************************************************************
+ * BrowseId
+ *****************************************************************************/
+static ContentDir_Children*
+BrowseAll (const ContentDir* cds,
+	   void* result_context, 
+	   const char* objectId, 
+	   enum BrowseFlag metadata)
+{
+  ContentDir_Children* result = talloc (result_context, ContentDir_Children);
+  if (result == NULL) 
+    return NULL; // ---------->
+
+  *result = (ContentDir_Children) { 
+    .nb_objects = 0,
+    .objects 	= NULL
+  };
+  
+  // Request all objects
+  Count nb_matched  = 0;
+  Count nb_returned = 0;
+  
+  int rc = BrowseAction (cds,
+			 result,
+			 objectId, 
+			 metadata,
+			 /* starting_index  => */ 0,
+			 /* requested_count => */ 0,
+			 &nb_matched,
+			 &nb_returned,
+			 &(result->objects));
+  if (rc != UPNP_E_SUCCESS) {
+    talloc_free (result);
+    return NULL; // ---------->
+  }
+  
+  result->nb_objects = nb_returned;
+  // Loop if missing entries
+  while (result->nb_objects < nb_matched) {
+    // This is not normal : "RequestedCount" == 0 means to request all entries
+    // according to ContentDirectory specification.
+    Log_Printf 
+      (LOG_WARNING, 
+       "ContentDir_BrowseId ObjectId=%s : got %d results, expected %d",
+       objectId, (int) result->nb_objects, (int) nb_matched);
+    
+    // Workaround : request missing entries.
+    rc = BrowseAction(cds,
+		      result,
+		      objectId, 
+		      metadata,
+		      /* starting_index  => */ result->nb_objects,
+		      /* requested_count => */ nb_matched - result->nb_objects,
+		      &nb_matched,
+		      &nb_returned,
+		      &(result->objects));
+    // Stop if error, or no more results (to prevent infinite loop)
+    if (rc != UPNP_E_SUCCESS || nb_returned == 0)
+      break; // ---------->
+    
+    result->nb_objects += nb_returned;
+  }
+  
   return result;
 }
 
@@ -311,7 +390,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
     /*
      * No cache
      */
-    br->children = ContentDir_BrowseId (cds, br, objectId, BROWSE_CHILDREN);
+    br->children = BrowseAll (cds, br, objectId, BROWSE_CHILDREN);
 
   } else {
     /*
@@ -331,8 +410,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
       br->children = ce->children; 
     } else {
       // Use the cache as parent context for allocation of result
-      br->children = ContentDir_BrowseId (cds, cds->m.cache, objectId, 
-					  BROWSE_CHILDREN);
+      br->children = BrowseAll (cds, cds->m.cache, objectId, BROWSE_CHILDREN);
       if (same_object_id) {
 	Log_Printf (LOG_DEBUG, 
 		    "ContentDir CACHE_EXPIRED (new='%s', idx=%u)",
@@ -390,17 +468,14 @@ ContentDir_BrowseMetadata (const ContentDir* cds,
   // TBD: no cache in BrowseMetadata method for the time being
   
   ContentDir_Object* res = NULL;
-  Children* children = ContentDir_BrowseId (cds, NULL, objectId, 
-					    BROWSE_METADATA);
-  if (children) {
-    if (children->objects && children->objects->next == NULL) {
-      res = talloc_steal (result_context, children->objects);
-    } else {
-      Log_Printf (LOG_ERROR, 
-		  "ContentDir_BrowseMetadata : not 1 result exactly Id=%s",
-		  NN(objectId));
-    }
-    talloc_free (children);
+  Count nb_matched  = 0;
+  Count nb_returned = 0;
+  int rc = BrowseAction (cds, result_context, objectId, BROWSE_METADATA,
+			 0, 1, &nb_matched, &nb_returned, &res);
+  if (rc == UPNP_E_SUCCESS && nb_returned != 1) {
+    Log_Printf (LOG_ERROR, 
+		"ContentDir_BrowseMetadata : not 1 result exactly Id=%s",
+		NN(objectId));
   }
   return res;
 }
