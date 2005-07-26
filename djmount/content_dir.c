@@ -195,7 +195,7 @@ BrowseAction (const ContentDir* cds,
      "RequestedCount", 	int_to_string (tmp_ctx, requested_count),
      "SortCriteria", 	"",
      NULL, 		NULL);
-  if (doc == NULL)
+  if (doc == NULL && rc == UPNP_E_SUCCESS)
     rc = UPNP_E_BAD_RESPONSE;
   if (rc != UPNP_E_SUCCESS) {
     Log_Printf (LOG_ERROR, "ContentDir_BrowseAction ObjectId='%s'",
