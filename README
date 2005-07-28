@@ -66,6 +66,12 @@ Note: the FUSE  kernel module shall be loaded before running djmount
 Installation
 ------------
 
+djmount has been tested on the following configurations:
+
+* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1), FUSE 2.2.1 or 2.3.0
+
+
+
 1) Prerequisites for compilation:
 
 * the FUSE package : http://fuse.sourceforge.net/ 
