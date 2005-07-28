@@ -1,11 +1,14 @@
 
-0.10
+Roadmap
+=======
+
+0.10 (done)
    implement read operations
 	status
 	browse
    no write, no search
 
-0.20
+0.20 (done)
    add cache for network browse requests
 
 0.30
@@ -14,11 +17,22 @@
 0.50
    add search operations
 
-0.xx
-   finer thread locking i.e. per service and device
 
-0.xx
-   add extended attributes
+
+To Be Done
+==========
+
+- finer thread locking i.e. per service and device
+
+- add extended attributes
+
+- clean cache on update of SystemUpdateID / ContainerUpdateIDs
+
+- provide access to DeviceDescription.xml file
+
+- add statistics for debug of ContentDir cache
+
+
 
 
 
