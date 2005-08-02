@@ -125,7 +125,6 @@ CreateObject (IN void* talloc_context, IN IXML_Element* elem,
     o->element = (IXML_Element*) node;
 
     o->id = talloc_strdup (o, ixmlElement_getAttribute (o->element, "id"));
-    // TBD handle unicode names ? XXX
     o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
 				     (node, "dc:title"));
     o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue

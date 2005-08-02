@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <sys/statfs.h>
 #ifdef HAVE_SETXATTR
-#include <sys/xattr.h>
+#  include <sys/xattr.h>
 #endif
 #include <stdarg.h>	/* missing from "talloc.h" */
 #include <stdint.h>
@@ -44,6 +44,7 @@
 #include "string_util.h"
 #include "djfs.h"
 #include "content_dir.h"
+#include "charset.h"
 
 
 #define MY_FUSE_VERSION (FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
@@ -74,13 +75,39 @@ typedef struct _FileHandle {
 
 
 /*****************************************************************************
- * FsObject cache
+ * Charset conversions (display <-> UTF-8) for filesystem
  *****************************************************************************/
 
+typedef struct {
+  fuse_dirh_t    h;
+  fuse_dirfil_t  filler;
+} my_dir_handle;
 
-// TBD 
+static int my_filler (fuse_dirh_t h, const char *name, int type, ino_t ino)
+{
+  // Convert filename from UTF-8 to display charset to UTF-8
+  char buffer [Charset_FromUtf8Size (name)];
+  char* const display_name = Charset_FromUtf8 (name, buffer, sizeof (buffer));
 
+  my_dir_handle* const my_h = (my_dir_handle*) h;
+  return my_h->filler (my_h->h, display_name, type, ino);
+}
 
+static int
+Browse (const char* path, 
+	/* for STAT => */	struct stat* stbuf, 
+	/* for GETDIR => */	fuse_dirh_t h, fuse_dirfil_t filler, 
+	/* for READ => */	void* talloc_context, char** file_content)
+{
+  // Convert filename from display charset to UTF-8
+  char buffer [Charset_ToUtf8Size (path)];
+  char* const utf_path = Charset_ToUtf8 (path, buffer, sizeof (buffer));
+  my_dir_handle my_h = { .h = h, .filler = filler };
+  
+  return DJFS_Browse (utf_path, stbuf, 
+		      (filler ? (void*)&my_h : h), (filler ? my_filler : NULL),
+		      talloc_context, file_content);
+}
 
 /*****************************************************************************
  * FUSE Operations
@@ -91,7 +118,7 @@ fs_getattr (const char* path, struct stat* stbuf)
 {
   *stbuf = (struct stat) { .st_mode = 0 };
   
-  int rc = DJFS_Browse (path, stbuf, NULL, NULL, NULL, NULL);
+  int rc = Browse (path, stbuf, NULL, NULL, NULL, NULL);
 
   return rc;
 }
@@ -114,7 +141,7 @@ static int fs_readlink (const char *path, char *buf, size_t size)
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
-  int rc = DJFS_Browse (path, NULL, h, filler, NULL, NULL);
+  int rc = Browse (path, NULL, h, filler, NULL, NULL);
   return rc;
 }  
 
@@ -325,7 +352,7 @@ fs_open (const char* path, struct fuse_file_info* fi)
     return -ENOMEM; // ---------->
   
   char* content = NULL;
-  int rc = DJFS_Browse (path, NULL, NULL, NULL, fh, &content);
+  int rc = Browse (path, NULL, NULL, NULL, fh, &content);
   if (rc == 0) {
     *fh = (struct _FileHandle) { 
       .mode   = FILE_READ_STRING,
@@ -511,7 +538,7 @@ static struct fuse_operations fs_oper = {
  *****************************************************************************/
 
 static void
-stdout_print (Log_Level level, const char *msg)
+stdout_print (Log_Level level, const char* msg)
 {
   switch (level) {
   case LOG_ERROR:	printf ("[E] "); break;
@@ -522,7 +549,12 @@ stdout_print (Log_Level level, const char *msg)
     printf ("[%d] ", (int) level);
     break;
   }
-  puts (msg);
+
+  // Convert message to display charset 
+  char buffer [Charset_FromUtf8Size (msg)];
+  char* const str = Charset_FromUtf8 (msg, buffer, sizeof (buffer));
+
+  puts (str);
 }
 
 /*****************************************************************************
@@ -530,9 +562,9 @@ stdout_print (Log_Level level, const char *msg)
  *****************************************************************************/
 
 #ifdef DEBUG
-#define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
+#  define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
 #else
-#define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
+#  define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
 #endif
 
 static void
@@ -543,8 +575,12 @@ usage (const char* progname)
      "usage: %s [options] mountpoint\n"
      "Options:\n"
      "    -h                     print help\n"
+     "    -o [options]           mount options (see below)\n"
      "    -d[levels]             enable debug output (implies -f)\n"
      "    -f                     foreground operation\n"
+     "\n"
+     "Mount options (one or more comma separated options) :\n"
+     "    iocharset=<charset>    filenames encoding (default: environment)\n"
      "\n"
      "Debug levels are one or more comma separated words :\n"
 #ifdef DEBUG
@@ -581,6 +617,8 @@ main (int argc, char *argv[])
   /*
    * Handle options
    */
+  char* charset = NULL;
+
   char* fuse_argv[32] = { argv[0] };
   int fuse_argc = 1;
 
@@ -598,6 +636,25 @@ main (int argc, char *argv[])
     } else if (*o != '-') { 
       // mount point
       FUSE_ARG (o);
+
+    } else if ( strcmp (o, "-o") == 0 && argv[opt] ) { 
+      // Parse mount options
+      const char* const options = argv[opt++];
+      char* options_copy = strdup (options);
+      char* tokptr = 0;
+      char* s;
+      for (s = strtok_r (options_copy, ",", &tokptr); 
+	   s != NULL; 
+	   s = strtok_r (NULL, ",", &tokptr)) {
+	if (strncmp (s, "iocharset=", 10) == 0) {
+	  charset = talloc_strdup (talloc_autofree_context(), s+10);
+	} else {
+	  fprintf (stderr, "%s : unknown mount option '%s'\n\n", argv[0], s);
+	  usage (argv[0]); // ---------->
+	}
+      }
+      free (options_copy);
+      Log_Printf (LOG_INFO, "  Mount options = %s", options);
 
     } else if (strncmp (o, "-d", 2) == 0) {
       FUSE_ARG ("-f");
@@ -653,6 +710,14 @@ main (int argc, char *argv[])
 #endif
 
   fuse_argv[fuse_argc] = NULL;
+
+
+  /*
+   * Set charset encoding
+   */
+  rc = Charset_Initialize (charset);
+  if (rc) 
+    Log_Printf (LOG_ERROR, "Error initialising charset='%s'", NN(charset));
 
 
   /*

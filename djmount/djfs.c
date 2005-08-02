@@ -251,7 +251,7 @@ object_to_file (void* talloc_context,
 int
 DJFS_Browse (const char* path, 
 	     /* for STAT => */	    struct stat* stbuf, 
-	     /* for GETDIR => */    fuse_dirh_t h, fuse_dirfil_t filler, 
+	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
 	     /* for READ => */	    void* talloc_context, char** file_content)
 {
   int rc = 0;
@@ -370,13 +370,12 @@ DJFS_Browse (const char* path,
 		    }
 		    char* name = talloc_asprintf (tmp_ctx, "%s.xml", o->title);
 		    FILE_BEGIN (name) {
-		      // TBD print encoding ????
 		      talloc_string = 
-			talloc_asprintf (talloc_context, 
-					 "<?xml version=\"1.0\"?>\n%s",
-					 XMLUtil_GetNodeString 
-					 (tmp_ctx, 
-					  (IXML_Node*) o->element));
+			talloc_asprintf 
+			(talloc_context, 
+			 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
+			 XMLUtil_GetNodeString (tmp_ctx, 
+						(IXML_Node*) o->element));
 		    } FILE_END;
 		  }
 		  o = o->next;

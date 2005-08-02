@@ -29,6 +29,7 @@
 #include "content_dir.h"
 #include "djfs.h"
 #include "log.h"
+#include "charset.h"
 
 #include <talloc.h>
 
@@ -115,7 +116,7 @@ static const int CMDNUM = sizeof(CMDLIST)/sizeof(CMDLIST[0]);
 
 
 static void
-stdout_print (Log_Level level, const char *msg)
+stdout_print (Log_Level level, const char* const msg)
 {
   // ANSI Color codes
 #define VT(CODES)		"\033[" CODES "m"
@@ -145,7 +146,12 @@ stdout_print (Log_Level level, const char *msg)
 
   // TBD print thread id ?
 
-  printf ("%s%s\n", msg, (col ? VT_NORMAL : ""));
+  // Convert message to display charset 
+  const size_t size = Charset_FromUtf8Size (msg);
+  char buffer [size];
+  const char* const str = Charset_FromUtf8 (msg, buffer, size);
+
+  printf ("%s%s\n", (str ? str : msg), (col ? VT_NORMAL : ""));
 }
 
 
@@ -179,21 +185,24 @@ print_commands()
 static int
 process_command (const char* cmdline)
 {
+  int rc = UPNP_E_SUCCESS;  
+
+  // Create a working context for temporary memory allocations
+  void* tmp_ctx = talloc_new (NULL);
+
+  // Convert from display charset to UTF-8
+  cmdline = Charset_ToUtf8_talloc (tmp_ctx, cmdline);
+
   char cmd[100];
   char strarg1[100];
   char strarg2[100];
   char strarg3[100];
-  int i;
-  int rc = UPNP_E_SUCCESS;
- 
-  // Create a working context for temporary memory allocations
-  void* tmp_ctx = talloc_new (NULL);
-
   int validargs = sscanf (cmdline, "%99s %99s %99s %99s", 
 			  cmd, strarg1, strarg2, strarg3);
   int invalidargs = 0;
   int cmdnum = -1;
 
+  int i;
   for (i = 0; i < CMDNUM; i++) {
     if (strcasecmp (cmd, CMDLIST[i].str) == 0 ) {
       cmdnum = CMDLIST[i].cmdnum;
@@ -376,6 +385,10 @@ main (int argc, char** argv)
   }  
   Log_SetMaxLevel (LOG_DEBUG);
 
+  rc = Charset_Initialize (NULL);
+  if (rc) 
+    Log_Printf (LOG_ERROR, "Error initialising charset");
+
   rc = DeviceList_Start (UPNP_TARGET, NULL);
   if( rc != UPNP_E_SUCCESS ) {
     Log_Printf (LOG_ERROR, "Error starting UPnP Control Point");
@@ -399,6 +412,8 @@ main (int argc, char** argv)
   
   Log_Printf (LOG_WARNING, "Shutting down on signal %d...", sig);
   rc = DeviceList_Stop();
+
+  Charset_Finish();
   Log_Finish();
 
   exit (rc);

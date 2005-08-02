@@ -1,3 +1,10 @@
+2005-08-02  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount : preliminary i18n charset support (internal handling
+	  of utf8 and 8bits charsets cpxxx and ios-8859-xxx).
+
+	* djmount/log.c : handle NULL messages or incorrect vsnprintf formats
+
 2005-07-25  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* content_dir.c: loop on result in Browse to workaround incomplete

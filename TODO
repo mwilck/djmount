@@ -11,8 +11,11 @@ Roadmap
 0.20 (done)
    add cache for network browse requests
 
-0.30
+0.30 (in progress)
    i18n / unicode file names handling
+
+0.40
+   add embedded / uClibc support
 
 0.50
    add search operations

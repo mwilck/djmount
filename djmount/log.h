@@ -69,8 +69,11 @@ typedef enum Log_Level {
  *	is allowed by the current log level (see Log_SetMaxLevel).
  *	For console output, this function should behave similarly to "puts"
  *	and append a carriage-return to the display.
+ *	The string is encoded in UTF-8 (see "charset.h") : it is the
+ *	responsibility of this print function to translate to another
+ *	charset if necessary.
  */
-typedef void (*Log_PrintFunction) (Log_Level level, const char *string);
+typedef void (*Log_PrintFunction) (Log_Level level, const char* string);
 
 
 /*****************************************************************************

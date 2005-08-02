@@ -59,7 +59,8 @@ APPS = test_upnp djmount
 all: $(APPS)
 
 OBJS := log.o object.o service.o device.o device_list.o content_dir.o \
-	djfs.o upnp_util.o string_util.o xml_util.o 
+	djfs.o upnp_util.o string_util.o xml_util.o \
+	charset_internal.o charset.o
 
 djmount: fuse_main.o $(OBJS) 
 	$(CC) $(CFLAGS) $+ $(LIBS) -lfuse -o $@ 

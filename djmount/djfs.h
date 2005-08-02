@@ -43,7 +43,7 @@
 int
 DJFS_Browse (const char* path, 
 	     /* for STAT => */	    struct stat* stbuf, 
-	     /* for GETDIR => */    fuse_dirh_t h, fuse_dirfil_t filler, 
+	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
 	     /* for READ => */	    void* talloc_context, char** file_content);
 
 
