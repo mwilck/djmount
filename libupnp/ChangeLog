@@ -1,3 +1,8 @@
+2005-08-02  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* ixml/src/Makefile: correct bug for static library being incorrectly 
+	  stripped when building non-debug
+
 2005-06-09  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* ixml/src/element.c (ixmlElement_removeAttributeNode): 

@@ -122,7 +122,9 @@ $(OBJ_DIR)/%.o:	%.c
 
 $(OBJ_DIR)/$(TARGET_OUTPUT): $(OBJ)
 	$(BUILDLIB)
+ifneq ($(STATIC),1)
 	$(STRIPU)
+endif
 	@-mkdir -p $(IXML_DIR)
 	@cp $(OBJ_DIR)/$(TARGET_OUTPUT) $(IXML_DIR)
 
