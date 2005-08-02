@@ -98,7 +98,7 @@ Devices / Media Servers :
 * GMediaServer version 0.4.0 on Linux ( http://www.nongnu.org/gmediaserver/ )
 
 
-Altough it should work with other UPnP AV compliant devices, help is needed 
+Although it should work with other UPnP AV compliant devices, help is needed 
 to test on additional devices.
 
 
@@ -116,6 +116,8 @@ This project uses the following main libraries :
 
 * the "talloc" library : http://talloc.samba.org/
   A local copy is included in the "talloc" directory for convenience.
+
+* for testing only (test_upnp executable) : "readline" library (optionnal)
 
 
 The UPnP AV Architecture is described here : 
