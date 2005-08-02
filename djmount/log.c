@@ -90,7 +90,7 @@ Log_Finish ()
 int
 Log_Print (Log_Level level, const char* msg)
 {
-  if (g_initialized && gPrintFun && level <= g_max_level) { 
+  if (g_initialized && gPrintFun && level <= g_max_level && msg) { 
     
     ithread_mutex_lock (&g_log_mutex);
     gPrintFun (level, msg);
@@ -106,19 +106,19 @@ Log_Print (Log_Level level, const char* msg)
 int
 Log_Printf (Log_Level level, const char* fmt, ... )
 {
-  if (g_initialized && gPrintFun && level <= g_max_level) { 
+  if (g_initialized && gPrintFun && level <= g_max_level && fmt) { 
     va_list ap;
-    char buf[4096];
-    int rc;
+    char buf[4096] = "";
     
-    va_start( ap, fmt );
-    rc = vsnprintf( buf, sizeof(buf), fmt, ap );
-    va_end( ap );
+    va_start (ap, fmt);
+    int rc = vsnprintf (buf, sizeof(buf), fmt, ap);
+    va_end (ap);
     
-    ithread_mutex_lock (&g_log_mutex);
-    gPrintFun (level, buf);
-    ithread_mutex_unlock (&g_log_mutex);
-    
+    if (rc >= 0) {
+      ithread_mutex_lock (&g_log_mutex);
+      gPrintFun (level, buf);
+      ithread_mutex_unlock (&g_log_mutex);
+    }
     return rc;
   }
   return -1;
