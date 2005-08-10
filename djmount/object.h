@@ -83,17 +83,18 @@ _Object_IsA (const Object* obj, const ObjectClass* searched_class);
 // GCC-specific optimisations for compile-time checks :
 // checks if object already of the target type
 #ifdef __GNUC__
-#  define _OBJECT_IF_COMPILE_CHECK_TYPE(O,TYPE,THEN,ELSE)	\
+#  define _OBJECT_IF_COMPILE_CHECK_TYPE(OBJ,TYPE,THEN,ELSE)	\
   __builtin_choose_expr						\
-  (__builtin_types_compatible_p(typeof(O), TYPE), THEN, ELSE)
+  (__builtin_types_compatible_p(typeof(OBJ), TYPE), THEN, ELSE)
 #else
-#  define _OBJECT_IF_COMPILE_CHECK_TYPE(O,TYPE,THEN,ELSE) ELSE
+#  define _OBJECT_IF_COMPILE_CHECK_TYPE(OBJ,TYPE,THEN,ELSE) ELSE
 #endif
 
 
-#define OBJECT_IS_A(O,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE		\
-  (O, TYPE*, true,							\
-   _Object_IsA((const Object*) O, (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)))
+#define OBJECT_IS_A(OBJ,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE	\
+  (OBJ, TYPE*, true,						\
+   _Object_IsA((const Object*) OBJ,				\
+	       (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)))
   
 
 
@@ -107,10 +108,10 @@ _Object_IsA (const Object* obj, const ObjectClass* searched_class);
  *
  *****************************************************************************/
 
-#define OBJECT_DYNAMIC_CAST(O,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE	\
-  (O,TYPE*, O,								\
-   _Object_IsA((const Object*) O,					\
-	       (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)) ? (TYPE*)O : NULL)
+#define OBJECT_DYNAMIC_CAST(OBJ,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE	\
+  (OBJ, TYPE*, OBJ,							\
+   _Object_IsA((const Object*) OBJ,					\
+	       (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)) ? (TYPE*)OBJ :NULL)
 
 
 
