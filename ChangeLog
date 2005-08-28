@@ -1,7 +1,10 @@
 2005-08-28  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* libupnp/ixml : new "ixmlRelaxParser" function to make the XML parser
-	  more tolerant to malformed text.
+	* version 0.26
+	
+	* libupnp/ixml : new "ixmlRelaxParser" function makes the XML parser
+	  more tolerant to malformed text, in order to improve 
+	  interoperability.
 
 	* djmount/device_list.c (DeviceList_Start): calls "ixmlRelaxParser"
 
