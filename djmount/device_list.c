@@ -994,6 +994,9 @@ DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
 
   ListInit (&GlobalDeviceList, 0, 0);
 
+  // Makes the XML parser more tolerant to malformed text
+  ixmlRelaxParser ('?');
+
   Log_Printf (LOG_DEBUG, "Intializing UPnP with ipaddress=%s port=%d",
 	      NN(ip_address), port);
   rc = UpnpInit (ip_address, port);

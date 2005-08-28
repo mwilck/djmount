@@ -32,6 +32,8 @@
 #include <string.h>
 #include "ixmlparser.h"
 
+static char g_error_char = '\0';
+
 static const char LESSTHAN = '<';
 static const char GREATERTHAN = '>';
 static const char SLASH = '/';
@@ -329,6 +331,24 @@ Parser_isValidXmlName( IN DOMString name )
 }
 
 /*==============================================================================*
+*   Parser_setErrorChar:	
+*       If 'c' is 0 (default), the parser is strict about XML encoding :
+*       invalid UTF-8 sequences or "&" entities are rejected, and the parsing 
+*       aborts.
+*       If 'c' is not 0, the parser is relaxed : invalid UTF-8 characters
+*       are replaced by this character, and invalid "&" entities are left
+*       untranslated. The parsing is then allowed to continue.
+*       External function.
+*   
+*===============================================================================*/
+void
+Parser_setErrorChar( IN char c )
+{
+     g_error_char = c;
+}
+
+
+/*==============================================================================*
 *   Parser_intToUTF8:	
 *       Encoding a character to its UTF-8 character string, and return its length
 *       internal function.
@@ -427,8 +447,13 @@ Parser_UTF8ToInt( IN char *ss,
                  ( ( s[2] & 0x3f ) << 18 ) | ( ( s[3] & 0x3f ) << 12 ) |
                  ( ( s[4] & 0x3f ) << 6 ) | ( s[5] & 0x3f ) );
     } else {                    // none of above, error
-        *len = 0;
-        return -1;
+        if (g_error_char) {
+            *len = 1;
+            return g_error_char;
+        } else {
+            *len = 0;
+            return -1;
+        }
     }
 }
 
@@ -1110,7 +1135,7 @@ Parser_getChar( IN char *src,
 
         i = Parser_UTF8ToInt( src, cLen );
         if( !Parser_isXmlChar( i ) ) {
-            return -1;
+            return ( g_error_char ? g_error_char : -1 );
         }
         return i;
     } else if( strncasecmp( src, QUOT, strlen( QUOT ) ) == 0 ) {
@@ -1145,7 +1170,7 @@ Parser_getChar( IN char *src,
         }
 
         if( ( pnum == src ) || *pnum != ';' || !Parser_isXmlChar( sum ) ) {
-            return -1;
+            goto fail_entity;
         }
 
         *cLen = pnum - src + 1;
@@ -1161,13 +1186,18 @@ Parser_getChar( IN char *src,
         }
 
         if( ( pnum == src ) || *pnum != ';' || !Parser_isXmlChar( sum ) ) {
-            return -1;
+            goto fail_entity;
         }
 
         *cLen = pnum - src + 1;
         return sum;
     }
 
+fail_entity:
+    if (g_error_char) {
+        *cLen = 1;
+        return '&';
+    }
     return -1;
 }
 

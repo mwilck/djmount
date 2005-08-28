@@ -398,6 +398,19 @@ ixmlNodetoString( IN IXML_Node * node )
 }
 
 /*================================================================
+*   ixmlRelaxParser
+*       Makes the XML parser more tolerant to malformed text.
+*       External function.
+*
+*=================================================================*/
+void
+ixmlRelaxParser(char errorChar)
+{
+    Parser_setErrorChar( errorChar );
+}
+
+
+/*================================================================
 *   ixmlParseBufferEx
 *       Parse xml file stored in buffer.
 *       External function.

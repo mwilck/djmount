@@ -1,3 +1,14 @@
+2005-08-28  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* libupnp/ixml : new "ixmlRelaxParser" function to make the XML parser
+	  more tolerant to malformed text.
+
+	* djmount/device_list.c (DeviceList_Start): calls "ixmlRelaxParser"
+
+2005-08-25  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* version 0.25
+
 2005-08-02  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount : preliminary i18n charset support (internal handling

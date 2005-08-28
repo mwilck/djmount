@@ -92,10 +92,11 @@ Known Compatible Devices
 djmount has been tested successfully with the following UPnP AV 
 Devices / Media Servers :
 
-* TwonkyVision UPnP Music Server version 2.7.2 on Linux
-  ( http://www.twonkyvision.de )
+* TwonkyVision UPnP Music Server on Linux ( http://www.twonkyvision.de )
+  versions 2.7.2 and 2.9.1 ok
 
-* GMediaServer version 0.4.0 on Linux ( http://www.nongnu.org/gmediaserver/ )
+* GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
+  versions 0.4.0 and 0.5.0 ok (version 0.6.0 not working).
 
 
 Although it should work with other UPnP AV compliant devices, help is needed 

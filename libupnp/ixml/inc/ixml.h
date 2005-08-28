@@ -1746,6 +1746,20 @@ ixmlNodetoString(IXML_Node *doc
 		   /** The root of the {\bf Node} tree to render to XML text. */
                 );
 
+
+  /** Makes the XML parser more tolerant to malformed text.
+   *       
+   * If {\bf errorChar} is 0 (default), the parser is strict about XML 
+   * encoding : invalid UTF-8 sequences or "&" entities are rejected, and 
+   * the parsing aborts.
+   * If {\bf errorChar} is not 0, the parser is relaxed : invalid UTF-8 
+   * characters are replaced by the {\bf errorChar}, and invalid "&" entities 
+   * are left untranslated. The parsing is then allowed to continue.
+   */
+void
+ixmlRelaxParser(char errorChar);
+
+
   /** Parses an XML text buffer converting it into an IXML DOM representation.
    *
    *  @return [Document*] A {\bf Document} if the buffer correctly parses or 
