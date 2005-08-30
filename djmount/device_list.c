@@ -448,9 +448,9 @@ EventHandlerCallback (Upnp_EventType EventType,
       }
       // TBD else ??
       
-      if (d_event->DeviceType && d_event->DeviceType[0]) { 
-	Log_Printf (LOG_INFO, "Discovery : found device type '%s'", 
-		    d_event->DeviceType);
+      if (d_event->DeviceId && d_event->DeviceId[0]) { 
+	Log_Printf (LOG_INFO, "Discovery : found device type '%s' at url %s", 
+		    NN(d_event->DeviceType), NN(d_event->Location));
 	
 	Log_Printf (LOG_DEBUG, "Discovery : before AddDevice\n");
 	AddDevice (d_event->DeviceId, d_event->Location, d_event->Expires);
