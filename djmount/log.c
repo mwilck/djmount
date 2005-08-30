@@ -25,7 +25,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <upnp/ithread.h>
-
+#include <stdbool.h>
 
 
 /*
@@ -84,14 +84,23 @@ Log_Finish ()
   return 0;
 }
 
+
+/*****************************************************************************
+ * Log_Print 
+ *****************************************************************************/
+static inline bool
+is_log_activated (Log_Level level) 
+{
+  return ( g_initialized && gPrintFun && level <= g_max_level );
+}
+
 /*****************************************************************************
  * Log_Print 
  *****************************************************************************/
 int
 Log_Print (Log_Level level, const char* msg)
 {
-  if (g_initialized && gPrintFun && level <= g_max_level && msg) { 
-    
+  if (is_log_activated (level) && msg) { 
     ithread_mutex_lock (&g_log_mutex);
     gPrintFun (level, msg);
     ithread_mutex_unlock (&g_log_mutex);
@@ -106,7 +115,7 @@ Log_Print (Log_Level level, const char* msg)
 int
 Log_Printf (Log_Level level, const char* fmt, ... )
 {
-  if (g_initialized && gPrintFun && level <= g_max_level && fmt) { 
+  if (is_log_activated (level) && fmt) { 
     va_list ap;
     char buf[4096] = "";
     
