@@ -1,3 +1,8 @@
+2005-08-29  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/minmax.h : new file, copied from Gnulib
+	  ( http://www.gnu.org/software/gnulib/ )
+
 2005-08-28  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* version 0.26

@@ -20,4 +20,8 @@ djmount (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
   he wrote the great "talloc" library ( http://talloc.samba.org/ ).
 
 
+* Some files part of Gnulib - The GNU Portability Library
+  (C) 2004 Free Software Foundation ( http://www.gnu.org/software/gnulib/ ).
+
+
 
