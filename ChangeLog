@@ -1,5 +1,10 @@
 2005-09-04  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/djfs.c (DJFS_Browse): 'devices' file now contains only names
+	  of devices, for easier parsing by scripts
+
+	* djmount/device_list : remove some obsolete code
+
 	* djmount/log: add colorization of output (moved from test_upnp.c)
 
 	* djmount/charset, djmount/charset_internal : full i18n charset 

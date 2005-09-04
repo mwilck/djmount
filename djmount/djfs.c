@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * djfs : file system implementation for djmount.
@@ -160,88 +161,115 @@ _DJFS_BrowseCDS (void* result_context,
  *****************************************************************************/
 
 enum GetMode {
-  GET_EXTENSION,
-  GET_CONTENT
+	GET_EXTENSION,
+	GET_CONTENT
 };
 
-const struct {
-  const char* mimetype; 
-  const char* playlist;
-} FORMATS[] = {
-  /*
-   * The match on mimetype is done on the begining of the string
-   * so the order of this list matters.
-   */
-  { "application/vnd.rn-realmedia",	"ram" },
-  { "audio/vnd.rn-realaudio",	   	"ram" },
-  { "audio/x-pn-realaudio", 	   	"ram" }, 
-  // also "audio/x-pn-realaudio-plugin"
-  { "audio/x-realaudio", 	        "ram" },
-  { "video/vnd.rn-realvideo", 	   	"ram" },
-  { "audio/",				"m3u" },
-  { "video/",			   	"m3u" },
-  { NULL,				NULL }
+typedef struct _FileFormat {
+	const char* mimetype; 
+	const char* extension;
+} FileFormat;
+
+const FileFormat FORMATS[] = {
+	/*
+	 * The match on mimetype is done on the begining of the string
+	 * so the order of this list matters.
+	 */
+	{ "application/vnd.rn-realmedia",	"ram" },
+	{ "audio/vnd.rn-realaudio",	   	"ram" },
+	{ "audio/x-pn-realaudio", 	   	"ram" }, 
+	// also "audio/x-pn-realaudio-plugin"
+	{ "audio/x-realaudio", 	        	"ram" },
+	{ "video/vnd.rn-realvideo", 	   	"ram" },
+	{ "audio/",				"m3u" },
+	{ "video/",			   	"m3u" },
+	{ NULL,					NULL }
 };
-  
+
 static char*
-object_to_file (void* talloc_context, 
-		const ContentDir_Object* o, enum GetMode get)
+object_to_file_content (void* talloc_context, 
+			const ContentDir_Object* const o, 
+			const FileFormat* const format,
+			const char* const uri,
+			IXML_Element* const res)
 {
-  char* str = NULL;
-  IXML_NodeList *reslist = ixmlElement_getElementsByTagName(o->element, "res");
-  if (reslist) {
-    int i;
-    for (i = 0; i < ixmlNodeList_length (reslist) && str == NULL; i++) {
-      IXML_Element* const res = (IXML_Element*) ixmlNodeList_item (reslist, i);
-      
-      const char* protocol = ixmlElement_getAttribute (res, "protocolInfo");
-      const char* uri = XMLUtil_GetElementValue (res);
-      char mimetype [64] = "";
-      if (uri && protocol && 
-	  sscanf(protocol, "http-get:*:%63[^:;]", mimetype) == 1) {
+	char* str = NULL;
+	
 	/*
 	 * See description of various playlist formats at:
-	 * 	http://gonze.com/playlists/playlist-format-survey.html
+	 * http://gonze.com/playlists/playlist-format-survey.html
 	 */
-	int j;
-	for (j = 0; FORMATS[j].mimetype != NULL; j++) {
-	  if (strncmp (mimetype, FORMATS[j].mimetype, 
-		       strlen (FORMATS[j].mimetype)) == 0) {
-	    const char* const ext = FORMATS[j].playlist;
-	    if (get == GET_EXTENSION) {
-	      str = (char*) ext;
-	    } else if (strcmp (ext, "ram") == 0) {
-	      /*
-	       * 1) "RAM" playlist - Real Audio content
-	       */
-	      str = talloc_asprintf (talloc_context,
-				     "%s?title=%s\n", uri, o->title);
-	    } else if (strcmp (ext, "m3u") == 0) {
-	      /*
-	       * 2) "M3U" playlist - Winamp, MP3, ... 
-	       *     and default for all audio files 
-	       */
-	      const char* duration = ixmlElement_getAttribute(res, "duration");
-	      int seconds = -1;
-	      if (duration) {
-		int hh = 0;
-		unsigned int mm = 0, ss = 0;
-		if (sscanf (duration, "%d:%u:%u", &hh, &mm, &ss) == 3 
-		    && hh >= 0)
-		  seconds = ss + 60*(mm + 60*hh);
-	      }
-	      str = talloc_asprintf (talloc_context,
-				     "#EXTM3U\n"
-				     "#EXTINF:%d,%s\n"
-				     "%s\n", seconds, o->title, uri);
-	    }
-	  }
+	if (strcmp (format->extension, "ram") == 0) {
+		/*
+		 * 1) "RAM" playlist - Real Audio content
+		 */
+		str = talloc_asprintf (talloc_context, "%s?title=%s\n", 
+				       uri, o->title);
+	} else if (strcmp (format->extension, "m3u") == 0) {
+		/*
+		 * 2) "M3U" playlist - Winamp, MP3, ... 
+		 *     and default for all audio files 
+		 */
+		const char* const duration = 
+			ixmlElement_getAttribute (res, "duration");
+		int seconds = -1;
+		if (duration) {
+			int hh = 0;
+			unsigned int mm = 0, ss = 0;
+			if (sscanf (duration, "%d:%u:%u", &hh, &mm, &ss) == 3 
+			    && hh >= 0)
+				seconds = ss + 60*(mm + 60*hh);
+		}
+		str = talloc_asprintf (talloc_context,
+				       "#EXTM3U\n"
+				       "#EXTINF:%d,%s\n"
+				       "%s\n", seconds, o->title, uri);
 	}
-      }
-    }
-    ixmlNodeList_free (reslist);
-  }
-  return str;
+	return str;
+}
+
+
+static char*
+object_to_file (void* talloc_context, 
+		const ContentDir_Object* const o, enum GetMode get)
+{
+	char* str = NULL;
+	IXML_NodeList* const reslist = 
+		ixmlElement_getElementsByTagName (o->element, "res");
+	if (reslist == NULL)
+		return NULL; // ---------->
+
+	int i;
+	// Loop until first result
+	for (i = 0; i < ixmlNodeList_length (reslist) && str == NULL; i++) {
+		IXML_Element* const res = 
+			(IXML_Element*) ixmlNodeList_item (reslist, i);
+		
+		const char* const protocol = 
+			ixmlElement_getAttribute (res, "protocolInfo");
+		const char* const uri = XMLUtil_GetElementValue (res);
+		char mimetype [64] = "";
+		if (uri == NULL || protocol == NULL || 
+		    sscanf (protocol, "http-get:*:%63[^:;]", mimetype) != 1) 
+			continue; // ---------->
+			
+		const FileFormat* format = FORMATS;
+		while (format->mimetype != NULL && str == NULL) {
+			if (strncmp (mimetype, format->mimetype, 
+				     strlen (format->mimetype)) == 0) {
+				if (get == GET_EXTENSION) {
+					str = (char*) format->extension;
+				} else {
+					str = object_to_file_content 
+						(talloc_context, o, format,
+						 uri, res);
+				}
+			}
+			format++;
+		}
+	}
+	ixmlNodeList_free (reslist);
+	return str;
 }
 
 
@@ -327,16 +355,23 @@ DJFS_Browse (const char* path,
 
   DIR_BEGIN("") {
 
+    const StringArray* const names = DeviceList_GetDevicesNames (tmp_ctx);
+
     FILE_BEGIN("devices") {
-      // May be NULL if no devices
-      talloc_string = DeviceList_GetStatusString (talloc_context);
+      talloc_string = NULL; // Will stay NULL if no devices
+      if (names) {
+        int i;
+	for (i = 0; i < names->nb; i++) {
+          talloc_string = talloc_asprintf_append (talloc_string, "%s\n",
+						  names->str[i]);
+	}
+      }
     } FILE_END;
 
-    StringArray* const array = DevicelList_GetDevicesNames (tmp_ctx);
-    if (array) {
+    if (names) {
       int i;
-      for (i = 0; i < array->nb; i++) {
-	const char* const devName = array->str[i];
+      for (i = 0; i < names->nb; i++) {
+	const char* const devName = names->str[i];
 	DIR_BEGIN(devName) {
 	  FILE_BEGIN("status") {
 	    talloc_string = DeviceList_GetDeviceStatusString (talloc_context,
