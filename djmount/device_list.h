@@ -96,13 +96,6 @@ DeviceList_RefreshAll (const char* target);
  *	rc = Service_SendAction (the_service, actionName, nb_params, params);
  *
  *****************************************************************************/
-#define TBD_DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVID,METHOD,...)	\
-  do {								\
-    Service* __serv = _DeviceList_LockService(DEVNAME,SERVID);	\
-    RET = METHOD(__serv, __VA_ARGS__);				\
-    _DeviceList_UnlockService(__serv);				\
-  } while (0)								
-
 
 #define DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVID,SERVTYPE,METHOD,...) \
   do {									\
@@ -131,24 +124,6 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 
 /*****************************************************************************
  * @brief Send an Action request to the specified service of a device
- *	  (asynchronous call).
- *
- * @param deviceName    the device name
- * @param serviceId	the service identifier
- * @param actionName    the name of the action
- * @param ...		List of Name / Value pairs.
- *			This list shall be terminated by NULL / NULL.
- *****************************************************************************/
-// TBD to be deleted
-#if 0
-int 
-DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
-			      const char* actionName, ...);
-#endif
-
-
-/*****************************************************************************
- * @brief Send an Action request to the specified service of a device
  *	  (synchronous call).
  *
  * @param deviceName    the device name
@@ -163,26 +138,6 @@ IXML_Document*
 DeviceList_SendAction (const char* deviceName, const char* serviceId,
 		       const char* actionName, 
 		       int nb_params, const StringPair* params);
-  
-
-/*****************************************************************************
- * @brief Send an Action request to the specified service of a device
- *	  (synchronous call).
- *
- * @param deviceName    the device name
- * @param serviceId	the service identifier
- * @param actionName    the name of the action
- * @param ...		List of Name / Value pairs.
- *			This list shall be terminated by NULL / NULL.
- * @return              the DOM document for the response. Allocated
- *		        by the SDK ; the caller needs to free it.
- *****************************************************************************/
-// TBD to be deleted
-#if 0
-IXML_Document* 
-DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
-			 const char* actionName, ...);
-#endif
   
 
 
@@ -214,7 +169,7 @@ extern "C" {
  * @param talloc_context	parent context to allocate result, may be NULL
  *****************************************************************************/
 StringArray*
-DevicelList_GetDevicesNames (void* talloc_context);
+DeviceList_GetDevicesNames (void* talloc_context);
 
 
 /*****************************************************************************

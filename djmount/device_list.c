@@ -624,38 +624,8 @@ _DeviceList_UnlockService (Service* serv)
 
 
 /*****************************************************************************
- * DeviceList_SendActionAsyncVa
- *****************************************************************************/
-#if 0
-// TBD to be deleted
-int	
-DeviceList_SendActionAsyncVa (const char* deviceName, const char* serviceId,
-			      const char* actionName, ...)
-{
-  // Some reasonable number
-#define MAX_PARAMS	64
-
-  // Get names+values
-  StringPair params [MAX_PARAMS];
-  va_list ap;
-  va_start (ap, actionName);
-  int nb = 0;
-  while ( (params[nb].name = va_arg (ap, char*)) && (nb < MAX_PARAMS) ) {
-    params[nb].value = va_arg (ap, char*); // TBD should be "const char*"
-    nb++;
-  }
-  va_end (ap);
-  Log_Printf (LOG_DEBUG, "DeviceList_SendActionAsyncVa : %d pairs found", nb);
-  
-  return DeviceList_SendActionAsync (deviceName, serviceId, actionName, 
-				     nb, params);
-}
-#endif
-
-/*****************************************************************************
  * DeviceList_SendActionAsync
  *****************************************************************************/
-#if 1
 int
 DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 			    const char* actionName, 
@@ -668,74 +638,11 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
 			    nb_params, params);
   return rc;
 }
-#else
-// TBD to be deleted
-int	
-DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
-			    const char* actionName, 
-			    int nb_params, const StringPair* params)
-{
-  int rc = UPNP_E_SUCCESS;
 
-  ithread_mutex_lock (&DeviceListMutex);
-  
-  Log_Printf (LOG_DEBUG, "SendActionAsync '%s' for device '%s' service '%s'",
-	      NN(actionName), NN(deviceName), NN(serviceId));
-  
-  const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
-  if (devnode == 0) {
-    rc = UPNP_E_INVALID_DEVICE;
-  } else {
-    
-    const Service* const servnode = 
-      Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
-    if (servnode == 0) {
-      rc = UPNP_E_INVALID_SID;
-    } else {
-      rc = Service_SendActionAsync (servnode, EventHandlerCallback,
-				    actionName, nb_params, params);
-    }
-  }
-  
-  ithread_mutex_unlock (&DeviceListMutex);
-  
-  return rc;  
-}
-#endif
-
-
-/*****************************************************************************
- * DeviceList_SendActionVa
- *****************************************************************************/
-#if 0
-// TBD to be deleted
-IXML_Document*
-DeviceList_SendActionVa (const char* deviceName, const char* serviceId,
-			 const char* actionName, ...)
-{
-  // Some reasonable number
-#define MAX_PARAMS	64
-
-  // Get names+values
-  StringPair params [MAX_PARAMS];
-  va_list ap;
-  va_start (ap, actionName);
-  int nb = 0;
-  while ( (params[nb].name = va_arg (ap, char*)) && (nb < MAX_PARAMS) ) {
-    params[nb].value = va_arg (ap, char*); // TBD should be "const char*"
-    nb++;
-  }
-  va_end (ap);
-  Log_Printf (LOG_DEBUG, "DeviceList_SendActionVa : %d pairs found", nb);
-  
-  return DeviceList_SendAction (deviceName, serviceId, actionName, nb, params);
-}
-#endif
 
 /*****************************************************************************
  * DeviceList_SendAction
  *****************************************************************************/
-#if 1
 IXML_Document*
 DeviceList_SendAction (const char* deviceName, const char* serviceId,
 		       const char* actionName, 
@@ -747,51 +654,13 @@ DeviceList_SendAction (const char* deviceName, const char* serviceId,
 			    &res, actionName, nb_params, params);
   return (rc == UPNP_E_SUCCESS ? res : NULL);
 }
-#else
-// TBD to be deleted
-IXML_Document*
-DeviceList_SendAction (const char* deviceName, const char* serviceId,
-		       const char* actionName, 
-		       int nb_params, const StringPair* params)
-{
-  IXML_Document* res = 0;
-
-  ithread_mutex_lock (&DeviceListMutex);
-  
-  Log_Printf (LOG_DEBUG, "SendAction '%s' for device '%s' service '%s'",
-	      NN(actionName), NN(deviceName), NN(serviceId));
-  
-  const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
-  if (devnode) {
-    const Service* const servnode = 
-      Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
-    if (servnode) {
-      int rc = Service_SendAction (servnode, &res, actionName, 
-				   nb_params, params);
-      if (rc != UPNP_E_SUCCESS) {
-	if (res) {
-	  DOMString s = ixmlDocumenttoString (res);
-	  Log_Printf (LOG_ERROR, "Error in UpnpSendAction, response = %s", s);
-	  ixmlFreeDOMString (s);
-	  ixmlDocument_free (res);
-	  res = 0;
-	}
-      }
-    }
-  }
-  
-  ithread_mutex_unlock (&DeviceListMutex);
-  
-  return res;  
-}
-#endif
 
 
 /*****************************************************************************
  * GetDevicesNames
  *****************************************************************************/
 StringArray*
-DevicelList_GetDevicesNames (void* context)
+DeviceList_GetDevicesNames (void* context)
 {
   ithread_mutex_lock (&DeviceListMutex);
 
