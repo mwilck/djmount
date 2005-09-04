@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * main FUSE interface.
@@ -30,7 +31,7 @@
 #include <errno.h>
 #include <sys/statfs.h>
 #ifdef HAVE_SETXATTR
-#  include <sys/xattr.h>
+#   include <sys/xattr.h>
 #endif
 #include <stdarg.h>	/* missing from "talloc.h" */
 #include <stdint.h>
@@ -58,19 +59,19 @@
  *****************************************************************************/
 
 enum FileMode {
-    
-  FILE_NONE = 0,
-  FILE_READ_STRING
+	
+	FILE_NONE = 0,
+	FILE_READ_STRING
   
 };
 
 typedef struct _FileHandle {
     
-  enum FileMode mode;
-  
-  char*  string;
-  size_t length;
-  
+	enum FileMode mode;
+	
+	char*  string;
+	size_t length;
+	
 } FileHandle;
 
 
@@ -80,15 +81,15 @@ typedef struct _FileHandle {
  *****************************************************************************/
 
 typedef struct {
-  fuse_dirh_t    h;
-  fuse_dirfil_t  filler;
+	fuse_dirh_t    h;
+	fuse_dirfil_t  filler;
 } my_dir_handle;
 
 static int filler_from_utf8 (fuse_dirh_t h, const char *name, 
 			     int type, ino_t ino)
 {
 	// Convert filename to display charset
-	char buffer [PATH_MAX];
+	char buffer [NAME_MAX + 1];
 	char* display_name = Charset_ConvertString (CHARSET_FROM_UTF8, 
 						    name, 
 						    buffer, sizeof (buffer),
@@ -134,11 +135,11 @@ Browse (const char* path,
 static int 
 fs_getattr (const char* path, struct stat* stbuf)
 {
-  *stbuf = (struct stat) { .st_mode = 0 };
-  
-  int rc = Browse (path, stbuf, NULL, NULL, NULL, NULL);
-
-  return rc;
+	*stbuf = (struct stat) { .st_mode = 0 };
+	
+	int rc = Browse (path, stbuf, NULL, NULL, NULL, NULL);
+	
+	return rc;
 }
 
 #if 1
@@ -159,8 +160,8 @@ static int fs_readlink (const char *path, char *buf, size_t size)
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
-  int rc = Browse (path, NULL, h, filler, NULL, NULL);
-  return rc;
+	int rc = Browse (path, NULL, h, filler, NULL, NULL);
+	return rc;
 }  
 
 
@@ -357,31 +358,31 @@ fs_utime (const char *path, struct utimbuf *buf)
 static int 
 fs_open (const char* path, struct fuse_file_info* fi)
 {
-  if (fi == NULL) {
-    return -EIO; // ---------->
-  } 
-  if ((fi->flags & O_ACCMODE) != O_RDONLY) {
-    return -EACCES; // ---------->
-  } 
-
-  void* context = NULL; // TBD
-  FileHandle* fh = talloc (context, FileHandle);
-  if (fh == NULL) 
-    return -ENOMEM; // ---------->
-  
-  char* content = NULL;
-  int rc = Browse (path, NULL, NULL, NULL, fh, &content);
-  if (rc == 0) {
-    *fh = (struct _FileHandle) { 
-      .mode   = FILE_READ_STRING,
-      .string = content,
-      .length = content ? strlen (content) : 0
-    };
-    fi->fh = (intptr_t) fh;
-  }
-  if (rc)
-    talloc_free (fh);
-  return rc;
+	if (fi == NULL) {
+		return -EIO; // ---------->
+	} 
+	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
+		return -EACCES; // ---------->
+	} 
+	
+	void* context = NULL; // TBD
+	FileHandle* fh = talloc (context, FileHandle);
+	if (fh == NULL) 
+		return -ENOMEM; // ---------->
+	
+	char* content = NULL;
+	int rc = Browse (path, NULL, NULL, NULL, fh, &content);
+	if (rc == 0) {
+		*fh = (struct _FileHandle) { 
+			.mode   = FILE_READ_STRING,
+			.string = content,
+			.length = content ? strlen (content) : 0
+		};
+		fi->fh = (intptr_t) fh;
+	}
+	if (rc)
+		talloc_free (fh);
+	return rc;
 }
 
 
@@ -389,33 +390,30 @@ static int
 fs_read (const char* path, char* buf, size_t size, off_t offset,
 	 struct fuse_file_info* fi)
 {
-  int rc;
-  FileHandle* const fh = (FileHandle*) fi->fh;
-  
-  if (buf == NULL) {
-    rc = -EFAULT;
-
-  } else if (fh == NULL) {
-    rc = -EIO; // should not happen
-
-  } else {
-    switch (fh->mode) {
-    case FILE_READ_STRING:
-      if (offset >= fh->length) {
-	rc = 0; // EOF // TBD return error ??? XXX
-      } else {
-	size_t n = MIN (size, fh->length - offset);
-	memcpy (buf, fh->string + offset, n);
-	rc = n;
-      }
-      break;
-    default:
-      rc = -EIO; // should not happen
-      break;
-    }
-  }
-  
-  return rc;
+	int rc;
+	FileHandle* const fh = (FileHandle*) fi->fh;
+	
+	if (buf == NULL) {
+		rc = -EFAULT;
+	} else if (fh == NULL) {
+		rc = -EIO; // should not happen
+	} else {
+		switch (fh->mode) {
+		case FILE_READ_STRING:
+			if (offset >= fh->length) {
+				rc = 0; // EOF // TBD return error ??? XXX
+			} else {
+				size_t n = MIN (size, fh->length - offset);
+				memcpy (buf, fh->string + offset, n);
+				rc = n;
+			}
+			break;
+		default:
+			rc = -EIO; // should not happen
+			break;
+		}
+	}
+	return rc;
 }
 
 
@@ -450,15 +448,14 @@ fs_statfs (const char* path, struct statfs* stbuf)
 static int 
 fs_release (const char* path, struct fuse_file_info* fi)
 {
-  FileHandle* const fh = (FileHandle*) fi->fh;
-  
-  if (fh) {
-    fh->mode = FILE_NONE;
-    talloc_free (fh);
-    fi->fh = 0;
-  }
-  
-  return 0;
+	FileHandle* const fh = (FileHandle*) fi->fh;
+	
+	if (fh) {
+		fh->mode = FILE_NONE;
+		talloc_free (fh);
+		fi->fh = 0;
+	}
+	return 0;
 }
 
 
@@ -516,32 +513,32 @@ static int fs_removexattr (const char *path, const char *name)
 
 
 static struct fuse_operations fs_oper = {
-  .getattr	= fs_getattr,
-  .readlink	= fs_readlink,
-  .getdir	= fs_getdir,
-  .mknod	= fs_mknod,
-  .mkdir	= fs_mkdir,
-  .symlink	= fs_symlink,
-  .unlink	= fs_unlink,
-  .rmdir	= fs_rmdir,
-  .rename	= fs_rename,
-  .link		= fs_link,
-  .chmod	= fs_chmod,
-  .chown	= fs_chown,
-  .truncate	= fs_truncate,
-  .utime	= fs_utime,
-  .open		= fs_open,
-  .read		= fs_read,
-  .write	= fs_write,
-  .statfs	= fs_statfs,
-  .flush      	= NULL,
-  .release	= fs_release,
-  .fsync	= fs_fsync,
+	.getattr	= fs_getattr,
+	.readlink	= fs_readlink,
+	.getdir		= fs_getdir,
+	.mknod		= fs_mknod,
+	.mkdir		= fs_mkdir,
+	.symlink	= fs_symlink,
+	.unlink		= fs_unlink,
+	.rmdir		= fs_rmdir,
+	.rename		= fs_rename,
+	.link		= fs_link,
+	.chmod		= fs_chmod,
+	.chown		= fs_chown,
+	.truncate	= fs_truncate,
+	.utime		= fs_utime,
+	.open		= fs_open,
+	.read		= fs_read,
+	.write		= fs_write,
+	.statfs		= fs_statfs,
+	.flush      	= NULL,
+	.release	= fs_release,
+	.fsync		= fs_fsync,
 #ifdef HAVE_SETXATTR
-  .setxattr	= fs_setxattr,
-  .getxattr	= fs_getxattr,
-  .listxattr	= fs_listxattr,
-  .removexattr	= fs_removexattr,
+	.setxattr	= fs_setxattr,
+	.getxattr	= fs_getxattr,
+	.listxattr	= fs_listxattr,
+	.removexattr	= fs_removexattr,
 #endif
 };
 
@@ -558,29 +555,32 @@ static struct fuse_operations fs_oper = {
 static void
 stdout_print (Log_Level level, const char* msg)
 {
-  switch (level) {
-  case LOG_ERROR:	printf ("[E] "); break;
-  case LOG_WARNING:	printf ("[W] "); break;
-  case LOG_INFO:	printf ("[I] "); break;
-  case LOG_DEBUG:	printf ("[D] "); break;
-  default:
-    printf ("[%d] ", (int) level);
-    break;
-  }
-
-  // Convert message to display charset, and print
-  Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
-  printf ("\n");
+	Log_BeginColor (level, stdout);
+	switch (level) {
+	case LOG_ERROR:		printf ("[E] "); break;
+	case LOG_WARNING:	printf ("[W] "); break;
+	case LOG_INFO:		printf ("[I] "); break;
+	case LOG_DEBUG:		printf ("[D] "); break;
+	default:
+		printf ("[%d] ", (int) level);
+		break;
+	}
+	
+	// Convert message to display charset, and print
+	Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
+	Log_EndColor (level, stdout);
+	printf ("\n");
 }
+
 
 /*****************************************************************************
  * Usage
  *****************************************************************************/
 
 #ifdef DEBUG
-#  define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
+#    define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
 #else
-#  define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
+#    define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
 #endif
 
 static void
@@ -619,143 +619,156 @@ usage (const char* progname)
 int 
 main (int argc, char *argv[])
 {
-  int rc;
-
-  rc = Log_Initialize (stdout_print);
-  if (rc != 0) {
-    fprintf (stderr, "%s : Error initialising Logger", argv[0]);
-    exit (rc); // ---------->
-  }  
+	int rc;
+	
+	rc = Log_Initialize (stdout_print);
+	if (rc != 0) {
+		fprintf (stderr, "%s : Error initialising Logger", argv[0]);
+		exit (rc); // ---------->
+	}  
+	Log_Colorize (true);
 #ifdef DEBUG
-  SetLogFileNames ("/dev/null", "/dev/null");
+	SetLogFileNames ("/dev/null", "/dev/null");
 #endif
+	
+	/*
+	 * Handle options
+	 */
+	char* charset = NULL;
+	
+	char* fuse_argv[32] = { argv[0] };
+	int fuse_argc = 1;
+	
+#define FUSE_ARG(OPT)						\
+	if (fuse_argc >= 31) usage (argv[0]) ;			\
+	Log_Printf (LOG_DEBUG, "  Fuse option = %s", OPT);	\
+	fuse_argv[fuse_argc++] = OPT
 
-  /*
-   * Handle options
-   */
-  char* charset = NULL;
-
-  char* fuse_argv[32] = { argv[0] };
-  int fuse_argc = 1;
-
-#define FUSE_ARG(OPT)					\
-  if (fuse_argc >= 31) usage (argv[0]) ;		\
-  Log_Printf (LOG_DEBUG, "  Fuse option = %s", OPT);	\
-  fuse_argv[fuse_argc++] = OPT
-
-  int opt = 1;
-  char* o;
-  while ((o = argv[opt++])) {
-    if (strcmp(o, "-f") == 0) {
-      FUSE_ARG (o);
-
-    } else if (*o != '-') { 
-      // mount point
-      FUSE_ARG (o);
-
-    } else if ( strcmp (o, "-o") == 0 && argv[opt] ) { 
-      // Parse mount options
-      const char* const options = argv[opt++];
-      char* options_copy = strdup (options);
-      char* tokptr = 0;
-      char* s;
-      for (s = strtok_r (options_copy, ",", &tokptr); 
-	   s != NULL; 
-	   s = strtok_r (NULL, ",", &tokptr)) {
-	if (strncmp (s, "iocharset=", 10) == 0) {
-	  charset = talloc_strdup (talloc_autofree_context(), s+10);
-	} else {
-	  fprintf (stderr, "%s : unknown mount option '%s'\n\n", argv[0], s);
-	  usage (argv[0]); // ---------->
-	}
-      }
-      free (options_copy);
-      Log_Printf (LOG_INFO, "  Mount options = %s", options);
-
-    } else if (strncmp (o, "-d", 2) == 0) {
-      FUSE_ARG ("-f");
-      // Parse debug levels
-      const char* const levels = (o[2] ? o+2 : DEBUG_DEFAULT_LEVELS);
-      char* levels_copy = strdup (levels);
-      char* tokptr = 0;
-      char* s;
-      for (s = strtok_r (levels_copy, ",", &tokptr); 
-	   s != NULL; 
-	   s = strtok_r (NULL, ",", &tokptr)) {
-	if (strcmp (s, "leak") == 0) {
-	  talloc_enable_leak_report();
-	} else if (strcmp (s, "leakfull") == 0) {
-	  talloc_enable_leak_report_full();
-	} else if (strcmp (s, "fuse") == 0) {
-	  FUSE_ARG ("-d");
-	} else if (strcmp (s, "debug") == 0) {
-	  Log_SetMaxLevel (LOG_DEBUG);
-	} else if (strcmp (s, "info") == 0) {
-	  Log_SetMaxLevel (LOG_INFO);
-	} else if (strncmp (s, "warn", 4) == 0) {
-	  Log_SetMaxLevel (LOG_WARNING);
-	} else if (strncmp (s, "error", 3) == 0) {
-	  Log_SetMaxLevel (LOG_ERROR);
+	int opt = 1;
+	char* o;
+	while ((o = argv[opt++])) {
+		if (strcmp(o, "-f") == 0) {
+			FUSE_ARG (o);
+			
+		} else if (*o != '-') { 
+			// mount point
+			FUSE_ARG (o);
+			
+		} else if ( strcmp (o, "-o") == 0 && argv[opt] ) { 
+			// Parse mount options
+			const char* const options = argv[opt++];
+			char* options_copy = strdup (options);
+			char* tokptr = 0;
+			char* s;
+			for (s = strtok_r (options_copy, ",", &tokptr); 
+			     s != NULL; 
+			     s = strtok_r (NULL, ",", &tokptr)) {
+				if (strncmp (s, "iocharset=", 10) == 0) {
+					charset = talloc_strdup 
+						(talloc_autofree_context(), 
+						 s+10);
+				} else {
+					fprintf (stderr, 
+						 "%s : unknown mount option "
+						 "'%s'\n\n", argv[0], s);
+					usage (argv[0]); // ---------->
+				}
+			}
+			free (options_copy);
+			Log_Printf (LOG_INFO, "  Mount options = %s", options);
+			
+		} else if (strncmp (o, "-d", 2) == 0) {
+			FUSE_ARG ("-f");
+			// Parse debug levels
+			const char* const levels = 
+				(o[2] ? o+2 : DEBUG_DEFAULT_LEVELS);
+			char* levels_copy = strdup (levels);
+			char* tokptr = 0;
+			char* s;
+			for (s = strtok_r (levels_copy, ",", &tokptr); 
+			     s != NULL; 
+			     s = strtok_r (NULL, ",", &tokptr)) {
+				if (strcmp (s, "leak") == 0) {
+					talloc_enable_leak_report();
+				} else if (strcmp (s, "leakfull") == 0) {
+					talloc_enable_leak_report_full();
+				} else if (strcmp (s, "fuse") == 0) {
+					FUSE_ARG ("-d");
+				} else if (strcmp (s, "debug") == 0) {
+					Log_SetMaxLevel (LOG_DEBUG);
+				} else if (strcmp (s, "info") == 0) {
+					Log_SetMaxLevel (LOG_INFO);
+				} else if (strncmp (s, "warn", 4) == 0) {
+					Log_SetMaxLevel (LOG_WARNING);
+				} else if (strncmp (s, "error", 3) == 0) {
+					Log_SetMaxLevel (LOG_ERROR);
 #ifdef DEBUG
-	} else if (strcmp (s, "upnperr") == 0) {
-	  SetLogFileNames ("/dev/stdout", "/dev/null");
-	} else if (strcmp (s, "upnpall") == 0) {
-	  SetLogFileNames ("/dev/stdout", "/dev/stdout");
+				} else if (strcmp (s, "upnperr") == 0) {
+					SetLogFileNames ("/dev/stdout", 
+							 "/dev/null");
+				} else if (strcmp (s, "upnpall") == 0) {
+					SetLogFileNames ("/dev/stdout", 
+							 "/dev/stdout");
 #endif
-	} else {
-	  fprintf (stderr, "%s : unknown debug level '%s'\n\n", argv[0], s);
-	  usage (argv[0]); // ---------->
+				} else {
+					fprintf (stderr, 
+						 "%s : unknown debug level "
+						 "'%s'\n\n", argv[0], s);
+					usage (argv[0]); // ---------->
+				}
+			}
+			free (levels_copy);
+			Log_Printf (LOG_DEBUG, "  Debug options = %s", levels);
+		} else {
+			if (strcmp (o, "-h") != 0)
+				fprintf (stderr, 
+					 "%s : unknown option '%s'\n\n",
+					 argv[0], o);
+			usage (argv[0]); // ---------->
+		}
 	}
-      }
-      free (levels_copy);
-      Log_Printf (LOG_DEBUG, "  Debug options = %s", levels);
-    } else {
-      if (strcmp (o, "-h") != 0)
-	fprintf (stderr, "%s : unknown option '%s'\n\n", argv[0], o);
-      usage (argv[0]); // ---------->
-    }
-  }
-
-  // Force Read-only (write operations not implemented yet)
-  FUSE_ARG ("-r"); 
+	
+	// Force Read-only (write operations not implemented yet)
+	FUSE_ARG ("-r"); 
 
 #if MY_FUSE_VERSION >= 23
-  // try to fill in d_ino in readdir
-  FUSE_ARG ("-o");
-  FUSE_ARG ("readdir_ino");
+	// try to fill in d_ino in readdir
+	FUSE_ARG ("-o");
+	FUSE_ARG ("readdir_ino");
 #endif
 
-  fuse_argv[fuse_argc] = NULL;
+	fuse_argv[fuse_argc] = NULL;
+	
 
+	/*
+	 * Set charset encoding
+	 */
+	rc = Charset_Initialize (charset);
+	if (rc) 
+		Log_Printf (LOG_ERROR, "Error initialising charset='%s'",
+			    NN(charset));
+	
+	
+	/*
+	 * Initialise UPnP Control point and starts FUSE file system
+	 */
+	
+	rc = DeviceList_Start (CONTENT_DIR_SERVICE_TYPE, NULL);
+	if (rc != UPNP_E_SUCCESS) {
+		Log_Printf (LOG_ERROR, "Error starting UPnP Control Point");
+		exit (rc); // ---------->
+	}
+	
+	rc = fuse_main (fuse_argc, fuse_argv, &fs_oper);
+	if (rc != 0) {
+		Log_Printf (LOG_ERROR, "Error in FUSE main loop = %d", rc);
+	}
+	
+	Log_Printf (LOG_DEBUG, "Shutting down ...");
+	DeviceList_Stop();
+	
+	Charset_Finish();
+	Log_Finish();
 
-  /*
-   * Set charset encoding
-   */
-  rc = Charset_Initialize (charset);
-  if (rc) 
-    Log_Printf (LOG_ERROR, "Error initialising charset='%s'", NN(charset));
-
-
-  /*
-   * Initialise UPnP Control point and starts FUSE file system
-   */
-
-  rc = DeviceList_Start (CONTENT_DIR_SERVICE_TYPE, NULL);
-  if (rc != UPNP_E_SUCCESS) {
-    Log_Printf (LOG_ERROR, "Error starting UPnP Control Point");
-    exit (rc); // ---------->
-  }
-
-  rc = fuse_main (fuse_argc, fuse_argv, &fs_oper);
-  if (rc != 0) {
-    Log_Printf (LOG_ERROR, "Error in FUSE main loop = %d", rc);
-  }
-
-  Log_Printf (LOG_DEBUG, "Shutting down ...");
-  DeviceList_Stop();
-
-  Charset_Finish();
-  Log_Finish();
-
-  return rc; 
+	return rc; 
 }

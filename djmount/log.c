@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * Log facilities.
@@ -38,7 +39,7 @@ static Log_PrintFunction gPrintFun = NULL;
 /*
  * Mutex to control displaying of events
  */
-static int g_initialized = 0;
+static bool g_initialized = false;
 static ithread_mutex_t g_log_mutex;
 
 
@@ -46,6 +47,33 @@ static ithread_mutex_t g_log_mutex;
  * Current log level
  */
 static Log_Level g_max_level = LOG_INFO;
+
+
+/*
+ * Authorize colorizing log output
+ */
+static bool g_colorize = false;
+
+// ANSI Color codes
+#define VT(CODES)		"\033[" CODES "m"
+#define VT_NORMAL 		VT("0")
+#define VT_DIM			VT("2")
+#define VT_RED			VT("31")
+#define VT_RED_BRIGHT		VT("31;1")
+#define VT_GREEN 		VT("32")
+#define VT_YELLOW_BRIGHT	VT("33;1")
+#define VT_BLUE 		VT("34")
+#define VT_MAGENTA_BRIGHT	VT("35;1")
+
+static const char* const COLORS[] = {
+	[LOG_ERROR]   = VT_RED_BRIGHT,
+	[LOG_WARNING] = VT_MAGENTA_BRIGHT,
+	[LOG_INFO]    = VT_BLUE,
+	[LOG_DEBUG]   = VT_DIM,
+};
+static int const NB_COLORS = sizeof(COLORS)/sizeof(COLORS[0]);
+
+static const char* const COLOR_UNKNOWN_LEVEL = VT_RED_BRIGHT;
 
 
 
@@ -56,17 +84,18 @@ static Log_Level g_max_level = LOG_INFO;
 int
 Log_Initialize (Log_PrintFunction print_function )
 {
-  if (! g_initialized) {
-    ithread_mutexattr_t attr;
-    
-    ithread_mutexattr_init (&attr);
-    ithread_mutexattr_setkind_np (&attr, ITHREAD_MUTEX_RECURSIVE_NP );
-    ithread_mutex_init (&g_log_mutex, &attr);
-    ithread_mutexattr_destroy (&attr);
-    g_initialized = 1;
-  }
-  gPrintFun = print_function;
-  return 0;
+	if (! g_initialized) {
+		ithread_mutexattr_t attr;
+		
+		ithread_mutexattr_init (&attr);
+		ithread_mutexattr_setkind_np (&attr,
+					      ITHREAD_MUTEX_RECURSIVE_NP);
+		ithread_mutex_init (&g_log_mutex, &attr);
+		ithread_mutexattr_destroy (&attr);
+		g_initialized = true;
+	}
+	gPrintFun = print_function;
+	return 0;
 }
 
 
@@ -76,12 +105,12 @@ Log_Initialize (Log_PrintFunction print_function )
 int
 Log_Finish ()
 {
-  gPrintFun = NULL;
-  if (g_initialized) {
-    g_initialized = 0;
-    ithread_mutex_destroy (&g_log_mutex);
-  }
-  return 0;
+	gPrintFun = NULL;
+	if (g_initialized) {
+		g_initialized = false;
+		ithread_mutex_destroy (&g_log_mutex);
+	}
+	return 0;
 }
 
 
@@ -91,7 +120,7 @@ Log_Finish ()
 static inline bool
 is_log_activated (Log_Level level) 
 {
-  return ( g_initialized && gPrintFun && level <= g_max_level );
+	return ( g_initialized && gPrintFun && level <= g_max_level );
 }
 
 /*****************************************************************************
@@ -100,12 +129,12 @@ is_log_activated (Log_Level level)
 int
 Log_Print (Log_Level level, const char* msg)
 {
-  if (is_log_activated (level) && msg) { 
-    ithread_mutex_lock (&g_log_mutex);
-    gPrintFun (level, msg);
-    ithread_mutex_unlock (&g_log_mutex);
-  }
-  return 0;
+	if (is_log_activated (level) && msg) { 
+		ithread_mutex_lock (&g_log_mutex);
+		gPrintFun (level, msg);
+		ithread_mutex_unlock (&g_log_mutex);
+	}
+	return 0;
 }
 
 
@@ -115,22 +144,22 @@ Log_Print (Log_Level level, const char* msg)
 int
 Log_Printf (Log_Level level, const char* fmt, ... )
 {
-  if (is_log_activated (level) && fmt) { 
-    va_list ap;
-    char buf[4096] = "";
-    
-    va_start (ap, fmt);
-    int rc = vsnprintf (buf, sizeof(buf), fmt, ap);
-    va_end (ap);
-    
-    if (rc >= 0) {
-      ithread_mutex_lock (&g_log_mutex);
-      gPrintFun (level, buf);
-      ithread_mutex_unlock (&g_log_mutex);
-    }
-    return rc;
-  }
-  return -1;
+	if (is_log_activated (level) && fmt) { 
+		va_list ap;
+		char buf[4096] = "";
+		
+		va_start (ap, fmt);
+		int rc = vsnprintf (buf, sizeof(buf), fmt, ap);
+		va_end (ap);
+		
+		if (rc >= 0) {
+			ithread_mutex_lock (&g_log_mutex);
+			gPrintFun (level, buf);
+			ithread_mutex_unlock (&g_log_mutex);
+		}
+		return rc;
+	}
+	return -1;
 }
 
 
@@ -141,7 +170,7 @@ Log_Printf (Log_Level level, const char* fmt, ... )
 void 
 Log_SetMaxLevel (Log_Level max_level)
 {
-  g_max_level = max_level;
+	g_max_level = max_level;
 }
 
 
@@ -152,11 +181,48 @@ Log_SetMaxLevel (Log_Level max_level)
 int
 Log_Lock()
 {
-  return ithread_mutex_lock (&g_log_mutex);
+	return ithread_mutex_lock (&g_log_mutex);
 }
 
 int
 Log_Unlock()
 {
-  return ithread_mutex_unlock (&g_log_mutex);
+	return ithread_mutex_unlock (&g_log_mutex);
 }
+
+
+/*****************************************************************************
+ * Log_Colorize / Log_BeginColor / Log_EndColor
+ *****************************************************************************/
+void
+Log_Colorize (bool colorize)
+{
+	g_colorize = colorize;
+}
+
+void 
+Log_BeginColor (Log_Level level, FILE* stream)
+{
+	if (is_log_activated (level) && stream) { 
+		// colorize ?
+		const bool colorize = g_colorize && isatty (fileno (stream)); 
+		if (colorize) {
+			if (level >= 0 && level <= NB_COLORS && COLORS[level])
+				fputs (COLORS[level], stream);
+			else
+				fputs (COLOR_UNKNOWN_LEVEL, stream);
+		}
+	}
+}
+
+void 
+Log_EndColor (Log_Level level, FILE* stream)
+{
+	if (is_log_activated (level) && stream) { 
+		const bool colorize = g_colorize && isatty (fileno (stream)); 
+		if (colorize) {
+			fputs (VT_NORMAL, stream);
+		}
+	}
+}
+

@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * Log facilities.
@@ -27,15 +28,21 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+#include <stdbool.h>
 
+
+#ifdef PRINTF_ATTRIBUTE
+#  undef PRINTF_ATTRIBUTE
+#endif
 #if (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Some gcc 2.x versions don't handle this properly ?
  */
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#  define PRINTF_ATTRIBUTE(a1, a2) __attribute__((format (__printf__, a1, a2)))
 #else
-#define PRINTF_ATTRIBUTE(a1, a2)
+#  define PRINTF_ATTRIBUTE(a1, a2)
 #endif
 
 
@@ -52,14 +59,18 @@ extern "C" {
  */
 typedef enum Log_Level {
 
-  LOG_RESERVED = -1, // Internal use
-
-  LOG_ERROR    = 0,
-  LOG_WARNING  = 1,
-  LOG_INFO     = 2,
-  LOG_DEBUG    = 3
+	LOG_RESERVED = -1, // Internal use
+	
+	LOG_ERROR    = 0,
+	LOG_WARNING  = 1,
+	LOG_INFO     = 2,
+	LOG_DEBUG    = 3
 
 } Log_Level;
+
+#define LOG_LEVEL_MIN	-1
+#define LOG_LEVEL_MAX 	3
+
 
 
 /**
@@ -144,6 +155,26 @@ void Log_SetMaxLevel (Log_Level max_level);
 
 int Log_Lock (void);
 int Log_Unlock (void);
+
+
+/**
+ * @brief Authorize colorizing log output (default : false).
+ */
+void Log_Colorize (bool colorize);
+
+
+/**
+ * @brief Starts colorizing log output (depending on log severity)
+ *	The color is applied only if authorised (see Log_Colorize), 
+ *	and if the output stream is a terminal (tty).
+ */
+void Log_BeginColor (Log_Level level, FILE* stream);
+
+
+/**
+ * @brief Stops colorizing log output. Must match Log_BeginColor().
+ */
+void Log_EndColor (Log_Level level, FILE* stream);
 
 
 /*****************************************************************************

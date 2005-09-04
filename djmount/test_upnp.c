@@ -117,40 +117,18 @@ static const int CMDNUM = sizeof(CMDLIST)/sizeof(CMDLIST[0]);
 static void
 stdout_print (Log_Level level, const char* const msg)
 {
-	// ANSI Color codes
-#define VT(CODES)		"\033[" CODES "m"
-#define VT_NORMAL 		VT("0")
-#define VT_DIM			VT("2")
-#define VT_RED			VT("31")
-#define VT_RED_BRIGHT		VT("31;1")
-#define VT_GREEN 		VT("32")
-#define VT_YELLOW_BRIGHT	VT("33;1")
-#define VT_BLUE 		VT("34")
-#define VT_MAGENTA_BRIGHT	VT("35;1")
-
-
-	// colorize ?
-	const bool col = isatty (fileno (stdout)); 
-
-	switch (level) {
-	case LOG_ERROR:    
-		printf ("%s[E] ", (col ? VT_RED_BRIGHT : ""));     
-		break;
-	case LOG_WARNING:  
-		printf ("%s[W] ", (col ? VT_MAGENTA_BRIGHT : "")); 
-		break;
-	case LOG_INFO:
-		printf ("%s[I] ", (col ? VT_BLUE : ""));  
-		break;
-	case LOG_DEBUG:  
-		printf ("%s[D] ", (col ? VT_DIM : ""));            
-		break;
-	case LOG_MAIN: 
-		// Do not tag internal message from main module   
-		break; 
-	default:
-		printf ("%s[%d] ", (col ? VT_RED_BRIGHT : ""), (int) level);
-		break;
+	// Tag, except if internal message from main module
+	if (level != LOG_MAIN) {
+		Log_BeginColor (level, stdout);
+		switch (level) {
+		case LOG_ERROR:    printf ("[E] "); break;
+		case LOG_WARNING:  printf ("[W] "); break;
+		case LOG_INFO:     printf ("[I] "); break;
+		case LOG_DEBUG:    printf ("[D] "); break;
+		default:
+			printf ("[%d] ", (int) level);
+			break;
+		}
 	}
 	
 	// TBD print thread id ?
@@ -158,7 +136,9 @@ stdout_print (Log_Level level, const char* const msg)
 	// Convert message to display charset, and print
 	Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
 
-	printf ("%s\n", (col ? VT_NORMAL : ""));
+	if (level != LOG_MAIN)
+		Log_EndColor (level, stdout);
+	printf ("\n");
 }
 
 
@@ -387,9 +367,10 @@ main (int argc, char** argv)
   
   rc = Log_Initialize (stdout_print);
   if ( rc != 0 ) {
-    Log_Printf (LOG_ERROR, "Error initialising Control Point");
+    Log_Printf (LOG_ERROR, "Error initialising Log");
     exit (rc); // ---------->
   }  
+  Log_Colorize (true);
   Log_SetMaxLevel (LOG_DEBUG);
 
   rc = Charset_Initialize (NULL);
