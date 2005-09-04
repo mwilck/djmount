@@ -11,7 +11,7 @@ Roadmap
 0.20 (done)
    add cache for network browse requests
 
-0.30 (in progress)
+0.30 (done)
    i18n / unicode file names handling
 
 0.40
@@ -24,6 +24,10 @@ Roadmap
 
 To Be Done
 ==========
+
+- handle duplicate filenames (titles) inside a directory
+
+- use charset conversion for strings inside playlists files
 
 - finer thread locking i.e. per service and device
 
