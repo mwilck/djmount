@@ -96,7 +96,7 @@ Devices / Media Servers :
   versions 2.7.2 and 2.9.1 ok
 
 * GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
-  versions 0.4.0 and 0.5.0 ok (version 0.6.0 not working).
+  versions 0.4.0, 0.5.0 or 0.7.0 ok (version 0.6.0 not working).
 
 
 Although it should work with other UPnP AV compliant devices, help is needed 
