@@ -45,6 +45,7 @@
 #include "djfs.h"
 #include "content_dir.h"
 #include "charset.h"
+#include "minmax.h"
 
 
 #define MY_FUSE_VERSION (FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
@@ -83,14 +84,20 @@ typedef struct {
   fuse_dirfil_t  filler;
 } my_dir_handle;
 
-static int my_filler (fuse_dirh_t h, const char *name, int type, ino_t ino)
+static int filler_from_utf8 (fuse_dirh_t h, const char *name, 
+			     int type, ino_t ino)
 {
-  // Convert filename from UTF-8 to display charset to UTF-8
-  char buffer [Charset_FromUtf8Size (name)];
-  char* const display_name = Charset_FromUtf8 (name, buffer, sizeof (buffer));
-
-  my_dir_handle* const my_h = (my_dir_handle*) h;
-  return my_h->filler (my_h->h, display_name, type, ino);
+	// Convert filename to display charset
+	char buffer [PATH_MAX];
+	char* display_name = Charset_ConvertString (CHARSET_FROM_UTF8, 
+						    name, 
+						    buffer, sizeof (buffer),
+						    NULL);
+	my_dir_handle* const my_h = (my_dir_handle*) h;
+	int rc = my_h->filler (my_h->h, display_name, type, ino);
+	if (display_name != buffer && display_name != name)
+		talloc_free (display_name);
+	return rc;
 }
 
 static int
@@ -99,14 +106,25 @@ Browse (const char* path,
 	/* for GETDIR => */	fuse_dirh_t h, fuse_dirfil_t filler, 
 	/* for READ => */	void* talloc_context, char** file_content)
 {
-  // Convert filename from display charset to UTF-8
-  char buffer [Charset_ToUtf8Size (path)];
-  char* const utf_path = Charset_ToUtf8 (path, buffer, sizeof (buffer));
-  my_dir_handle my_h = { .h = h, .filler = filler };
-  
-  return DJFS_Browse (utf_path, stbuf, 
-		      (filler ? (void*)&my_h : h), (filler ? my_filler : NULL),
-		      talloc_context, file_content);
+	int rc = -EIO;
+	if (! Charset_IsConverting()) {
+		rc = DJFS_Browse (path, stbuf, h, filler, 
+				  talloc_context, file_content);
+	} else {
+		// Convert filename from display charset 
+		char buffer [PATH_MAX];
+		char* const utf_path = Charset_ConvertString 
+			(CHARSET_TO_UTF8, path, buffer, sizeof (buffer), NULL);
+		my_dir_handle my_h = { .h = h, .filler = filler };
+		
+		rc = DJFS_Browse (utf_path, stbuf, 
+				  (filler ? (void*)&my_h : h), 
+				  (filler ? filler_from_utf8 : NULL),
+				  talloc_context, file_content);
+		if (utf_path != buffer && utf_path != path)
+			talloc_free (utf_path);
+	}
+	return rc;
 }
 
 /*****************************************************************************
@@ -386,7 +404,7 @@ fs_read (const char* path, char* buf, size_t size, off_t offset,
       if (offset >= fh->length) {
 	rc = 0; // EOF // TBD return error ??? XXX
       } else {
-	size_t n = min (size, fh->length - offset);
+	size_t n = MIN (size, fh->length - offset);
 	memcpy (buf, fh->string + offset, n);
 	rc = n;
       }
@@ -550,11 +568,9 @@ stdout_print (Log_Level level, const char* msg)
     break;
   }
 
-  // Convert message to display charset 
-  char buffer [Charset_FromUtf8Size (msg)];
-  char* const str = Charset_FromUtf8 (msg, buffer, sizeof (buffer));
-
-  puts (str);
+  // Convert message to display charset, and print
+  Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
+  printf ("\n");
 }
 
 /*****************************************************************************
@@ -737,6 +753,8 @@ main (int argc, char *argv[])
 
   Log_Printf (LOG_DEBUG, "Shutting down ...");
   DeviceList_Stop();
+
+  Charset_Finish();
   Log_Finish();
 
   return rc; 

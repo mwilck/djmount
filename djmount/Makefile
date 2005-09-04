@@ -20,6 +20,12 @@
 #
 
 
+APPS = test_charset test_upnp djmount
+
+OBJS := log.o object.o service.o device.o device_list.o content_dir.o \
+	djfs.o upnp_util.o string_util.o xml_util.o \
+	charset.o
+
 INCLUDES= 
 
 FUSEFLAGS= -D_FILE_OFFSET_BITS=64 -D_REENTRANT -DFUSE_USE_VERSION=22
@@ -42,9 +48,20 @@ LIBS += -L$(LIBUPNP)/bin -lupnp
 LIBS += -L$(LIBUPNP)/bin -lthreadutil -lixml 
 endif
 
+
 ifneq ($(wildcard /usr/include/readline/readline.h),)
 CPPFLAGS += -DHAVE_READLINE=1
 test_upnp: LIBS +=  -lreadline -lhistory -ltermcap
+endif
+
+
+ifneq ($(wildcard /usr/include/iconv.h),)
+HAVE_ICONV = 1
+endif
+ifeq ($(HAVE_ICONV),1)
+CPPFLAGS += -DHAVE_ICONV=1
+else
+OBJS += charset_internal.o
 endif
 
 
@@ -54,18 +71,14 @@ CXXFLAGS += -Wall -Wextra \
 	$(OPT) $(CPPFLAGS) $(FUSEFLAGS)
 # -Wold-style-cast -Weffc++  -Woverloaded-virtual 
 
-APPS = test_upnp djmount
 
 all: $(APPS)
 
-OBJS := log.o object.o service.o device.o device_list.o content_dir.o \
-	djfs.o upnp_util.o string_util.o xml_util.o \
-	charset_internal.o charset.o
 
 djmount: fuse_main.o $(OBJS) 
 	$(CC) $(CFLAGS) $+ $(LIBS) -lfuse -o $@ 
 
-test_upnp : $(OBJS) test_upnp.o 
+test_% : $(OBJS) test_%.o 
 	$(CC) $(CFLAGS) $+ $(LIBS) -o $@ 
 
 

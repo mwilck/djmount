@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * charset : charset management for djmount.
@@ -26,6 +27,8 @@
 #define CHARSET_H_INCLUDED 1
 
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 
 /*
@@ -67,10 +70,18 @@
  */
 
 
+/**
+ * Conversion direction
+ */
+typedef enum _Charset_Direction {
+	CHARSET_TO_UTF8,
+	CHARSET_FROM_UTF8,
+} Charset_Direction;
+
+
 /*****************************************************************************
  * @brief Initializes the charset converter, by selecting a charset.
  *	Must be called before any other charset functions. 
- *	May be called multiple times.
  *	If no charset if provided (charset == NULL), a default
  *	is selected based on the user environment e.g. current locale.
  * @return 0 if ok, non 0 if error e.g. non-supported charset
@@ -80,59 +91,46 @@ Charset_Initialize (const char* charset);
 
 
 /*****************************************************************************
- *	Return the buffer size necessary to convert a string 
- *	from selected charset to UTF-8 (includes  terminating '\0').
- *	This is a quick estimate : the size returned might be slightly
- *	bigger than strictly necessary.
+ * @brief Returns true if module has been initialized with a supported charset,
+ *	  other than UTF-8. 
+ *	  Returns false if charset is UTF-8, or not yet initialized, or not 
+ *	  supported. In this case, all conversion functions below are no-op.
  *****************************************************************************/
-size_t
-Charset_ToUtf8Size (const char* src);
+bool
+Charset_IsConverting();
 
 
 /*****************************************************************************
- * @brief Convert a string from selected charset to UTF-8.
- *	  Result string is put into provided buffer "dest" of 
- *	  maximum size (including terminating '\0') "dest_size".
+ * @brief Convert a string.
+ *	a) if not conversion is necessary (e.g. module initialized with UTF-8),
+ *	   returns the input string "str",
+ *	b) else if "buffer" is provided (not NULL) and is big enough (including
+ *   	   terminating '\0') it is used to store the result,
+ *  	c) else (buffer NULL or too small) the result string is dynamically 
+ *	   allocated with "talloc". It should be freed using "talloc_free" 
+ *	   when finished.
+ *	The function returns a pointer to the result (== "str" or "buffer" 
+ *	or dynamically allocated string), or NULL if error (note that illegal 
+ *	character sequences do not abort the conversion but are handled 
+ *	internally). 
  *****************************************************************************/
 char*
-Charset_ToUtf8 (const char* src, char* dest, size_t dest_size);
+Charset_ConvertString (Charset_Direction, const char* str, 
+		       char* buffer, size_t bufsize,
+		       void* talloc_context);
 
 
 /*****************************************************************************
- * @brief Convert a string from selected charset to UTF-8.
- *	  Result string is dynamically allocated with "talloc" ;
- *	  It should be freed using "talloc_free" when finished.
+ * @brief Converts and prints a string.
+ *	  Return value is similar to "fputs" : a non-negative number for 
+ *	  success, or EOF for error (note that illegal character sequences 
+ *	  do not abort the conversion but are handled internally). 
+ *	  This function is more efficient than calling Charset_ConvertString
+ *	  and printing the result because there is never dynamic memory
+ *	  allocation.
  *****************************************************************************/
-char*
-Charset_ToUtf8_talloc (void* talloc_context, const char* str);
-
-
-/*****************************************************************************
- *	Return the buffer size necessary to convert a string 
- *	from UTF-8 to selected charset (includes  terminating '\0').
- *	This is a quick estimate : the size returned might be slightly
- *	bigger than strictly necessary.
- *****************************************************************************/
-size_t
-Charset_FromUtf8Size (const char* src);
-
-
-/*****************************************************************************
- * @brief Convert a string from UTF-8 to selected charset.
- *	  Result string is put into provided buffer "dest" of 
- *	  maximum size (including terminating '\0') "dest_size".
- *****************************************************************************/
-char*
-Charset_FromUtf8 (const char* src, char* dest, size_t dest_size);
-
-
-/*****************************************************************************
- * @brief Convert a string from UTF-8 to selected charset.
- *	  Result string is dynamically allocated with "talloc" ;
- *	  It should be freed using "talloc_free" when finished.
- *****************************************************************************/
-char*
-Charset_FromUtf8_talloc (void* talloc_context, const char* str);
+int
+Charset_PrintString (Charset_Direction, const char* str, FILE* stream);
 
 
 /*****************************************************************************

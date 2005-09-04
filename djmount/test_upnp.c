@@ -114,11 +114,10 @@ static const int CMDNUM = sizeof(CMDLIST)/sizeof(CMDLIST[0]);
 // Special "internal" log level for main module
 #define LOG_MAIN 	LOG_RESERVED
 
-
 static void
 stdout_print (Log_Level level, const char* const msg)
 {
-  // ANSI Color codes
+	// ANSI Color codes
 #define VT(CODES)		"\033[" CODES "m"
 #define VT_NORMAL 		VT("0")
 #define VT_DIM			VT("2")
@@ -130,28 +129,36 @@ stdout_print (Log_Level level, const char* const msg)
 #define VT_MAGENTA_BRIGHT	VT("35;1")
 
 
-  // colorize ?
-  const bool col = isatty (fileno (stdout)); 
+	// colorize ?
+	const bool col = isatty (fileno (stdout)); 
 
-  switch (level) {
-  case LOG_ERROR:    printf ("%s[E] ", (col ? VT_RED_BRIGHT : ""));     break;
-  case LOG_WARNING:  printf ("%s[W] ", (col ? VT_MAGENTA_BRIGHT : "")); break;
-  case LOG_INFO:     printf ("%s[I] ", (col ? VT_BLUE : ""));           break;
-  case LOG_DEBUG:    printf ("%s[D] ", (col ? VT_DIM : ""));            break;
-  case LOG_MAIN:     break; // Do not tag internal message from main module
-  default:
-    printf ("%s[%d] ", (col ? VT_RED_BRIGHT : ""), (int) level);
-    break;
-  }
+	switch (level) {
+	case LOG_ERROR:    
+		printf ("%s[E] ", (col ? VT_RED_BRIGHT : ""));     
+		break;
+	case LOG_WARNING:  
+		printf ("%s[W] ", (col ? VT_MAGENTA_BRIGHT : "")); 
+		break;
+	case LOG_INFO:
+		printf ("%s[I] ", (col ? VT_BLUE : ""));  
+		break;
+	case LOG_DEBUG:  
+		printf ("%s[D] ", (col ? VT_DIM : ""));            
+		break;
+	case LOG_MAIN: 
+		// Do not tag internal message from main module   
+		break; 
+	default:
+		printf ("%s[%d] ", (col ? VT_RED_BRIGHT : ""), (int) level);
+		break;
+	}
+	
+	// TBD print thread id ?
 
-  // TBD print thread id ?
+	// Convert message to display charset, and print
+	Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
 
-  // Convert message to display charset 
-  const size_t size = Charset_FromUtf8Size (msg);
-  char buffer [size];
-  const char* const str = Charset_FromUtf8 (msg, buffer, size);
-
-  printf ("%s%s\n", (str ? str : msg), (col ? VT_NORMAL : ""));
+	printf ("%s\n", (col ? VT_NORMAL : ""));
 }
 
 
@@ -190,8 +197,8 @@ process_command (const char* cmdline)
   // Create a working context for temporary memory allocations
   void* tmp_ctx = talloc_new (NULL);
 
-  // Convert from display charset to UTF-8
-  cmdline = Charset_ToUtf8_talloc (tmp_ctx, cmdline);
+  // Convert from display charset
+  cmdline = Charset_ConvertString (CHARSET_TO_UTF8, cmdline, NULL, 0, tmp_ctx);
 
   char cmd[100];
   char strarg1[100];

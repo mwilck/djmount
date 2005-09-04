@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * charset_internal : 
@@ -7,6 +8,9 @@
  * File "charset.c" copied from "siefs" v0.5 
  * ( http://chaos.allsiemens.com/siefs/ )
  * (C) Dmitry Zakharov aka ChaoS <dmitry-z@mail.ru>
+ *
+ * Includes some code adapted from "libiconv-1.9.1/lib/utf8.h"
+ * Copyright (C) 1999-2001 Free Software Foundation, Inc.
  *
  * Modified for djmount (C) 2005, Rémi Turboult <r3mi@users.sourceforge.net>
  *
@@ -22,6 +26,13 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <errno.h>
+#include <stdbool.h>
+
+
+static const uint16_t      ERROR_CHAR_UCS   = 0xFFFD; // REPLACEMENT CHARACTER
+static const unsigned char ERROR_CHAR_ASCII = '?';
+
 
 static const uint16_t c2u_cp1250[128] = {
 	0x20ac, 0x0000, 0x201a, 0x0000,
@@ -91,6 +102,41 @@ static const uint16_t c2u_cp1251[128] = {
 	0x0444, 0x0445, 0x0446, 0x0447,
 	0x0448, 0x0449, 0x044a, 0x044b,
 	0x044c, 0x044d, 0x044e, 0x044f,
+};
+
+static const uint16_t c2u_cp1252[128] = {
+	0x20ac,	0x0000,	0x201a,	0x0192,
+	0x201e,	0x2026,	0x2020,	0x2021,
+	0x02c6,	0x2030,	0x0160,	0x2039,
+	0x0152,	0x0000,	0x017d,	0x0000,
+	0x0000,	0x2018,	0x2019,	0x201c,
+	0x201d,	0x2022,	0x2013,	0x2014,
+	0x02dc,	0x2122,	0x0161,	0x203a,
+	0x0153,	0x0000,	0x017e,	0x0178,
+	0x00a0,	0x00a1,	0x00a2,	0x00a3,
+	0x00a4,	0x00a5,	0x00a6,	0x00a7,
+	0x00a8,	0x00a9,	0x00aa,	0x00ab,
+	0x00ac,	0x00ad,	0x00ae,	0x00af,
+	0x00b0,	0x00b1,	0x00b2,	0x00b3,
+	0x00b4,	0x00b5,	0x00b6,	0x00b7,
+	0x00b8,	0x00b9,	0x00ba,	0x00bb,
+	0x00bc,	0x00bd,	0x00be,	0x00bf,
+	0x00c0,	0x00c1,	0x00c2,	0x00c3,
+	0x00c4,	0x00c5,	0x00c6,	0x00c7,
+	0x00c8,	0x00c9,	0x00ca,	0x00cb,
+	0x00cc,	0x00cd,	0x00ce,	0x00cf,
+	0x00d0,	0x00d1,	0x00d2,	0x00d3,
+	0x00d4,	0x00d5,	0x00d6,	0x00d7,
+	0x00d8,	0x00d9,	0x00da,	0x00db,
+	0x00dc,	0x00dd,	0x00de,	0x00df,
+	0x00e0,	0x00e1,	0x00e2,	0x00e3,
+	0x00e4,	0x00e5,	0x00e6,	0x00e7,
+	0x00e8,	0x00e9,	0x00ea,	0x00eb,
+	0x00ec,	0x00ed,	0x00ee,	0x00ef,
+	0x00f0,	0x00f1,	0x00f2,	0x00f3,
+	0x00f4,	0x00f5,	0x00f6,	0x00f7,
+	0x00f8,	0x00f9,	0x00fa,	0x00fb,
+	0x00fc,	0x00fd,	0x00fe,	0x00ff,
 };
 
 static const uint16_t c2u_cp1255[128] = {
@@ -1147,14 +1193,14 @@ static const struct {
 	const char *name;
 	const uint16_t *c2u;
 } nls_list[] = {
-	{ "cp1250", c2u_cp1250 },
-	{ "cp1251", c2u_cp1251 },
-	{ "cp1255", c2u_cp1255 },
-	{ "cp437", c2u_cp437 },
+	/*
+	 * MS-DOS code pages (see http://czyborra.com/charsets/codepages.html)
+	 */
+	{ "cp437", c2u_cp437 },		// original MS-DOS codepage
 	{ "cp737", c2u_cp737 },
 	{ "cp775", c2u_cp775 },
-	{ "cp850", c2u_cp850 },
-	{ "cp852", c2u_cp852 },
+	{ "cp850", c2u_cp850 },		// CP437 merged with Latin1
+	{ "cp852", c2u_cp852 },		// CP437 merged with Latin2
 	{ "cp855", c2u_cp855 },
 	{ "cp857", c2u_cp857 },
 	{ "cp860", c2u_cp860 },
@@ -1166,25 +1212,44 @@ static const struct {
 	{ "cp866", c2u_cp866 },
 	{ "cp869", c2u_cp869 },
 	{ "cp874", c2u_cp874 },
-	{ "iso88591", c2u_iso8859_1 },
-	{ "iso885913", c2u_iso8859_13 },
-	{ "iso885914", c2u_iso8859_14 },
-	{ "iso885915", c2u_iso8859_15 },
+	/*
+	 * Windows code pages (see http://czyborra.com/charsets/codepages.html)
+	 */
+	{ "cp1250", c2u_cp1250 },	// WinLatin2
+	{ "cp1251", c2u_cp1251 },	// WinCyrillic
+	{ "cp1252", c2u_cp1252 },	// WinLatin1
+	{ "cp1255", c2u_cp1255 },	// WinHebrew
+	/*
+	 * ISO 8859 alphabets (see http://czyborra.com/charsets/iso8859.html)
+	 */
+	{ "iso88591", c2u_iso8859_1 },	// West European (Latin1)
+	{ "iso885913",c2u_iso8859_13 },	
+	{ "iso885914",c2u_iso8859_14 },	
+	{ "iso885915",c2u_iso8859_15 },	// Latin9 (aka Latin0, includes euro)
 	{ "iso88592", c2u_iso8859_2 },
 	{ "iso88593", c2u_iso8859_3 },
 	{ "iso88594", c2u_iso8859_4 },
 	{ "iso88595", c2u_iso8859_5 },
 	{ "iso88596", c2u_iso8859_6 },
 	{ "iso88597", c2u_iso8859_7 },
-	{ "iso88599", c2u_iso8859_9 },
-	{ "koi8r", c2u_koi8_r },
-	{ "koi8u", c2u_koi8_u },
+	{ "iso88599", c2u_iso8859_9 },	
+	/* 
+	 * Cyrillic charsets (see http://czyborra.com/charsets/cyrillic.html)
+	 */
+	{ "koi8r", c2u_koi8_r },	// Relcom's KOI8
+	{ "koi8u", c2u_koi8_u },	// Ukrainian KOI8
+	/*
+	 * ASCII : truncates to 7-bit (useful for tests)
+	 */
+	{ "ascii", NULL },
 	{ NULL, NULL },
 };
+
 
 static uint16_t *c2u_table = NULL;
 static unsigned char *u2c_table = NULL;
 static size_t u2c_table_size = 0;
+
 
 int init_charset (const char* name) 
 {
@@ -1213,26 +1278,33 @@ int init_charset (const char* name)
 	
 	for (i=0; nls_list[i].name != NULL; i++) {
 		if (strcmp(sname, nls_list[i].name) == 0) {
-		        uint16_t c;
-		        u2c_table_size = 128;
-			for (j=0; j<128; j++) {
-				c = nls_list[i].c2u[j];
-				if (c > u2c_table_size)
-					u2c_table_size = c;
+		        uint16_t s;
+		        u2c_table_size = 127;
+			if (nls_list[i].c2u) {
+				for (j=0; j<128; j++) {
+					s = nls_list[i].c2u[j];
+					if (s > u2c_table_size)
+						u2c_table_size = s;
+				}
 			}
 			u2c_table_size++;
 			c2u_table = (uint16_t *)malloc(256 * 2);
 			u2c_table = (unsigned char *)malloc(u2c_table_size);
-			memset(u2c_table, '?', u2c_table_size);
+			memset (u2c_table, ERROR_CHAR_ASCII, u2c_table_size);
 			for (j=0; j<128; j++) {
 				c2u_table[j] = (uint16_t)j;
 				u2c_table[j] = (unsigned char)j;
 			}
 
 			for (j=128; j<256; j++) {
-				c = nls_list[i].c2u[j-128];
-				c2u_table[j] = c;
-				u2c_table[c] = (unsigned char)j;
+				s = nls_list[i].c2u ? 
+					nls_list[i].c2u[j-128] : 0x0;
+				if (s != 0x0) {
+					c2u_table[j] = s;
+					u2c_table[s] = (unsigned char)j;
+				} else {
+					c2u_table[j] = ERROR_CHAR_UCS;
+				}
 			}
 			return 1;
 		}
@@ -1241,129 +1313,170 @@ int init_charset (const char* name)
 }
 
 
-size_t utf2ascii_size (const char* src) 
+static int
+no_conv (const char** const inbuf, size_t* const inbytesleft,
+	 char** const outbuf, size_t* const outbytesleft)
 {
-  size_t size = 0;
-  if (src) {
-    if (u2c_table == NULL) {
-      // no conversion
-      size = strlen (src);
-    } else {
-      /*
-       * Convert UTF-8 to selected charset : result string will be at most of 
-       * the same length because choosen charset are all 8-bits.
-       */
-      while (*src) {
-	unsigned char const c = (unsigned char) *(src++);
-	// Skip all continuation bytes
-	if ( ( c & 0xc0) != 0x80 ) 
-	  size++;
-      }
-    }
-    size += 1; // Add space for final '\0'
-  }
-  return size;
+	const char* src = *inbuf;
+	char* dest = *outbuf;
+	while (*inbytesleft > 0 && *outbytesleft > 0) {
+		*(dest++) = *(src++);
+		(*outbytesleft)--;
+		(*inbytesleft)--;
+	}
+	*outbuf = dest;
+	*inbuf  = src;
+	return 0;
 }
 
 
-char *utf2ascii (const char *src, char *dest, size_t size) 
+size_t utf2ascii_size (const char* src) 
 {
-  char *p = dest;
-  int n = 0;
-  
-  // Set size to max. number of characters = buffer size minus final '\0'
-  size -= 1;
-  
-  if (u2c_table == NULL) {
-    strncpy (dest, src, size);
-    dest[size] = '\0';
-    return dest;
-  }
-  
-  while (*src && n < size) {
-    unsigned char const c = (unsigned char) *(src++);
-    uint16_t s;
-    if (c == 0) break;
-    if (c <= 0x7f) {
-      s = c;
-    } else if (c >= 0xc0 && c <= 0xdf && (*src & 0xc0) == 0x80) {
-      s = ((c & 0x1f) << 6) | (*(src++) & 0x3f);
-    } else if (c >= 0xe0 && c <= 0xef &&
-	       (*src & 0xc0) == 0x80 && (*(src+1) & 0xc0) == 0x80) {
-      s = ((c & 0x0f) << 12) | ((*(src++) & 0x3f) << 6);
-      s |= (*(src++) & 0x3f);
-    } else {
-      s = '?';
-    }   
-    *(dest++) = (s < u2c_table_size ? u2c_table[s] : '?');
-    n++;
-  }
-  *dest = '\0';
-  return p;
+	size_t size = 0;
+	if (src) {
+		if (u2c_table == NULL) {
+			// no conversion
+			size = strlen (src);
+		} else {
+			/*
+			 * Convert UTF-8 to selected charset : result string
+			 * will be at most of the same length because 
+			 * choosen charset are all 8-bits.
+			 */
+			while (*src) {
+				unsigned char c = (unsigned char) *(src++);
+				// Skip all continuation bytes
+				if ( ( c & 0xc0) != 0x80 ) 
+					size++;
+			}
+		}
+		size += 1; // Add space for final '\0'
+	}
+	return size;
+}
+
+
+int
+utf2ascii (const char** const inbuf, size_t* const inbytesleft,
+	   char** const outbuf, size_t* const outbytesleft)
+{
+	if (inbuf  == NULL || *inbuf  == NULL || inbytesleft  == NULL ||
+	    outbuf == NULL || *outbuf == NULL || outbytesleft == NULL)
+		return EFAULT; // ---------->
+
+	if (u2c_table == NULL) {
+		return no_conv (inbuf, inbytesleft, outbuf, outbytesleft);
+	}
+	
+	const unsigned char* src = *inbuf;
+	char* dest = *outbuf;
+	while (*inbytesleft > 0 && *outbytesleft > 0) {
+		unsigned char const c = (unsigned char) *src;
+		uint16_t s = 0x0;
+		bool s_ok = false;
+		int count = 1;
+		if (c <= 0x7f) {
+			s = c;
+			s_ok = true;
+		} else if (c >= 0xc0 && c <= 0xdf &&
+			   *inbytesleft > 1 &&
+			   (src[1] & 0xc0) == 0x80) {
+			s = ((c & 0x1f) << 6) | (src[1] & 0x3f);
+			s_ok = (s > 0x7f); // detect illegal overlong sequence
+			count = 2;
+		} else if (c >= 0xe0 && c <= 0xef &&
+			   *inbytesleft > 2 &&
+			   (src[1] & 0xc0) == 0x80 && 
+			   (src[2] & 0xc0) == 0x80) {
+			s = ((c & 0x0f) << 12) | ((src[1] & 0x3f) << 6);
+			s |= (src[2] & 0x3f);
+			s_ok = (s > 0x7ff); // detect illegal overlong sequence
+			count = 3;
+		}
+		src += count;
+		(*inbytesleft) -= count;
+		(*outbytesleft)--;
+		if (s_ok && s < u2c_table_size) {
+			*(dest++) = u2c_table[s];
+		} else {
+			*(dest++) = ERROR_CHAR_ASCII;
+			// Skip all extraneous continuation bytes
+			while ( *inbytesleft > 0 && (*src & 0xc0) == 0x80 ) {
+				src++;
+				(*inbytesleft)--;
+			}
+		}
+	}
+	*outbuf = dest;
+	*inbuf  = src;
+	return (*inbytesleft > 0 ? E2BIG : 0);
 }
 
 
 size_t ascii2utf_size (const char* src) 
 {
-  size_t size = 0;
-  if (src) {
-    if (c2u_table == NULL) {
-      // No conversion
-      size = strlen (src);
-    } else {
-      /*
-       * Convert selected charset to UTF-8 : in theory, the result string 
-       * could be as long as 6 times the original length. However the choosen 
-       * 8-bits charsets have values between U+00000800 and U+0000FFFF so this
-       * gives at most a 3-bytes UTF-8 character.
-       */
-      while (*src) {
-	unsigned char const c = (unsigned char) *(src++);
-	size += ((c <= 0x7f) ? 1 : 3);
-      }
-    }
-    size += 1; // Add space for final '\0'
-  }
-  return size;
+	size_t size = 0;
+	if (src) {
+		if (c2u_table == NULL) {
+			// No conversion
+			size = strlen (src);
+		} else {
+			/*
+			 * Convert selected charset to UTF-8 : in theory, 
+			 * the result string could be as long as 6 times 
+			 * the original length. However the choosen 8-bits 
+			 * charsets are all in the BMP (values between U+0000
+			 * and U+FFFF) so this gives at most a 3-bytes 
+			 * UTF-8 character.
+			 */
+			while (*src) {
+				unsigned char c = (unsigned char) *(src++);
+				size += ((c <= 0x7f) ? 1 : 3);
+			}
+		}
+		size += 1; // Add space for final '\0'
+	}
+	return size;
 }
 
 
-char *ascii2utf (const char *src, char *dest, size_t size) 
+int
+ascii2utf (const char** const inbuf, size_t* const inbytesleft,
+	   char** const outbuf, size_t* const outbytesleft)
 {
-  char *p = dest;
-  int n = 0;
+	if (inbuf  == NULL || *inbuf  == NULL || inbytesleft  == NULL ||
+	    outbuf == NULL || *outbuf == NULL || outbytesleft == NULL)
+		return EFAULT; // ---------->
 
-  // Set size to max. number of characters = buffer size minus final '\0'
-  size -= 1;
+	if (c2u_table == NULL) {
+		return no_conv (inbuf, inbytesleft, outbuf, outbytesleft);
+	}
 	
-  if (c2u_table == NULL) {
-    strncpy(dest, src, size);
-    dest[size] = '\0';
-    return dest;
-  }
-
-  while (*src && n < size) {
-    unsigned char const c = (unsigned char) *(src++);
-    uint16_t const s = c2u_table[c];
-    if (s <= 0x7f) {
-      *(dest++) = (char)s;
-      n++;
-    } else if (s <= 0x7ff) {
-      if (n >= size-1)
-	break;
-      *(dest++) = (char)(0xc0 | (s >> 6));
-      *(dest++) = (char)(0x80 | (s & 0x3f));
-      n += 2;
-    } else {
-      if (n >= size-2)
-	break;
-      *(dest++) = (char)(0xe0 | (s >> 12));
-      *(dest++) = (char)(0x80 | ((s >> 6) & 0x3f));
-      *(dest++) = (char)(0x80 | (s & 0x3f));
-      n += 3;
-    }
-  }
-  *dest = '\0';
-  return p;
+	const unsigned char* src = *inbuf;
+	char* dest = *outbuf;
+	while (*inbytesleft > 0 && *outbytesleft > 0) {
+		uint16_t s = c2u_table[*src]; 
+		int count;
+		if (s <= 0x7f)
+			count = 1;
+		else if (s <= 0x7ff)
+			count = 2;
+		else
+			count = 3;
+		if (count > *outbytesleft)
+			break; // ---------->
+		switch (count) { // note: code falls through cases!
+		case 3: dest[2] = 0x80 | (s & 0x3f); s = s >> 6; s |= 0x800;
+		case 2: dest[1] = 0x80 | (s & 0x3f); s = s >> 6; s |= 0xc0;
+		case 1: dest[0] = s;
+		}
+		dest += count;
+		(*outbytesleft) -= count;
+		src++;
+		(*inbytesleft)--;
+	}
+	*outbuf = dest;
+	*inbuf  = src;
+	return ((*inbytesleft) > 0 ? E2BIG : 0);
 }
 

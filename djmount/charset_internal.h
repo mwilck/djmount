@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * charset_internal : 
@@ -24,10 +25,12 @@
 int init_charset (const char *name);
 
 size_t utf2ascii_size (const char* src);
-char *utf2ascii (const char *src, char *dest, size_t dest_size);
+int utf2ascii (const char** inbuf, size_t* inbytesleft,
+	       char** outbuf, size_t* outbytesleft);
 
 size_t ascii2utf_size (const char* src);
-char *ascii2utf (const char *src, char *dest, size_t dest_size);
+int ascii2utf (const char** inbuf, size_t* inbytesleft,
+	       char** outbuf, size_t* outbytesleft);
 
 #endif
 
