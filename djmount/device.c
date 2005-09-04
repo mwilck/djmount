@@ -252,6 +252,7 @@ Device_GetDescDocItem (const Device* dev, const char* item)
 /*****************************************************************************
  * Device_GetService
  *****************************************************************************/
+#if 0
 // TBD to be deleted
 Service*
 Device_GetService (const Device* dev, int servnum)
@@ -267,7 +268,7 @@ Device_GetService (const Device* dev, int servnum)
   Log_Print (LOG_ERROR, "Bad parameter finding Service number");
   return NULL; // not found
 }
-
+#endif
 
 Service*
 Device_GetServiceFrom (const Device* dev, 
