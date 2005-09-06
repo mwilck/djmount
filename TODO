@@ -39,6 +39,9 @@ To Be Done
 
 - add statistics for debug of ContentDir cache
 
+- redirect errors to syslog if daemonized ?
+
+
 
 
 

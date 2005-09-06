@@ -593,7 +593,7 @@ usage (const char* progname)
      "    -h                     print help\n"
      "    -o [options]           mount options (see below)\n"
      "    -d[levels]             enable debug output (implies -f)\n"
-     "    -f                     foreground operation\n"
+     "    -f                     foreground operation (default: daemonized)\n"
      "\n"
      "Mount options (one or more comma separated options) :\n"
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
@@ -620,7 +620,8 @@ int
 main (int argc, char *argv[])
 {
 	int rc;
-	
+	bool background = true;
+
 	rc = Log_Initialize (stdout_print);
 	if (rc != 0) {
 		fprintf (stderr, "%s : Error initialising Logger", argv[0]);
@@ -648,8 +649,8 @@ main (int argc, char *argv[])
 	char* o;
 	while ((o = argv[opt++])) {
 		if (strcmp(o, "-f") == 0) {
-			FUSE_ARG (o);
-			
+			background = false;
+
 		} else if (*o != '-') { 
 			// mount point
 			FUSE_ARG (o);
@@ -678,7 +679,8 @@ main (int argc, char *argv[])
 			Log_Printf (LOG_INFO, "  Mount options = %s", options);
 			
 		} else if (strncmp (o, "-d", 2) == 0) {
-			FUSE_ARG ("-f");
+			background = false;
+
 			// Parse debug levels
 			const char* const levels = 
 				(o[2] ? o+2 : DEBUG_DEFAULT_LEVELS);
@@ -737,18 +739,33 @@ main (int argc, char *argv[])
 	FUSE_ARG ("readdir_ino");
 #endif
 
-	fuse_argv[fuse_argc] = NULL;
+	/*
+	 * Daemonize process if necessary (must be done before UPnP
+	 * initialisation, so not relying on fuse_main function).
+	 */
+	FUSE_ARG ("-f");
+	if (background) {
+	        rc = daemon (0, 0);
+		if (rc == -1) {
+			int const err = errno;
+			Log_Printf (LOG_ERROR, 
+				    "Failed to daemonize program : %s",
+				    strerror (err));
+			exit (err);
+		}
+	}
 	
 
 	/*
 	 * Set charset encoding
 	 */
 	rc = Charset_Initialize (charset);
-	if (rc) 
+	if (rc) {
 		Log_Printf (LOG_ERROR, "Error initialising charset='%s'",
 			    NN(charset));
-	
-	
+	}
+
+
 	/*
 	 * Initialise UPnP Control point and starts FUSE file system
 	 */
@@ -759,6 +776,8 @@ main (int argc, char *argv[])
 		exit (rc); // ---------->
 	}
 	
+
+	fuse_argv[fuse_argc] = NULL; // End FUSE arguments list
 	rc = fuse_main (fuse_argc, fuse_argv, &fs_oper);
 	if (rc != 0) {
 		Log_Printf (LOG_ERROR, "Error in FUSE main loop = %d", rc);
