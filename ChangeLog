@@ -1,5 +1,7 @@
 2005-09-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* version 0.30
+
 	* djmount/fuse_main.c : daemonize process (if not -f or -d flags) 
 	  before libupnp initialisation else UPnP is not working
 	  (thanks Benjamin Zores for reporting)
