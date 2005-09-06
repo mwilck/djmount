@@ -854,7 +854,7 @@ int
 DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
 {
   int rc;
-  short int port = 0;
+  unsigned short port = 0;
   char* ip_address = NULL;
   
   gStateUpdateFun = eventCallback;
