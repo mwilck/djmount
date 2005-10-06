@@ -68,7 +68,8 @@ Installation
 
 djmount has been tested on the following configurations:
 
-* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1), FUSE 2.2.1 or 2.3.0
+* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1), 
+  FUSE 2.2.1, 2.3.0 or 2.4.0
 
 
 
@@ -84,6 +85,7 @@ djmount has been tested on the following configurations:
 4) To run, simply use the 'djmount/djmount' executable
    (there is no 'make install' yet).
 
+for help 
 
 
 Known Compatible Devices
@@ -92,15 +94,26 @@ Known Compatible Devices
 djmount has been tested successfully with the following UPnP AV 
 Devices / Media Servers :
 
-* TwonkyVision UPnP Music Server on Linux ( http://www.twonkyvision.de )
-  versions 2.7.2 and 2.9.1 ok
+* TwonkyVision UPnP Music Server ( http://www.twonkyvision.de )
+  versions 2.7.2 and 2.9.1 for Linux are ok
 
 * GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
   versions 0.4.0, 0.5.0 or 0.7.0 ok (version 0.6.0 not working).
 
+* Ahead Nero MediaHome Server ( http://www.nero.com/en/Nero_MediaHome.html )
+  included in Nero ultra 6.6
 
-Although it should work with other UPnP AV compliant devices, help is needed 
-to test on additional devices.
+* Microsoft Windows Media Connect 
+  ( http://www.microsoft.com/windows/windowsmedia/devices/wmconnect/ )
+  requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
+
+
+This page describes how to share A/V content with some of the above servers :
+ http://www.geexbox.org/wiki/index.php/Accessing_to_UPnP_Contents
+
+
+Although djmount should work with other UPnP AV compliant devices, 
+help is needed to test on additional devices.
 
 
 
