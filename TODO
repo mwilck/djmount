@@ -41,7 +41,7 @@ To Be Done
 
 - redirect errors to syslog if daemonized ?
 
-
+- make 'df' returns meaningful values
 
 
 
