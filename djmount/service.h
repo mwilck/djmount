@@ -118,7 +118,7 @@ Service_SendActionAsyncVa (const Service* serv,Upnp_FunPtr callback,
  * @param params       list of pairs : names + values 
  *****************************************************************************/
 int 
-Service_SendAction (const Service* serv, 
+Service_SendAction (Service* serv, 
 		    OUT IXML_Document** response,
 		    const char* actionName,
 		    int nb_params, const StringPair* params);
@@ -137,7 +137,7 @@ Service_SendAction (const Service* serv,
  *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
 int
-Service_SendActionVa (const Service* serv,
+Service_SendActionVa (Service* serv,
 		      OUT IXML_Document** response,
 		      const char* actionName, ...);
 

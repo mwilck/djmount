@@ -162,7 +162,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
  * Result should be freed using "talloc_free" when finished.
  */
 ContentDir_Object*
-ContentDir_BrowseMetadata (const ContentDir* cds,
+ContentDir_BrowseMetadata (ContentDir* cds,
 			   void* result_context, 
 			   const char* objectId);
 

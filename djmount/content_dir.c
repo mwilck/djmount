@@ -165,7 +165,7 @@ int_to_string (void* result_context, intmax_t val)
  * BrowseAction
  *****************************************************************************/
 static int
-BrowseAction (const ContentDir* cds,
+BrowseAction (ContentDir* cds,
 	      void* result_context, 
 	      const char* objectId, 
 	      enum BrowseFlag metadata,
@@ -280,7 +280,7 @@ BrowseAction (const ContentDir* cds,
  * BrowseId
  *****************************************************************************/
 static ContentDir_Children*
-BrowseAll (const ContentDir* cds,
+BrowseAll (ContentDir* cds,
 	   void* result_context, 
 	   const char* objectId, 
 	   enum BrowseFlag metadata)
@@ -460,7 +460,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
  * ContentDir_BrowseMetadata
  *****************************************************************************/
 ContentDir_Object*
-ContentDir_BrowseMetadata (const ContentDir* cds,
+ContentDir_BrowseMetadata (ContentDir* cds,
 			   void* result_context, 
 			   const char* objectId)
 {

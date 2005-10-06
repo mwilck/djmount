@@ -56,22 +56,28 @@ union _ServiceClass {
 
 union _Service {
 
-  const ServiceClass* isa;
+	const ServiceClass* isa;
 
-  struct {
-    Object _;
+	struct {
+		Object _;
 
-    char* serviceId;
-    char* serviceType;
-    char* eventURL;
-    char* controlURL;
-    char* sid;
-    
-    // TBD XXX to replace by hashtable XXX
-    LinkedList	variables;
-    
-    UpnpClient_Handle ctrlpt_handle;
-  } m;
+		char* serviceId;
+		char* serviceType;
+		char* eventURL;
+		char* controlURL;
+		char* sid;
+		
+		// TBD XXX to replace by hashtable XXX
+		LinkedList	variables;
+		
+		UpnpClient_Handle ctrlpt_handle;
+		
+		// Last Action information, for debugging
+		char* la_name;
+		int   la_result;
+		char* la_error_code;
+		char* la_error_desc;
+	} m;
 };
 
 

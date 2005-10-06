@@ -283,6 +283,49 @@ MakeAction (const char* actionName, const char* serviceType,
   return res;
 }
 
+/*****************************************************************************
+ * ActionError
+ *****************************************************************************/
+static void
+ActionError (Service* serv, const char* actionName,
+	     int rc, IXML_Document** response)
+{
+	talloc_free (serv->m.la_name);
+	serv->m.la_name   = talloc_strdup (serv, actionName);
+	serv->m.la_result = rc;
+
+	talloc_free (serv->m.la_error_code);
+	talloc_free (serv->m.la_error_desc);
+	serv->m.la_error_code = serv->m.la_error_desc = NULL;
+	
+	if (rc != UPNP_E_SUCCESS) {
+		Log_Printf (LOG_ERROR, 
+			    "Error in UpnpSendAction '%s' -- %d (%s)", 
+			    actionName, rc, UpnpGetErrorMessage (rc));
+		if (response && *response) { 
+			DOMString s = ixmlDocumenttoString (*response);
+			Log_Printf (LOG_DEBUG, 
+				    "Error in UpnpSendAction, response = %s", 
+				    s);
+			ixmlFreeDOMString (s);
+			// rc > 0 : SOAP-protocol error
+			serv->m.la_error_code = talloc_strdup 
+				(serv, XMLUtil_GetFirstNodeValue 
+				 ((IXML_Node*) *response, "errorCode"));
+			serv->m.la_error_desc = talloc_strdup 
+				(serv, XMLUtil_GetFirstNodeValue 
+				 ((IXML_Node*) *response, "errorDescription"));
+			Log_Printf (LOG_ERROR, 
+				    "Error SOAP in UpnpSendAction -- %s (%s)",
+				    serv->m.la_error_code, 
+				    serv->m.la_error_desc);
+			ixmlDocument_free (*response);
+			*response = NULL;
+		}
+	}
+
+}
+
 
 /*****************************************************************************
  * Service_SendActionAsync
@@ -348,7 +391,7 @@ Service_SendActionAsyncVa (const Service* serv,
  * Service_SendAction
  *****************************************************************************/
 int
-Service_SendAction (const Service* serv,
+Service_SendAction (Service* serv,
 		    IXML_Document** response,
 		    const char* actionName,
 		    int nb_params, const StringPair* params)
@@ -374,24 +417,7 @@ Service_SendAction (const Service* serv,
       rc = UpnpSendAction (serv->m.ctrlpt_handle, serv->m.controlURL,
 			   serv->m.serviceType, NULL, actionNode,
 			   response);
-      if (rc != UPNP_E_SUCCESS) {
-	Log_Printf (LOG_ERROR, "Error in UpnpSendAction -- %d (%s)", rc,
-		    UpnpGetErrorMessage (rc));
-	if (*response) { 
-	  DOMString s = ixmlDocumenttoString (response);
-	  Log_Printf (LOG_DEBUG, "Error in UpnpSendAction, response = %s", s);
-	  ixmlFreeDOMString (s);
-	  // rc > 0 : SOAP-protocol error
-	  Log_Printf 
-	    (LOG_ERROR, 
-	     "Error in UpnpSendAction -- SOAP error %s (%s)",
-	     XMLUtil_GetFirstNodeValue ((IXML_Node*) *response, "errorCode"),
-	     XMLUtil_GetFirstNodeValue ((IXML_Node*) *response, 
-					"errorDescription"));
-	  ixmlDocument_free (*response);
-	  *response = NULL;
-	}
-      }
+      ActionError (serv, actionName, rc, response);
       ixmlDocument_free (actionNode);
       actionNode = NULL;
     }
@@ -404,7 +430,7 @@ Service_SendAction (const Service* serv,
  * Service_SendActionVa
  *****************************************************************************/
 int
-Service_SendActionVa (const Service* serv,
+Service_SendActionVa (Service* serv,
 		      IXML_Document** response,
 		      const char* actionName, ...)
 {
@@ -447,6 +473,13 @@ get_status_string (const Service* serv,
   p=P(p, "%s  +- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
   p=P(p, "%s  +- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
   p=P(p, "%s  +- SID             = %s\n", spacer, NN(serv->m.sid));
+  p=P(p, "%s  +- Last Action     = %s\n", spacer, NN(serv->m.la_name));
+  if (serv->m.la_name) 
+	  p=P(p, "%s  |    +- Result     = %d (%s)\n", spacer, 
+	      serv->m.la_result, UpnpGetErrorMessage (serv->m.la_result));
+  if (serv->m.la_error_code || serv->m.la_error_desc) 
+	  p=P(p, "%s  |    +- SOAP Error = %s (%s)\n", spacer, 
+	      NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
   p=P(p, "%s  +- ServiceStateTable\n", spacer);
 
 
@@ -580,6 +613,10 @@ _Service_Initialize (Service* serv,
 
   // Initialise list of variables
   ListInit (&serv->m.variables, 0, 0);
+
+  // For debugging
+  serv->m.la_name = serv->m.la_error_code = serv->m.la_error_desc = NULL;
+  serv->m.la_result = UPNP_E_SUCCESS;
 
   return UPNP_E_SUCCESS;
 }

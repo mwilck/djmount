@@ -317,6 +317,8 @@ Device_GetStatusString (const Device* dev, void* result_context)
   p=P(p, "    +- DescDocURL     = %s\n", dev->descDocURL);
   p=P(p, "    +- FriendlyName   = %s\n", dev->friendlyName);
   p=P(p, "    +- PresURL        = %s\n", dev->presURL);
+  p=P(p, "    +- talloc memory  = %ld blocks / %ld bytes\n", 
+      (long) talloc_total_blocks (dev), (long) talloc_total_size (dev));
 
   ListNode* node;
   for (node = ListHead ((LinkedList*) &dev->services); 
