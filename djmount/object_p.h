@@ -75,7 +75,17 @@ struct _Object {
 /*
  * Cast a derived object pointer to its superclass
  */
-#define SUPER_CAST(O)	((O) ? &((O)->m._) : NULL)
+#define SUPER_CAST(OBJ)		((OBJ) ? &((OBJ)->m._) : NULL)
+
+
+/*
+ * Return the pointer to a virtual method
+ */
+#define OBJECT_METHOD(OBJ,METHOD) \
+	( ((OBJ) && (OBJ)->isa) ? (OBJ)->isa->m.METHOD : NULL)
+
+#define CLASS_METHOD(TYPE,METHOD) \
+	( OBJECT_CLASS_PTR(TYPE)->m.METHOD)
 
 
 /*****************************************************************************
