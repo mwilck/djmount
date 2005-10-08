@@ -272,7 +272,10 @@ process_command (const char* cmdline)
     break;
     
   case CMD_PRINTDEV:
-    rc = DeviceList_PrintDeviceStatus (LOG_MAIN, strarg1);
+    {
+      char* s = DeviceList_GetDeviceStatusString (tmp_ctx, strarg1, true);
+      Log_Print (LOG_MAIN, s);
+    }
     break;
     
   case CMD_LISTDEV:

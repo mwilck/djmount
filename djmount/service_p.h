@@ -47,6 +47,7 @@ union _ServiceClass {
     // Addition Virtual methods
     void  (*update_variable) (Service*, const char* name, const char* value);
     char* (*get_status_string) (const Service* serv, void* result_context, 
+				bool debug,
 				const char* spacer1, const char* spacer);
   } m;
   

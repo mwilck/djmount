@@ -234,8 +234,9 @@ Service_UpdateState (Service* serv, IXML_Document* changedVariables)
 		var->value = talloc_strdup (var, value);
 		ListAddTail (&serv->m.variables, var);
 	      }
-	      if (serv->isa && serv->isa->m.update_variable)
-		serv->isa->m.update_variable (serv, var->name, var->value);
+	      if (OBJECT_METHOD (serv,update_variable))
+		OBJECT_METHOD (serv, update_variable) (serv, 
+						       var->name, var->value);
 	    }
 	  }
 	}
@@ -455,7 +456,7 @@ Service_SendActionVa (Service* serv,
  *****************************************************************************/
 static char*
 get_status_string (const Service* serv, 
-		   void* result_context, 
+		   void* result_context, bool debug, 
 		   const char* spacer1, const char* spacer) 
 {
   if (spacer == NULL)
@@ -465,14 +466,27 @@ get_status_string (const Service* serv,
 			     (spacer1 ? spacer1 : ""));
   
 #define P talloc_asprintf_append 
-  p=P(p, "%s  +- C Class         = %s\n", spacer, 
+  p=P(p, "%s  +- Class           = %s\n", spacer, 
       NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
-  p=P(p, "%s  +- C Name          = %s\n", spacer, talloc_get_name(serv));
+  p=P(p, "%s  +- Object Name     = %s\n", spacer, talloc_get_name(serv));
   p=P(p, "%s  +- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
   p=P(p, "%s  +- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
   p=P(p, "%s  +- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
   p=P(p, "%s  +- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
-  p=P(p, "%s  +- SID             = %s\n", spacer, NN(serv->m.sid));
+
+  // Print variables
+  p=P(p, "%s  +- ServiceStateTable\n", spacer);
+  ListNode* node;
+  for (node = ListHead ((LinkedList*) &serv->m.variables);
+       node != NULL;
+       node = ListNext ((LinkedList*) &serv->m.variables, node)) {
+    StringPair* const var = node->item;
+    p=P(p, "%s  |    +- %-10s = %.150s%s\n", spacer, 
+	NN(var->name), NN(var->value), 
+	(var->value && strlen(var->value) > 150) ? "..." : "");
+  }
+
+  // Last Action
   p=P(p, "%s  +- Last Action     = %s\n", spacer, NN(serv->m.la_name));
   if (serv->m.la_name) 
 	  p=P(p, "%s  |    +- Result     = %d (%s)\n", spacer, 
@@ -480,19 +494,8 @@ get_status_string (const Service* serv,
   if (serv->m.la_error_code || serv->m.la_error_desc) 
 	  p=P(p, "%s  |    +- SOAP Error = %s (%s)\n", spacer, 
 	      NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
-  p=P(p, "%s  +- ServiceStateTable\n", spacer);
 
-
-  // Print variables
-  ListNode* node;
-  for (node = ListHead ((LinkedList*) &serv->m.variables);
-       node != NULL;
-       node = ListNext ((LinkedList*) &serv->m.variables, node)) {
-    StringPair* const var = node->item;
-    p=P(p, "%s       +- %-10s = %.150s%s\n", spacer, 
-	NN(var->name), NN(var->value), 
-	(var->value && strlen(var->value) > 150) ? "..." : "");
-  }
+  p=P(p, "%s  +- SID             = %s\n", spacer, NN(serv->m.sid));
 
 #undef P
   return p;
@@ -500,13 +503,13 @@ get_status_string (const Service* serv,
 
 char*
 Service_GetStatusString (const Service* serv,  
-			 void* result_context, 
+			 void* result_context, bool debug,
 			 const char* spacer1, const char* spacer) 
 {
-  if (serv && serv->isa && serv->isa->m.get_status_string)
-    return serv->isa->m.get_status_string (serv, result_context,
-					   spacer1, spacer);
-  return NULL;
+	if (OBJECT_METHOD (serv, get_status_string))
+		return OBJECT_METHOD (serv, get_status_string) 
+			(serv, result_context, debug, spacer1, spacer);
+	return NULL;
 }
 
 

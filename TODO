@@ -37,8 +37,6 @@ To Be Done
 
 - provide access to DeviceDescription.xml file
 
-- add statistics for debug of ContentDir cache
-
 - redirect errors to syslog if daemonized ?
 
 - make 'df' returns meaningful values

@@ -375,7 +375,7 @@ DJFS_Browse (const char* path,
 	DIR_BEGIN(devName) {
 	  FILE_BEGIN("status") {
 	    talloc_string = DeviceList_GetDeviceStatusString (talloc_context,
-							      devName);
+							      devName, true);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    size_t nb_matched = 0;

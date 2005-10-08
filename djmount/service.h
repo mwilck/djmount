@@ -161,10 +161,12 @@ Service_UpdateState (IN Service* serv,
 /*****************************************************************************
  * @brief Returns a string describing the state of the service.
  * 	  The returned string should be freed using "talloc_free".
+ *	  If 'debug' is true, returns extra debugging information (which
+ *	  might need to be computed).
  *****************************************************************************/
 char*
 Service_GetStatusString (const Service* serv, 
-			 void* result_context,
+			 void* result_context, bool debug,
 			 const char* spacer1, const char* spacern);
 
 

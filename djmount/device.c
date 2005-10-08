@@ -29,6 +29,7 @@
 #include "xml_util.h"
 #include "log.h"
 
+#include <time.h>
 #include <talloc.h>
 #include <stdbool.h>
 #include <upnp/upnp.h>
@@ -37,6 +38,8 @@
 
 
 struct _Device {
+
+  time_t	 creation_time;
 
   IXML_Document* descDoc;
   char*		 descDocURL;
@@ -181,9 +184,10 @@ Device* Device_Create (void* context,
   }
   
   *dev = (struct _Device) { 
-    .descDocURL = talloc_strdup (dev, descDocURL),
-    .descDoc    = descDoc,
-    // Other fields to empty values
+	  .creation_time = time (NULL),
+	  .descDocURL    = talloc_strdup (dev, descDocURL),
+	  .descDoc       = descDoc,
+	  // Other fields to empty values
   };
 
   /*
@@ -299,47 +303,55 @@ Device_GetServiceFrom (const Device* dev,
  * Device_GetStatusString
  *****************************************************************************/
 char*
-Device_GetStatusString (const Device* dev, void* result_context)
+Device_GetStatusString (const Device* dev, void* result_context, bool debug)
 {
-  if (dev == NULL)
-    return NULL; // ---------->
+	if (dev == NULL)
+		return NULL; // ---------->
 
-  char* p = talloc_strdup (result_context, "");
-  
-  // Create a working context for temporary strings
-  void* const tmp_ctx = talloc_new (p);
-
+	char* p = talloc_strdup (result_context, "");
+	
+	// Create a working context for temporary strings
+	void* const tmp_ctx = talloc_new (p);
+	
 #define P talloc_asprintf_append 
-  p=P(p, "  Device\n");
-  p=P(p, "    |                   \n");
-  p=P(p, "    +- UDN            = %s\n", dev->udn);
-  p=P(p, "    +- DeviceType     = %s\n", dev->deviceType);
-  p=P(p, "    +- DescDocURL     = %s\n", dev->descDocURL);
-  p=P(p, "    +- FriendlyName   = %s\n", dev->friendlyName);
-  p=P(p, "    +- PresURL        = %s\n", dev->presURL);
-  p=P(p, "    +- talloc memory  = %ld blocks / %ld bytes\n", 
-      (long) talloc_total_blocks (dev), (long) talloc_total_size (dev));
+	p=P(p, " Device\n");
+	p=P(p, "   |                   \n");
+	time_t const now = time (NULL);
+	p=P(p, "   +- Discovered on  = %s", ctime (&dev->creation_time));
+	p[strlen(p)-1] = ' '; // remove '\n' from 'ctime'
+	p=P(p, "(%ld seconds ago)\n", (long) (now - dev->creation_time));
+	p=P(p, "   +- UDN            = %s\n", dev->udn);
+	p=P(p, "   +- DeviceType     = %s\n", dev->deviceType);
+	p=P(p, "   +- DescDocURL     = %s\n", dev->descDocURL);
+	p=P(p, "   +- FriendlyName   = %s\n", dev->friendlyName);
+	p=P(p, "   +- PresURL        = %s\n", dev->presURL);
+	if (debug) 
+		p=P(p, "   +- talloc memory  = %ld blocks / %ld bytes\n", 
+		    (long) talloc_total_blocks (dev),
+		    (long) talloc_total_size (dev));
 
-  ListNode* node;
-  for (node = ListHead ((LinkedList*) &dev->services); 
-       node != NULL;
-       node = ListNext ((LinkedList*) &dev->services, node)) {
-    const Service* const serv = node->item;
-    const char* const spacer = 
-      (node == ListTail ((LinkedList*) &dev->services)) ? "     " : "    |";
-    p=P(p, "    |                  \n");
-    if (serv == NULL) {
-      p=P(p, "    +- **ERROR** NULL Service\n");
-    } else {
-      p=P(p, "%s", Service_GetStatusString (serv, tmp_ctx, "    +- ", spacer));
-    }
-  }
+	ListNode* node;
+	for (node = ListHead ((LinkedList*) &dev->services); 
+	     node != NULL;
+	     node = ListNext ((LinkedList*) &dev->services, node)) {
+		const Service* const serv = node->item;
+		const char* const spacer = 
+			(node == ListTail ((LinkedList*) &dev->services)) ?
+			"    " : "   |";
+		p=P(p, "   |                  \n");
+		if (serv == NULL) {
+			p=P(p, "   +- **ERROR** NULL Service\n");
+		} else {
+			p=P(p, "%s", Service_GetStatusString 
+			    (serv, tmp_ctx, debug, "   +- ", spacer));
+		}
+	}
 #undef P
       
-  // Delete all temporary strings
-  talloc_free (tmp_ctx);
-
-  return p;
+	// Delete all temporary strings
+	talloc_free (tmp_ctx);
+	
+	return p;
 }
 
 

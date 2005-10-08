@@ -68,7 +68,8 @@ String_CleanFileName (void* talloc_context, const char* s)
  *	http://burtleburtle.net/bob/hash/doobs.html
  *****************************************************************************/
 
-#define HASH_ALGO_SDBM	1
+//#define HASH_ALGO_SDBM  1
+#define HASH_ALGO_DJB2_XOR  1
 
 String_HashType
 String_Hash (const char* str)

@@ -98,10 +98,12 @@ Device_GetServiceFrom (const Device* dev,
 /******************************************************************************
  * @brief Returns a string describing the state of the device.
  * 	  The returned string should be freed using "talloc_free".
+ *	  If 'debug' is true, returns extra debugging information (which
+ *	  might need to be computed).
  *****************************************************************************/
 char*
-Device_GetStatusString (const Device* dev, void* result_context);
-
+Device_GetStatusString (const Device* dev, void* result_context,
+			bool debug);
 
 
 

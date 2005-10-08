@@ -191,26 +191,18 @@ DeviceList_PrintStatus (Log_Level);
 
 
 /*****************************************************************************
- * Returns a string describing the state of a device
- * (identifiers and state table).
- * The returned string should be freed using "talloc_free".
+ * @brief Returns a string describing the state of a device
+ * 	  (identifiers and state table).
+ * 	  The returned string should be freed using "talloc_free".
+ *	  If 'debug' is true, returns extra debugging information (which
+ *	  might need to be computed).
  *
  * @param talloc_context	parent context to allocate result, may be NULL
  * @param deviceName		the device name
  *****************************************************************************/
 char*
 DeviceList_GetDeviceStatusString (void* talloc_context, 
-				  const char* deviceName);
-
-/**
- * Print the state of a device (see DeviceList_GetDeviceStatusString).
- *
- * @param level		the Log level
- * @param deviceName	the device name
- */
-int
-DeviceList_PrintDeviceStatus (Log_Level level, const char* deviceName);
-
+				  const char* deviceName, bool debug);
 
 
 /*****************************************************************************

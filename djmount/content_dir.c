@@ -400,12 +400,14 @@ ContentDir_BrowseChildren (ContentDir* cds,
     String_HashType const h = String_Hash (objectId);
     unsigned int const idx  = h % CACHE_SIZE;
     CacheEntry* const ce    = cds->m.cache + idx;
-    
+
+    cds->m.cache_access++;
     bool const same_object_id = (ce->objectId && ce->hash == h && 
 				 strcmp (ce->objectId, objectId) == 0);
     if (same_object_id && time(NULL) <= ce->limit) {
       Log_Printf (LOG_DEBUG, "ContentDir CACHE_HIT (id='%s', idx=%u)",
 		  objectId, idx);
+      cds->m.cache_hit++;
       br->children = ce->children; 
     } else {
       // Use the cache as parent context for allocation of result
@@ -414,11 +416,13 @@ ContentDir_BrowseChildren (ContentDir* cds,
 	Log_Printf (LOG_DEBUG, 
 		    "ContentDir CACHE_EXPIRED (new='%s', idx=%u)",
 		    objectId, idx);
+	cds->m.cache_expired++;
       } else {
 	if (ce->objectId) {
 	  Log_Printf (LOG_DEBUG, 
 		      "ContentDir CACHE_COLLIDE (old='%s', new='%s', idx=%u)",
 		      ce->objectId, objectId, idx);
+	  cds->m.cache_collide++;
 	} else {
 	  Log_Printf (LOG_DEBUG, "ContentDir CACHE_NEW (new='%s', idx=%u)",
 		      objectId, idx);
@@ -480,6 +484,57 @@ ContentDir_BrowseMetadata (ContentDir* cds,
 }
 
 
+/*****************************************************************************
+ * get_status_string
+ *****************************************************************************/
+static char*
+get_status_string (const Service* serv, 
+		   void* result_context, bool debug, 
+		   const char* const spacer1, const char* spacer) 
+{
+	ContentDir* const cds = (ContentDir*) serv;
+
+	// Call superclass' method
+	char* p = CLASS_METHOD (Service, get_status_string)
+		(serv, result_context, debug, spacer1, spacer);
+
+	// Add ContentDir specific status
+	if (spacer == NULL)
+		spacer = "";
+	
+#define P talloc_asprintf_append 
+
+	p=P(p, "%s  +- Cache size      = %d\n", spacer, (int) CACHE_SIZE);
+	if (debug && cds->m.cache) {
+		time_t const now = time(NULL);
+		int i, nb_cached = 0;
+		for (i = 0; i < CACHE_SIZE; i++) {
+			if (cds->m.cache[i].limit >= now)
+				nb_cached++;
+		}
+		p=P(p, "%s  +- Cached entries  = %d (%d%%)\n", spacer, 
+		    nb_cached, (int) (nb_cached * 100 / CACHE_SIZE));
+	}
+	p=P(p, "%s  +- Cache timeout   = %d seconds\n", spacer, 
+	    (int) CACHE_TIMEOUT);
+	p=P(p, "%s  +- Cache access    = %d\n", spacer, cds->m.cache_access);
+	if (cds->m.cache_access > 0) {
+		p=P(p, "%s       +- hits       = %d (%d%%)\n", spacer, 
+		    cds->m.cache_hit, 
+		    (int) (cds->m.cache_hit * 100 / cds->m.cache_access));
+		p=P(p, "%s       +- collide    = %d (%d%%)\n", spacer, 
+		    cds->m.cache_collide, 
+		    (int) (cds->m.cache_collide * 100 / cds->m.cache_access));
+		p=P(p, "%s       +- expired    = %d (%d%%)\n", spacer, 
+		    cds->m.cache_expired, 
+		    (int) (cds->m.cache_expired * 100 / cds->m.cache_access));
+	}
+#undef P
+	return p;
+}
+
+
+
 /******************************************************************************
  * finalize
  *
@@ -526,6 +581,7 @@ const ContentDirClass* OBJECT_CLASS_PTR(ContentDir)
       .initializer 	= &the_default_object,
       .finalize 	= finalize,
     };
+    the_class.m._.m.get_status_string = get_status_string;
 
     // Class-specific initialization :
     // Increase maximum permissible content-length for SOAP messages
@@ -564,6 +620,8 @@ ContentDir_Create (void* talloc_context,
     int i;
     for (i = 0; i < CACHE_SIZE; i++)
       cds->m.cache[i] = (CacheEntry) { .objectId = NULL, .limit = 0 };
+    cds->m.cache_access = cds->m.cache_hit = cds->m.cache_collide = 
+	    cds->m.cache_expired = 0;
     ithread_mutex_init (&cds->m.cache_mutex, NULL);
   }
 

@@ -740,7 +740,8 @@ DeviceList_PrintStatus (Log_Level level)
  * DeviceList_GetDeviceStatusString
  *****************************************************************************/
 char*
-DeviceList_GetDeviceStatusString (void* context, const char* deviceName) 
+DeviceList_GetDeviceStatusString (void* context, const char* deviceName,
+				  bool debug) 
 {
   char* ret = NULL;
   
@@ -748,7 +749,7 @@ DeviceList_GetDeviceStatusString (void* context, const char* deviceName)
   
   DeviceNode* devnode = GetDeviceNodeFromName (deviceName, true);
   if (devnode) { 
-    char* s = Device_GetStatusString (devnode->d, NULL);
+	  char* s = Device_GetStatusString (devnode->d, NULL, debug);
     ret = talloc_asprintf (context, 
 			   "Device \"%s\" (expires in %d seconds)\n%s",
 			   deviceName, devnode->expires, s);
@@ -759,26 +760,6 @@ DeviceList_GetDeviceStatusString (void* context, const char* deviceName)
   
   return ret;
 }
-
-
-/*****************************************************************************
- * DeviceList_PrintDeviceStatus
- *****************************************************************************/
-int
-DeviceList_PrintDeviceStatus (Log_Level level, const char* deviceName)
-{
-  int rc;
-  char* const s = DeviceList_GetDeviceStatusString (NULL, deviceName);
-  if (s) {
-    Log_Print (level, s);
-    talloc_free (s);
-    rc = UPNP_E_SUCCESS;
-  } else {
-    rc = UPNP_E_INVALID_DEVICE;
-  }
-  return rc;
-}
-
 
 
 /*****************************************************************************

@@ -51,16 +51,21 @@ struct _ContentDir_CacheEntry;
 
 union _ContentDir {
   
-  const ContentDirClass* isa;
+	const ContentDirClass* isa;
+	
+	struct {
+		// Inherit parent fields
+		Service _; 
+		
+		// Additional fields
+		struct _ContentDir_CacheEntry* 	cache;
+		ithread_mutex_t 		cache_mutex;
 
-  struct {
-    // Inherit parent fields
-    Service _; 
-
-    // Additional fields
-    struct _ContentDir_CacheEntry* 	cache;
-    ithread_mutex_t 			cache_mutex;
-
+		// Debug statistics
+		int	cache_access;
+		int	cache_hit;
+		int 	cache_collide;
+		int	cache_expired;
   } m;
 };
 
