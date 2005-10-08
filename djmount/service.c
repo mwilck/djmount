@@ -5,9 +5,6 @@
  *
  * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
  *
- * Part derived from libupnp example (upnp/sample/tvctrlpt/upnp_tv_ctrlpt.c)
- * Copyright (c) 2000-2003 Intel Corporation
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -456,59 +453,57 @@ Service_SendActionVa (Service* serv,
  *****************************************************************************/
 static char*
 get_status_string (const Service* serv, 
-		   void* result_context, bool debug, 
-		   const char* spacer1, const char* spacer) 
+		   void* result_context, bool debug, const char* spacer) 
 {
-  if (spacer == NULL)
-    spacer = "";
-  
-  char* p = talloc_asprintf (result_context, "%sService\n",
-			     (spacer1 ? spacer1 : ""));
-  
+	if (spacer == NULL)
+		spacer = "";
+	
+	char* p = talloc_strdup (result_context, "");
+	
 #define P talloc_asprintf_append 
-  p=P(p, "%s  +- Class           = %s\n", spacer, 
-      NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
-  p=P(p, "%s  +- Object Name     = %s\n", spacer, talloc_get_name(serv));
-  p=P(p, "%s  +- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
-  p=P(p, "%s  +- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
-  p=P(p, "%s  +- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
-  p=P(p, "%s  +- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
-
-  // Print variables
-  p=P(p, "%s  +- ServiceStateTable\n", spacer);
-  ListNode* node;
-  for (node = ListHead ((LinkedList*) &serv->m.variables);
-       node != NULL;
-       node = ListNext ((LinkedList*) &serv->m.variables, node)) {
-    StringPair* const var = node->item;
-    p=P(p, "%s  |    +- %-10s = %.150s%s\n", spacer, 
-	NN(var->name), NN(var->value), 
-	(var->value && strlen(var->value) > 150) ? "..." : "");
-  }
-
-  // Last Action
-  p=P(p, "%s  +- Last Action     = %s\n", spacer, NN(serv->m.la_name));
-  if (serv->m.la_name) 
-	  p=P(p, "%s  |    +- Result     = %d (%s)\n", spacer, 
-	      serv->m.la_result, UpnpGetErrorMessage (serv->m.la_result));
-  if (serv->m.la_error_code || serv->m.la_error_desc) 
-	  p=P(p, "%s  |    +- SOAP Error = %s (%s)\n", spacer, 
-	      NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
-
-  p=P(p, "%s  +- SID             = %s\n", spacer, NN(serv->m.sid));
-
+	p=P(p, "%s| \n", spacer);
+	p=P(p, "%s+- Class           = %s\n", spacer, 
+	    NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
+	p=P(p, "%s+- Object Name     = %s\n", spacer, talloc_get_name(serv));
+	p=P(p, "%s+- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
+	p=P(p, "%s+- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
+	p=P(p, "%s+- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
+	p=P(p, "%s+- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
+	
+	// Print variables
+	p=P(p, "%s+- ServiceStateTable\n", spacer);
+	ListNode* node;
+	for (node = ListHead ((LinkedList*) &serv->m.variables);
+	     node != NULL;
+	     node = ListNext ((LinkedList*) &serv->m.variables, node)) {
+		StringPair* const var = node->item;
+		p=P(p, "%s|    +- %-10s = %.150s%s\n", spacer, 
+		    NN(var->name), NN(var->value), 
+		    (var->value && strlen(var->value) > 150) ? "..." : "");
+	}
+	
+	// Last Action
+	p=P(p, "%s+- Last Action     = %s\n", spacer, NN(serv->m.la_name));
+	if (serv->m.la_name) 
+		p=P(p, "%s|    +- Result     = %d (%s)\n", spacer, 
+		    serv->m.la_result, UpnpGetErrorMessage(serv->m.la_result));
+	if (serv->m.la_error_code || serv->m.la_error_desc) 
+		p=P(p, "%s|    +- SOAP Error = %s (%s)\n", spacer, 
+		    NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
+	
+	p=P(p, "%s+- SID             = %s\n", spacer, NN(serv->m.sid));
+	
 #undef P
-  return p;
+	return p;
 }
 
 char*
 Service_GetStatusString (const Service* serv,  
-			 void* result_context, bool debug,
-			 const char* spacer1, const char* spacer) 
+			 void* result_context, bool debug, const char* spacer) 
 {
 	if (OBJECT_METHOD (serv, get_status_string))
 		return OBJECT_METHOD (serv, get_status_string) 
-			(serv, result_context, debug, spacer1, spacer);
+			(serv, result_context, debug, spacer);
 	return NULL;
 }
 

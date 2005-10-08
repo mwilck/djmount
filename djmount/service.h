@@ -166,8 +166,7 @@ Service_UpdateState (IN Service* serv,
  *****************************************************************************/
 char*
 Service_GetStatusString (const Service* serv, 
-			 void* result_context, bool debug,
-			 const char* spacer1, const char* spacern);
+			 void* result_context, bool debug, const char* spacer);
 
 
 /*****************************************************************************

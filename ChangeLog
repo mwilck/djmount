@@ -1,6 +1,6 @@
 2005-10-08  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* djmount/content_dir.c : status string includes cache debug statistics
+	* djmount/content_dir.c : add cache debug statistics in status string
 
 2005-10-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 

@@ -489,14 +489,13 @@ ContentDir_BrowseMetadata (ContentDir* cds,
  *****************************************************************************/
 static char*
 get_status_string (const Service* serv, 
-		   void* result_context, bool debug, 
-		   const char* const spacer1, const char* spacer) 
+		   void* result_context, bool debug, const char* spacer) 
 {
 	ContentDir* const cds = (ContentDir*) serv;
 
 	// Call superclass' method
 	char* p = CLASS_METHOD (Service, get_status_string)
-		(serv, result_context, debug, spacer1, spacer);
+		(serv, result_context, debug, spacer);
 
 	// Add ContentDir specific status
 	if (spacer == NULL)
@@ -504,7 +503,7 @@ get_status_string (const Service* serv,
 	
 #define P talloc_asprintf_append 
 
-	p=P(p, "%s  +- Cache size      = %d\n", spacer, (int) CACHE_SIZE);
+	p=P(p, "%s+- Cache size      = %d\n", spacer, (int) CACHE_SIZE);
 	if (debug && cds->m.cache) {
 		time_t const now = time(NULL);
 		int i, nb_cached = 0;
@@ -512,20 +511,20 @@ get_status_string (const Service* serv,
 			if (cds->m.cache[i].limit >= now)
 				nb_cached++;
 		}
-		p=P(p, "%s  +- Cached entries  = %d (%d%%)\n", spacer, 
+		p=P(p, "%s+- Cached entries  = %d (%d%%)\n", spacer, 
 		    nb_cached, (int) (nb_cached * 100 / CACHE_SIZE));
 	}
-	p=P(p, "%s  +- Cache timeout   = %d seconds\n", spacer, 
+	p=P(p, "%s+- Cache timeout   = %d seconds\n", spacer, 
 	    (int) CACHE_TIMEOUT);
-	p=P(p, "%s  +- Cache access    = %d\n", spacer, cds->m.cache_access);
+	p=P(p, "%s+- Cache access    = %d\n", spacer, cds->m.cache_access);
 	if (cds->m.cache_access > 0) {
-		p=P(p, "%s       +- hits       = %d (%d%%)\n", spacer, 
+		p=P(p, "%s     +- hits       = %d (%d%%)\n", spacer, 
 		    cds->m.cache_hit, 
 		    (int) (cds->m.cache_hit * 100 / cds->m.cache_access));
-		p=P(p, "%s       +- collide    = %d (%d%%)\n", spacer, 
+		p=P(p, "%s     +- collide    = %d (%d%%)\n", spacer, 
 		    cds->m.cache_collide, 
 		    (int) (cds->m.cache_collide * 100 / cds->m.cache_access));
-		p=P(p, "%s       +- expired    = %d (%d%%)\n", spacer, 
+		p=P(p, "%s     +- expired    = %d (%d%%)\n", spacer, 
 		    cds->m.cache_expired, 
 		    (int) (cds->m.cache_expired * 100 / cds->m.cache_access));
 	}

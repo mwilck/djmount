@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Service implementation (private / protected).
@@ -38,19 +39,20 @@
 
 union _ServiceClass {
 
-  ObjectClass o;
-
-  struct {
-    // Inherit parent fields
-    ObjectClass _;
-
-    // Addition Virtual methods
-    void  (*update_variable) (Service*, const char* name, const char* value);
-    char* (*get_status_string) (const Service* serv, void* result_context, 
-				bool debug,
-				const char* spacer1, const char* spacer);
-  } m;
-  
+	ObjectClass o;
+	
+	struct {
+		// Inherit parent fields
+		ObjectClass _;
+		
+		// Addition Virtual methods
+		void  (*update_variable) (Service*, 
+					  const char* name, const char* value);
+		char* (*get_status_string) (const Service* serv, 
+					    void* result_context, 
+					    bool debug, const char* spacer);
+	} m;
+	
 };
 
 

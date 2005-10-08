@@ -314,36 +314,37 @@ Device_GetStatusString (const Device* dev, void* result_context, bool debug)
 	void* const tmp_ctx = talloc_new (p);
 	
 #define P talloc_asprintf_append 
-	p=P(p, " Device\n");
-	p=P(p, "   |                   \n");
+	p=P(p, "  | \n");
 	time_t const now = time (NULL);
-	p=P(p, "   +- Discovered on  = %s", ctime (&dev->creation_time));
+	p=P(p, "  +- Discovered on  = %s", ctime (&dev->creation_time));
 	p[strlen(p)-1] = ' '; // remove '\n' from 'ctime'
 	p=P(p, "(%ld seconds ago)\n", (long) (now - dev->creation_time));
-	p=P(p, "   +- UDN            = %s\n", dev->udn);
-	p=P(p, "   +- DeviceType     = %s\n", dev->deviceType);
-	p=P(p, "   +- DescDocURL     = %s\n", dev->descDocURL);
-	p=P(p, "   +- FriendlyName   = %s\n", dev->friendlyName);
-	p=P(p, "   +- PresURL        = %s\n", dev->presURL);
-	if (debug) 
-		p=P(p, "   +- talloc memory  = %ld blocks / %ld bytes\n", 
+	p=P(p, "  +- UDN            = %s\n", dev->udn);
+	p=P(p, "  +- DeviceType     = %s\n", dev->deviceType);
+	p=P(p, "  +- DescDocURL     = %s\n", dev->descDocURL);
+	p=P(p, "  +- FriendlyName   = %s\n", dev->friendlyName);
+	p=P(p, "  +- PresURL        = %s\n", dev->presURL);
+	if (debug) {
+		p=P(p, "  +- talloc memory  = %ld blocks / %ld bytes\n", 
 		    (long) talloc_total_blocks (dev),
 		    (long) talloc_total_size (dev));
-
+	}
+	
 	ListNode* node;
 	for (node = ListHead ((LinkedList*) &dev->services); 
 	     node != NULL;
 	     node = ListNext ((LinkedList*) &dev->services, node)) {
 		const Service* const serv = node->item;
-		const char* const spacer = 
-			(node == ListTail ((LinkedList*) &dev->services)) ?
-			"    " : "   |";
-		p=P(p, "   |                  \n");
+		bool last = (node == ListTail ((LinkedList*) &dev->services));
+
+		p=P(p, "  | \n");
 		if (serv == NULL) {
-			p=P(p, "   +- **ERROR** NULL Service\n");
+			p=P(p, "  +- **ERROR** NULL Service\n");
 		} else {
+			p=P(p, "  +- Service\n");
 			p=P(p, "%s", Service_GetStatusString 
-			    (serv, tmp_ctx, debug, "   +- ", spacer));
+			    (serv, tmp_ctx, debug,
+			     (last ? "      " : "  |   ")));
 		}
 	}
 #undef P
