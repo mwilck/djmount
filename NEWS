@@ -1,0 +1,54 @@
+
+What is new in 0.30
+
+* full i18n charset support, either with iconv (when available), or internally
+  (limited to utf8 and 8bits charsets cpxxx and iso-8859-xxx).
+
+* fix running in daemon mode (default if not -f or -d flag)
+  (bug reported by Benjamin Zores)
+
+* fix discovery of new device when DeviceType is empty
+
+* fix printing of UPnP port number after initialisation 
+  (bug reported by Benjamin Zores)
+
+* add colorization of debug log output, depending on severity
+
+============================================================================
+
+What is new in 0.26
+
+* makes the XML parser more tolerant to malformed text, 
+  in order to improve interoperability with non strictly compliant devices.
+
+============================================================================
+
+What is new in 0.25
+
+* preliminary i18n charset support 
+  (supports 8bits charsets iso-8859-x and CPxxx)
+
+* tested on Linux with TwonkyVision UPnP Music Server and GMediaServer 
+
+============================================================================
+
+What is new in 0.20
+
+* Network caching has been implemented for basic browsing,
+  so performances for large media collections are a lot better.
+
+* Internal code improvments
+
+* Still only tested with TwonkyVision UPnP Music Server.
+
+============================================================================
+
+What is new in 0.10
+
+* first (alpha) release
+
+* Basic browsing is implemented, but there is no network caching yet, 
+  so browsing large media collections can be quite slow.
+
+* Only tested with TwonkyVision UPnP Music Server.
+
