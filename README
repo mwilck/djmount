@@ -72,7 +72,6 @@ djmount has been tested on the following configurations:
   FUSE 2.2.1, 2.3.0 or 2.4.0
 
 
-
 1) Prerequisites for compilation:
 
 * the FUSE package : http://fuse.sourceforge.net/ 
@@ -84,8 +83,6 @@ djmount has been tested on the following configurations:
 
 4) To run, simply use the 'djmount/djmount' executable
    (there is no 'make install' yet).
-
-for help 
 
 
 Known Compatible Devices
