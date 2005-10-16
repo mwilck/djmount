@@ -174,6 +174,7 @@ clean1:
 	@rm -rf $(OBJ_DIR)
 	@rm -f ../bin/$(CLEAN_PATH)/$(TARGET_OUTPUT)
 clean:
+	@rm -f libthread*.a libthread*.so
 	@rm -rf $(OBJ_DIR)
 	@rm -rf ../bin
 
