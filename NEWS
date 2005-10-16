@@ -1,4 +1,16 @@
 
+What is new in 0.31
+
+* fix small memory leak when reading '/devices' file
+
+* include additional debugging information in 'status' files, 
+  to help diagnostic in case of failure
+
+* updated README to indicate that djmount has been tested ok with 
+  FUSE 2.4.0, Windows Media Connect, Nero MediaHome
+
+============================================================================
+
 What is new in 0.30
 
 * full i18n charset support, either with iconv (when available), or internally

@@ -358,14 +358,15 @@ DJFS_Browse (const char* path,
     const StringArray* const names = DeviceList_GetDevicesNames (tmp_ctx);
 
     FILE_BEGIN("devices") {
-      talloc_string = NULL; // Will stay NULL if no devices
       if (names) {
+        talloc_string = talloc_strdup (talloc_context, "");
         int i;
 	for (i = 0; i < names->nb; i++) {
           talloc_string = talloc_asprintf_append (talloc_string, "%s\n",
 						  names->str[i]);
 	}
       }
+      // else talloc_string stays NULL if no devices
     } FILE_END;
 
     if (names) {
