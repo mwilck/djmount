@@ -14,7 +14,7 @@ Roadmap
 0.30 (done)
    i18n / unicode file names handling
 
-0.40
+0.40 (in progress)
    add embedded / uClibc support
 
 0.50
@@ -40,6 +40,12 @@ To Be Done
 - redirect errors to syslog if daemonized ?
 
 - make 'df' returns meaningful values
+
+- automake / autoconf
+
+- IPV6 support ?
+
+- share image files
 
 
 
