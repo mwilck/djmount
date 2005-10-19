@@ -46,20 +46,27 @@ LD = ld
 STRIP = strip
 endif
 
+ifeq ($(STATIC),1)
+LIB_EXT = a
+else
+LIB_EXT = so
+endif
 
 ifeq ($(DEBUG),1)
 OPT = -g -O2
 DEBUG_OPTION = DEBUG=1
-LIBS= ../../../bin/debug/$(DIR_PATH)libupnp.so ../../../bin/debug/$(DIR_PATH)libthreadutil_dbg.so \
-      ../../../bin/$(DIR_PATH)libixml.so
+LIBS= ../../../bin/debug/$(DIR_PATH)libupnp.$(LIB_EXT) \
+      ../../../bin/debug/$(DIR_PATH)libthreadutil_dbg.$(LIB_EXT) \
+      ../../../bin/debug/$(DIR_PATH)libixml.$(LIB_EXT)
 else
 DEBUG_OPTION =
 OPT = -O2
-LIBS= ../../../bin/$(DIR_PATH)libupnp.so ../../../bin/$(DIR_PATH)libthreadutil.so \
-      ../../../bin/$(DIR_PATH)libixml.so
+LIBS= ../../../bin/$(DIR_PATH)libupnp.$(LIB_EXT) \
+      ../../../bin/$(DIR_PATH)libthreadutil.$(LIB_EXT) \
+      ../../../bin/$(DIR_PATH)libixml.$(LIB_EXT)
 endif
 
-CFLAGS += -Wall $(OPT)
+CFLAGS += -Wall -pthread $(OPT)
 
 APPS = upnp_tv_ctrlpt
 
@@ -70,11 +77,11 @@ upnp_tv_ctrlpt: ../upnp_tv_ctrlpt.o ../../common/sample_util.o upnp_tv_ctrlpt_ma
 	$(CC)  $(CFLAGS) upnp_tv_ctrlpt.o sample_util.o  upnp_tv_ctrlpt_main.o $(LIBS) -o  $@ 
 	@echo "make $@ finished on `date`"
 
-../../../bin/libupnp.so:
-	cd ../../../; make 
+../../../bin/libupnp.$(LIB_EXT):
+	cd ../../../ && $(MAKE)
 
-../../../bin/debug/libupnp.so:
-	cd ../../../; make DEBUG=1
+../../../bin/debug/libupnp.$(LIB_EXT):
+	cd ../../../ && $(MAKE) DEBUG=1
 
 %.o:	%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<

@@ -45,19 +45,27 @@ LD = ld
 STRIP = strip
 endif
 
+ifeq ($(STATIC),1)
+LIB_EXT = a
+else
+LIB_EXT = so
+endif
+
 ifeq ($(DEBUG),1)
 OPT = -g -O2
 DEBUG_OPTION = DEBUG=1
-LIBS= ../../../bin/debug/$(DIR_PATH)libupnp.so ../../../bin/debug/$(DIR_PATH)libixml.so \
-      ../../../bin/debug/$(DIR_PATH)libthreadutil_dbg.so
+LIBS= ../../../bin/debug/$(DIR_PATH)libupnp.$(LIB_EXT) \
+      ../../../bin/debug/$(DIR_PATH)libixml.$(LIB_EXT) \
+      ../../../bin/debug/$(DIR_PATH)libthreadutil_dbg.$(LIB_EXT)
 else
 DEBUG_OPTION =
 OPT = -O2
-LIBS= ../../../bin/$(DIR_PATH)libupnp.so ../../../bin/$(DIR_PATH)libixml.so \
-      ../../../bin/$(DIR_PATH)libthreadutil.so
+LIBS= ../../../bin/$(DIR_PATH)libupnp.$(LIB_EXT) \
+      ../../../bin/$(DIR_PATH)libixml.$(LIB_EXT) \
+      ../../../bin/$(DIR_PATH)libthreadutil.$(LIB_EXT)
 endif
 
-CFLAGS += -Wall $(OPT)
+CFLAGS += -Wall -pthread $(OPT)
 
 APPS = upnp_tv_device 
 
@@ -70,65 +78,11 @@ upnp_tv_device: ../upnp_tv_device.o ../../common/sample_util.o $(LIBS) upnp_tv_d
 	@echo "make $@ finished on `date`"
 
 
-../../../bin/libupnp.so:
-	cd ../../../;make 
-../../../bin/debug/libupnp.so:
-	cd ../../../;make DEBUG=1
+../../../bin/libupnp.$(LIB_EXT):
+	cd ../../../ && $(MAKE)
 
-
-%.o:	%.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<
-
-clean:
-	rm -f *.o $(APPS)
-
-
-
-INCLUDES= -I../../../inc  -I../../common -I ../
-ifdef TARGET
-DIR_PATH=$(TARGET)/
-CROSS=$(TARGET)-
-
-CC=$(CROSS)gcc
-AR=$(CROSS)ar
-LD=$(CROSS)ld
-STRIP=$(CROSS)strip
-else
-CC = gcc
-AR = ar
-LD = ld
-STRIP = strip
-endif
-
-ifeq ($(DEBUG),1)
-OPT = -g -O2
-DEBUG_OPTION = DEBUG=1
-LIBS= ../../../bin/debug/$(DIR_PATH)libupnp.so ../../../bin/debug/$(DIR_PATH)libixml.so \
-      ../../../bin/debug/$(DIR_PATH)libthreadutil_dbg.so
-else
-DEBUG_OPTION =
-OPT = -O2
-LIBS= ../../../bin/$(DIR_PATH)libupnp.so ../../../bin/$(DIR_PATH)libixml.so \
-      ../../../bin/$(DIR_PATH)libthreadutil.so
-endif
-
-CFLAGS += -Wall $(OPT)
-
-APPS = upnp_tv_device 
-
-all: $(APPS)
-WEB_DIR = ../web
-
-upnp_tv_device: ../upnp_tv_device.o ../../common/sample_util.o $(LIBS) upnp_tv_device_main.o
-	$(CC)  $(CFLAGS) upnp_tv_device.o  sample_util.o upnp_tv_device_main.o $(LIBS) -o  $@ 
-	cp -rf ../web .
-	@echo "make $@ finished on `date`"
-
-
-../../../bin/libupnp.so:
-	cd ../../../;make 
-../../../bin/debug/libupnp.so:
-	cd ../../../;make DEBUG=1
+../../../bin/debug/libupnp.$(LIB_EXT):
+	cd ../../../ && $(MAKE) DEBUG=1
 
 
 %.o:	%.c

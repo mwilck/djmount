@@ -106,7 +106,7 @@ endif
 ifeq ($(STATIC),1)
 all:
 	@set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i $(DBG); done
-	$(AR) rc ../bin/libupnp.a $(OBJECTS)
+	$(AR) rc $(TARGET_OUTPUT) $(OBJECTS)
 else
 all: 
 	@set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i $(DBG); done
