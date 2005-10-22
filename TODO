@@ -18,8 +18,10 @@ Roadmap
    add embedded / uClibc support
 
 0.50
-   add search operations
+   share image files
 
+0.60
+   add search operations
 
 
 To Be Done
@@ -37,16 +39,25 @@ To Be Done
 
 - provide access to DeviceDescription.xml file
 
-- redirect errors to syslog if daemonized ?
-
 - make 'df' returns meaningful values
 
-- automake / autoconf
+- autoconfiscate (automake + autoconf)
+
+
+To Be Decided
+=============
 
 - IPV6 support ?
 
-- share image files
+- iTunes support ?
 
+- FreeBSD version using FUSE and libupnp ports ?
+  ( http://wikitest.freebsd.org/moin.cgi/FuseFilesystem
+    http://sf.net/tracker/index.php?func=detail&aid=1332618&group_id=7189&atid=307189 )
+
+- library version (libupnpav) ?
+
+- redirect errors to syslog if daemonized ?
 
 
 
