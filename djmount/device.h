@@ -86,13 +86,15 @@ Device_GetDescDocItem (const Device* dev, const char* item);
  * @param dev	    the parent device
  * @param servname  the service name
  * @param from      the kind of service name
+ * @param log_error if true, log an error if service can't be found
  *
  *****************************************************************************/
 
 enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL, FROM_SERVICE_ID };
 Service* 
 Device_GetServiceFrom (const Device* dev, 
-		       const char* servname, enum GetFrom from);
+		       const char* servname, enum GetFrom from,
+		       bool log_error);
 
 
 /******************************************************************************

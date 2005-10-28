@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Device
@@ -69,19 +70,28 @@ ServiceFactory (Device* dev,
 		IXML_Element* serviceDesc, 
 		const char* base_url)
 {
-  Service* serv = NULL;
-  /*
-   * Simple implementation, hardcoding the 2 possible classes.
-   */
-  const char* const serviceId = 
-    XMLUtil_GetFirstNodeValue ((IXML_Node*) serviceDesc, "serviceId");
-  if (serviceId && strcmp (serviceId, CONTENT_DIR_SERVICE_ID) == 0) {
-    serv = (Service*) ContentDir_Create (dev, ctrlpt_handle, 
-					 serviceDesc, base_url);
-  } else {
-    serv = Service_Create (dev, ctrlpt_handle, serviceDesc, base_url);
-  }
-  return serv;
+	Service* serv = NULL;
+	/*
+	 * Simple implementation, hardcoding the 2 possible classes of Service.
+	 *
+	 * We test on both ServiceId and ServiceType because I have seen some
+	 * devices with incorrect values in one or the other.
+	 */
+	const char* const serviceId = XMLUtil_GetFirstNodeValue 
+		((IXML_Node*) serviceDesc, "serviceId");
+	const char* const serviceType = XMLUtil_GetFirstNodeValue
+		((IXML_Node*) serviceDesc, "serviceType");
+
+	if ( (serviceId && strcmp (serviceId, CONTENT_DIR_SERVICE_ID) == 0) ||
+	     (serviceType && strcmp (serviceType, 
+				     CONTENT_DIR_SERVICE_TYPE) == 0) ) {
+		serv = (Service*) ContentDir_Create (dev, ctrlpt_handle, 
+						     serviceDesc, base_url);
+	} else {
+		serv = Service_Create (dev, ctrlpt_handle,
+				       serviceDesc, base_url);
+	}
+	return serv;
 }
 
 
@@ -256,45 +266,37 @@ Device_GetDescDocItem (const Device* dev, const char* item)
 /*****************************************************************************
  * Device_GetService
  *****************************************************************************/
-#if 0
-// TBD to be deleted
-Service*
-Device_GetService (const Device* dev, int servnum)
-{
-  ListNode* node;
-  for (node = ListHead ((LinkedList*) &dev->services);
-       node != NULL;
-       node = ListNext ((LinkedList*) &dev->services, node)) {
-    if (servnum == 0) 
-      return node->item; // ---------->
-    servnum--;
-  }
-  Log_Print (LOG_ERROR, "Bad parameter finding Service number");
-  return NULL; // not found
-}
-#endif
 
 Service*
 Device_GetServiceFrom (const Device* dev, 
-		       const char* servname, enum GetFrom from)
+		       const char* servname, enum GetFrom from,
+		       bool log_error)
 {  
-  if (servname) {
-    ListNode* node;
-    for (node = ListHead ((LinkedList*) &dev->services); 
-	 node != NULL;
-	 node = ListNext ((LinkedList*) &dev->services, node)) {
-      const char* s = NULL;
-      switch (from) {
-      case FROM_SID:		s = Service_GetSid (node->item); break;
-      case FROM_CONTROL_URL:	s = Service_GetControlURL (node->item); break;
-      case FROM_EVENT_URL:	s = Service_GetControlURL (node->item); break;
-      case FROM_SERVICE_ID:	s = Service_GetServiceId (node->item); break;
-      }
-      if (s && strcmp (servname, s) == 0)
-	return node->item; // ---------->
-    }
-  }
-  return NULL;
+	if (servname) {
+		ListNode* node;
+		for (node = ListHead ((LinkedList*) &dev->services); 
+		     node != NULL;
+		     node = ListNext ((LinkedList*) &dev->services, node)) {
+			const char* s = NULL;
+			switch (from) {
+			case FROM_SID:		
+				s = Service_GetSid (node->item); break;
+			case FROM_CONTROL_URL:	
+				s = Service_GetControlURL (node->item); break;
+			case FROM_EVENT_URL:	
+				s = Service_GetControlURL (node->item); break;
+			case FROM_SERVICE_ID:	
+				s = Service_GetServiceId (node->item); break;
+			}
+			if (s && strcmp (servname, s) == 0)
+				return node->item; // ---------->
+		}
+	}
+	if (log_error)
+		Log_Printf (LOG_ERROR, 
+			    "Device '%s' : error finding Service '%s'",
+			    NN(dev->friendlyName), NN(servname));
+	return NULL;
 }
 
 

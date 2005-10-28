@@ -1,3 +1,8 @@
+2005-10-28  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/device.c, djmount/device_list.c : additional checks and logs
+	  for devices with incorrect ServiceType or ServiceId values.
+
 2005-10-16  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* version 0.31

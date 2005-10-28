@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * DeviceList : List of UPnP Devices
@@ -148,18 +149,19 @@ GetDeviceListNodeFromId (const char* deviceId)
 static Service*
 GetService (const char* s, enum GetFrom from) 
 {
-  ListNode* node;
-  for (node = ListHead (&GlobalDeviceList);
-       node != 0;
-       node = ListNext (&GlobalDeviceList, node)) {
-    DeviceNode* const devnode = node->item;
-    if (devnode) {
-      Service* const serv = Device_GetServiceFrom (devnode->d, s, from);
-      if (serv) 
-	return serv; // ---------->
-    }
-  }
-  return 0;
+	ListNode* node;
+	for (node = ListHead (&GlobalDeviceList);
+	     node != 0;
+	     node = ListNext (&GlobalDeviceList, node)) {
+		DeviceNode* const devnode = node->item;
+		if (devnode) {
+			Service* const serv = Device_GetServiceFrom 
+				(devnode->d, s, from, false);
+			if (serv) 
+				return serv; // ---------->
+		}
+	}
+	return 0;
 }
 
 
@@ -593,22 +595,25 @@ EventHandlerCallback (Upnp_EventType EventType,
 Service*
 _DeviceList_LockService (const char* deviceName, const char* serviceId)
 {
-  Service* serv = NULL;
+	Service* serv = NULL;
 
-  Log_Printf (LOG_DEBUG, "LockService : device '%s' service '%s'",
-	      NN(deviceName), NN(serviceId));
+	Log_Printf (LOG_DEBUG, "LockService : device '%s' service '%s'",
+		    NN(deviceName), NN(serviceId));
 
-  // coarse implementation : lock the whole device list, not only the service
-  ithread_mutex_lock (&DeviceListMutex);
-  
-  const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
-  if (devnode) 
-    serv = Device_GetServiceFrom (devnode->d, serviceId, FROM_SERVICE_ID);
-  
-  if (serv == NULL)
-    ithread_mutex_unlock (&DeviceListMutex);
+	// coarse implementation : lock the whole device list, 
+	// not only the service
+	ithread_mutex_lock (&DeviceListMutex);
+	
+	const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, 
+								 true);
+	if (devnode) 
+		serv = Device_GetServiceFrom (devnode->d, serviceId, 
+					      FROM_SERVICE_ID, true);
+	
+	if (serv == NULL)
+		ithread_mutex_unlock (&DeviceListMutex);
 
-  return serv;
+	return serv;
 }
 
 
