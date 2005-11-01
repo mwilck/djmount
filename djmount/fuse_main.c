@@ -21,6 +21,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
 
 #include <fuse.h>
 #include <stdio.h>
@@ -33,7 +36,7 @@
 #ifdef HAVE_SETXATTR
 #   include <sys/xattr.h>
 #endif
-#include <stdarg.h>	/* missing from "talloc.h" */
+#include <stdarg.h>	
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -584,13 +587,15 @@ stdout_print (Log_Level level, const char* msg)
 #endif
 
 static void
-usage (const char* progname)
+usage (FILE* stream, const char* progname)
 {
   fprintf 
-    (stderr, 
+    (stdout,
      "usage: %s [options] mountpoint\n"
+     "\n"
      "Options:\n"
-     "    -h                     print help\n"
+     "    -h or --help           print this help, then exit\n"
+     "    --version              print version number, then exit\n"
      "    -o [options]           mount options (see below)\n"
      "    -d[levels]             enable debug output (implies -f)\n"
      "    -f                     foreground operation (default: daemonized)\n"
@@ -606,9 +611,40 @@ usage (const char* progname)
      "    fuse : activates FUSE traces\n"
      "    leak, leakfull : enable talloc leak reports at exit\n"
      "'-d' alone defaults to '" DEBUG_DEFAULT_LEVELS "' i.e. all traces.\n"
-     "\n",
+     "\n"
+     "Report bugs to <" PACKAGE_BUGREPORT ">.\n",
      progname);
-  exit (1);
+  exit (0); // ---------->
+}
+
+
+static void
+bad_usage (const char* progname, ...)
+{
+	fprintf (stderr, "%s: ", progname);
+	va_list ap;
+	va_start (ap, progname);
+	const char* const format = va_arg (ap, const char*);
+	vfprintf (stderr, format, ap);
+	va_end (ap);
+	fprintf (stderr, "\nTry '%s --help' for more information.\n",
+		 progname);
+	exit (1); // ---------->
+}
+
+
+static void
+version (FILE* stream, const char* progname)
+{
+	fprintf (stream, 
+		 "%s (" PACKAGE ") " VERSION "\n", progname);
+	fputs ("Copyright (C) 2005 Rémi Turboult\n", stream);
+	fputs ("\n\
+This is free software.  You may redistribute copies of it under the terms of\n\
+the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n\
+There is NO WARRANTY, to the extent permitted by law.\n\
+\n", stream);
+	exit (0); // ---------->
 }
 
 
@@ -640,15 +676,21 @@ main (int argc, char *argv[])
 	char* fuse_argv[32] = { argv[0] };
 	int fuse_argc = 1;
 	
-#define FUSE_ARG(OPT)						\
-	if (fuse_argc >= 31) usage (argv[0]) ;			\
-	Log_Printf (LOG_DEBUG, "  Fuse option = %s", OPT);	\
+#define FUSE_ARG(OPT)							\
+	if (fuse_argc >= 31) bad_usage (argv[0], "too many args");	\
+	Log_Printf (LOG_DEBUG, "  Fuse option = %s", OPT);		\
 	fuse_argv[fuse_argc++] = OPT
 
 	int opt = 1;
 	char* o;
 	while ((o = argv[opt++])) {
-		if (strcmp(o, "-f") == 0) {
+		if (strcmp (o, "-h") == 0 || strcmp (o, "--help") == 0) {
+			usage (stdout, argv[0]); // ---------->
+			
+		} else if (strcmp (o, "--version") == 0) {
+			version (stdout, argv[0]); // ---------->
+			
+		} else if (strcmp(o, "-f") == 0) {
 			background = false;
 
 		} else if (*o != '-') { 
@@ -669,10 +711,9 @@ main (int argc, char *argv[])
 						(talloc_autofree_context(), 
 						 s+10);
 				} else {
-					fprintf (stderr, 
-						 "%s : unknown mount option "
-						 "'%s'\n\n", argv[0], s);
-					usage (argv[0]); // ---------->
+					bad_usage (argv[0], 
+						   "unknown mount option '%s'",
+						   s); // ---------->
 				}
 			}
 			free (options_copy);
@@ -713,20 +754,17 @@ main (int argc, char *argv[])
 							 "/dev/stdout");
 #endif
 				} else {
-					fprintf (stderr, 
-						 "%s : unknown debug level "
-						 "'%s'\n\n", argv[0], s);
-					usage (argv[0]); // ---------->
+					bad_usage (argv[0],
+						   "unknown debug level '%s'",
+						   s); // ---------->
 				}
 			}
 			free (levels_copy);
 			Log_Printf (LOG_DEBUG, "  Debug options = %s", levels);
+			
 		} else {
-			if (strcmp (o, "-h") != 0)
-				fprintf (stderr, 
-					 "%s : unknown option '%s'\n\n",
-					 argv[0], o);
-			usage (argv[0]); // ---------->
+			bad_usage (argv[0], "unrecognized option '%s'", 
+				   o); // ---------->
 		}
 	}
 	

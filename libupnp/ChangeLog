@@ -1,3 +1,9 @@
+2005-11-01  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* autoconfiscate library : replace all makefiles by Makefile.am
+	  for automake support, + preliminary autoconf support
+	  (generated config.h not yet used in source files)
+
 2005-10-18  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* upnp/src/makefile: fix location of DEBUG STATIC libupnp library

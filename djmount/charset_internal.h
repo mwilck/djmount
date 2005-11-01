@@ -17,8 +17,8 @@
  * (at your option) any later version.
  */
 
-#ifndef CHARSET_H
-#define CHARSET_H
+#ifndef CHARSET_INTERNAL_H_INCLUDED
+#define CHARSET_INTERNAL_H_INCLUDED
 
 #include <stddef.h>
 

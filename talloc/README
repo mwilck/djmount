@@ -5,11 +5,12 @@ talloc library
 http://talloc.samba.org/
 
 
-copied 07-June-2005 from Samba4 sources :
+copied 17-October-2005 from Samba4 sources :
 
 	rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
 
-According to freshmeat, this is talloc 1.0
-( http://freshmeat.net/projects/talloc/?branch_id=55792&release_id=194518 )
+
+See also freshmeat release notes for talloc 1.0 :
+	http://freshmeat.net/projects/talloc/?branch_id=55792&release_id=194518 
 
 

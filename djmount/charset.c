@@ -21,6 +21,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include "charset.h"
 
 #include "log.h"
@@ -35,9 +39,12 @@
 #include <inttypes.h>
 #include "minmax.h"
 
-#include <locale.h>
-#include <langinfo.h>
-
+#ifdef HAVE_LOCALE_H
+#	include <locale.h>
+#endif
+#ifdef HAVE_LANGINFO_H
+#	include <langinfo.h>
+#endif
 
 #ifdef HAVE_ICONV
 #	include <iconv.h>
@@ -162,12 +169,16 @@ Charset_Initialize (const char* charset)
 		}
 	}
 	// c) else, use locale
+#if defined(HAVE_LANGINFO_CODESET) && defined(HAVE_SETLOCALE)
 	if (charset == NULL || *charset == 0) {
 		setlocale (LC_ALL, "");
 		strncpy (buffer, nl_langinfo (CODESET), sizeof(buffer)-1);
 		buffer[sizeof(buffer)-1] = '\0';
 		charset = buffer;
 	}
+#else
+#	warning "TBD no setlocale or nl_langinfo(CODESET) implemented"
+#endif
 	// d) else, UTF-8
 	if (charset == NULL || *charset == 0) {
 		charset = "UTF-8";
@@ -234,8 +245,8 @@ convert (Converter* const cvt,
 	 char** const outbuf, size_t* const outbytesleft)
 {
 #ifdef HAVE_ICONV
-	if (iconv (cvt->cd, (char**) inbuf, inbytesleft, outbuf, outbytesleft) 
-	    != (size_t) -1) 
+	if (iconv (cvt->cd, (ICONV_CONST char**) inbuf, inbytesleft, 
+		   outbuf, outbytesleft) != (size_t) -1) 
 		return 0; // ---------->
 	if (errno != EILSEQ && errno != EINVAL) 
 		return errno; // ---------->
@@ -258,7 +269,7 @@ convert (Converter* const cvt,
 		const char ERROR_CHAR = '?';
 		const char* ibuf = &ERROR_CHAR;
 		size_t ileft = 1;
-		if (iconv (cvt->cd, (char**) &ibuf, &ileft, 
+		if (iconv (cvt->cd, (ICONV_CONST char**) &ibuf, &ileft, 
 			   outbuf, outbytesleft) == (size_t) -1 || ileft > 0) {
 			if (errno == E2BIG || *outbytesleft < 1)
 				return E2BIG; // ---------->

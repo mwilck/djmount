@@ -1,0 +1,7 @@
+Makefile.in
+Makefile
+*.m4
+config.aux
+configure
+*.cache
+config.*

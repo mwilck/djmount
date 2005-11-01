@@ -1,0 +1,11 @@
+Makefile.in
+Makefile
+*.m4
+config.aux
+configure
+configure.scan
+*.cache
+config.*
+unused_config.*
+libtool
+*.pc

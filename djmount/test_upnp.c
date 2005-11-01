@@ -23,6 +23,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
  
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
 
 #include "device_list.h"
 #include "log.h"
@@ -41,11 +44,20 @@
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
 
-#ifdef HAVE_READLINE
-#    include <readline/readline.h>
-#    include <readline/history.h>
+#ifdef HAVE_LIBREADLINE
+#	if defined(HAVE_READLINE_READLINE_H)
+#    		include <readline/readline.h>
+#	elif defined(HAVE_READLINE_H)
+#		include <readline.h>
+#	endif
 #endif
-
+#ifdef HAVE_READLINE_HISTORY
+#	if defined(HAVE_READLINE_HISTORY_H)
+#		include <readline/history.h>
+#	elif defined(HAVE_HISTORY_H)
+#    		include <history.h>
+#	endif
+#endif 
 
 // UPnP search target
 #define UPNP_TARGET	"ssdp:all"
@@ -333,14 +345,16 @@ process_command (const char* cmdline)
 static void*
 CommandLoop (void* arg)
 {
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
   rl_inhibit_completion = true;
   while (1) {
     char* line = readline (">> ");
     char* s = String_StripSpaces (talloc_autofree_context(), line);
     if (s) {
       if (*s) {
+#ifdef HAVE_READLINE_HISTORY
 	add_history (s); // Add to history only non blank lines
+#endif
 	process_command (s);
       }
       talloc_free (s);
@@ -396,7 +410,7 @@ main (int argc, char** argv)
   sigaddset( &sigs_to_catch, SIGINT );
   sigwait( &sigs_to_catch, &sig );
 
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
   // Manually reset readline (we have overridden its SIGINT handler)
   rl_cleanup_after_signal();
 #endif
