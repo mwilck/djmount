@@ -15,12 +15,12 @@ AC_CONFIG_AUX_DIR(config.aux)
 AC_CONFIG_MACRO_DIR(m4)
 AC_CONFIG_SRCDIR(upnp/inc/upnp.h)
 
-AM_INIT_AUTOMAKE([-Wall std-options foreign])
+AM_INIT_AUTOMAKE([1.9 -Wall foreign subdir-objects])
 
 # for the time being, libupnp has its own "config.h" file (see ./upnp/inc)
 AC_CONFIG_HEADERS(unused_config.h)
 
-AC_REVISION($Revision$)
+AC_REVISION([$Revision$])
 
 
 #
@@ -58,6 +58,7 @@ AM_CONDITIONAL(ENABLE_TOOLS, test x"$enable_tools" = xyes)
 # Checks for programs
 #
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
