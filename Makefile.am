@@ -2,30 +2,39 @@
 #
 # Top-level Makefile.am for djmount
 #
-# (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+# Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
 #
 
 ACLOCAL_AMFLAGS = -I m4 -I gl/m4 -I libupnp/m4
 
-SUBDIRS = talloc libupnp gl djmount
+CLEANFILES	= IUpnpErrFile.txt IUpnpInfoFile.txt
+
+SUBDIRS 	= talloc gl libupnp djmount
 
 
-clean-local:
-	-rm -f IUpnpErrFile.txt IUpnpInfoFile.txt
+# 
+# Note : 'libupnp' has a complete autoconf/automake system, which also handles
+# an 'install' target. But we don't want to install libupnp, and we don't want
+# to modify its build system either, so we just forward all 'install*' targets
+# to './djmount' only.
+#
+AUTOMAKE_OPTIONS = -Wno-override
 
+# note: do not try to declare all targets together (install install-data ...)
+# or automake will not detect the override.
+install:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+install-data:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+install-exec:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+install-info:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+installdirs:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+uninstall:
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
+uninstall-info :
+	$(MAKE) $(AM_MAKEFLAGS) -C djmount $@
 
 
