@@ -2,7 +2,7 @@
 #
 # "Makefile.am" for "libupnp/upnp"
 #
-# (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+# Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
 #
 
 SUBDIRS 		= doc
@@ -136,8 +136,6 @@ endif
 EXTRA_DIST 		= LICENSE
 
 
-clean-local:
-	@if [ -d bin ]; then rm -rf bin; fi
 
 
 
