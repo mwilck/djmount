@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef XML_UTIL_H
-#define XML_UTIL_H
+#ifndef XML_UTIL_H_INCLUDED
+#define XML_UTIL_H_INCLUDED
 
 #include <inttypes.h>
 #include <upnp/ixml.h>
@@ -110,6 +110,7 @@ XMLUtil_GetNodeString (void* talloc_context, IN IXML_Node* node);
 
 
 
-#endif // XML_UTIL_H
+#endif // XML_UTIL_H_INCLUDED
+
 
 

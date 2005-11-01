@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef UPNP_UTIL_H
-#define UPNP_UTIL_H
+#ifndef UPNP_UTIL_H_INCLUDED
+#define UPNP_UTIL_H_INCLUDED
 
 #include "log.h" // import Log_Level
 
@@ -100,6 +100,7 @@ UpnpUtil_ResolveURL (void* talloc_context,
 
 
 
-#endif // UPNP_UTIL_H
+#endif // UPNP_UTIL_H_INCLUDED
+
 
 
