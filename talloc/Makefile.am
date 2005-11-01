@@ -6,7 +6,8 @@
 # (see talloc/Makefile.in) which does not support all automake features
 # e.g. "make dist"
 #
-
+# Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+#
 
 
 noinst_LIBRARIES	= libtalloc.a

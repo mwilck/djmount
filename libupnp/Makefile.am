@@ -2,10 +2,12 @@
 #
 # Top-level "Makefile.am" for libupnp
 #
+# Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+#
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = ixml threadutil upnp
+SUBDIRS 	= ixml threadutil upnp
 
 
 EXTRA_DIST	= libupnp.pc.in LICENSE
