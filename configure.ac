@@ -19,11 +19,12 @@ AC_CONFIG_MACRO_DIR(gl/m4)
 
 AC_CONFIG_SRCDIR(djmount/djfs.c)
 
-AM_INIT_AUTOMAKE([-Wall std-options gnu])
+AM_INIT_AUTOMAKE([1.9 -Wall std-options gnu])
 
 AC_CONFIG_HEADERS(config.h)
 
-AC_REVISION($Revision$)
+AC_COPYRIGHT([Copyright (C) 2005 Rémi Turboult])
+AC_REVISION([$Revision$])
 
 
 #
