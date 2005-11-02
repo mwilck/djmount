@@ -99,9 +99,9 @@ gl_INIT
 #
 # FUSE : checks for library and flags
 #
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 PKG_CHECK_MODULES(FUSE, [fuse >= 2.2])
-FUSE_CFLAGS="$FUSE_CFLAGS -D_REENTRANT -DFUSE_USE_VERSION=22"
+FUSE_CFLAGS="$FUSE_CFLAGS -DFUSE_USE_VERSION=22"
 
 
 #
