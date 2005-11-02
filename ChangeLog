@@ -2,6 +2,8 @@
 
 	* autoconfiscate (autoconf + automake support) all packages
 
+	* gl/ : new directory to store gnulib modules
+
 	* djmount/fuse_main.c: add '--version' and '--help' options
 	  for GNU standard compatibility
 
