@@ -52,7 +52,7 @@ To Be Decided
 - iTunes support ?
 
 - FreeBSD version using FUSE and libupnp ports ?
-  ( http://wikitest.freebsd.org/moin.cgi/FuseFilesystem
+  ( http://fuse4bsd.creo.hu/
     http://sf.net/tracker/index.php?func=detail&aid=1332618&group_id=7189&atid=307189 )
 
 - library version (libupnpav) ?
