@@ -12,6 +12,7 @@ dnl `libeditline' and `libreadline'. Sometimes we need to link a
 dnl termcap library for readline to work, this macro tests these cases
 dnl too by trying to link with `libtermcap', `libcurses' or
 dnl `libncurses' before giving up.
+dnl This macro sets the READLINE_LIBS variable accordingly, and AC_SUBST it.
 dnl
 dnl Here is an example of how to use the information provided by this
 dnl macro to perform the necessary includes or declarations in a C
@@ -45,7 +46,10 @@ dnl   #endif /* HAVE_READLINE_HISTORY */
 dnl
 dnl @category InstalledPackages
 dnl @author Ville Laurikari <vl@iki.fi>
-dnl @version 2002-04-04
+dnl @version 2002-04-04-patched:
+dnl	patch 2005-11-06 by R. Turboult : 
+dnl		1) output READLINE_LIBS instead of LIBS
+dnl		2) correct behaviour when cache is used (LIBS was not set ...)
 dnl @license AllPermissive
 
 AC_DEFUN([VL_LIB_READLINE], [
@@ -71,11 +75,17 @@ AC_DEFUN([VL_LIB_READLINE], [
     done
     if test -z "$vl_cv_lib_readline"; then
       vl_cv_lib_readline="no"
-      LIBS="$ORIG_LIBS"
     fi
+    # patch R. Turboult 2005-11-06
+    LIBS="$ORIG_LIBS"
   ])
 
+
   if test "$vl_cv_lib_readline" != "no"; then
+
+    # patch R. Turboult 2005-11-06
+    READLINE_LIBS=$vl_cv_lib_readline
+
     AC_DEFINE(HAVE_LIBREADLINE, 1,
               [Define if you have a readline compatible library])
     AC_CHECK_HEADERS(readline.h readline/readline.h)
@@ -90,4 +100,8 @@ AC_DEFUN([VL_LIB_READLINE], [
       AC_CHECK_HEADERS(history.h readline/history.h)
     fi
   fi
+
+  # patch R. Turboult 2005-11-06
+  AC_SUBST(READLINE_LIBS)
+
 ])dnl

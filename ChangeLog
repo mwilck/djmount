@@ -1,5 +1,8 @@
 2005-11-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* m4/vl_lib_readline.m4: correct macro behaviour when configure cache
+	  is used
+
 	* djmount/talloc_util.h: new file (talloc.h wrapper + utilities)
 
 2005-11-01  Rémi Turboult  <r3mi@users.sourceforge.net>
