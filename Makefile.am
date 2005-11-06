@@ -9,7 +9,11 @@ ACLOCAL_AMFLAGS = -I m4 -I gl/m4 -I libupnp/m4
 
 CLEANFILES	= IUpnpErrFile.txt IUpnpInfoFile.txt
 
-SUBDIRS 	= talloc gl libupnp djmount
+SUBDIRS 	= gl libupnp 
+if INTERNAL_TALLOC
+    SUBDIRS 	+= talloc 
+endif
+SUBDIRS 	+= djmount
 
 
 # 

@@ -29,14 +29,13 @@ UPNP_TMPINC	= @abs_builddir@/_upnp_temp_install
 
 AM_CFLAGS	= $(PTHREAD_CFLAGS) $(FUSE_CFLAGS)
 
-AM_CPPFLAGS	= -I$(top_builddir)/talloc -I$(UPNP_TMPINC) -I$(top_srcdir)/gl
+AM_CPPFLAGS	= -I$(UPNP_TMPINC) -I$(top_srcdir)/gl $(TALLOC_CPPFLAGS)
 
-AM_LDFLAGS	= $(PTHREAD_LIBS) \
-		  -L$(top_builddir)/talloc \
+AM_LDFLAGS	= $(PTHREAD_LIBS) $(TALLOC_LDFLAGS) \
 		  -L$(UPNP_BUILDDIR)/ixml -L$(UPNP_BUILDDIR)/threadutil \
 		  -L$(UPNP_BUILDDIR)/upnp
 
-LDADD		= -ltalloc $(LIBICONV) $(FUSE_LIBS) \
+LDADD		= $(TALLOC_LIBS) $(LIBICONV) $(FUSE_LIBS) \
 		  -lupnp -lthreadutil -lixml
 
 

@@ -1,5 +1,9 @@
 2005-11-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* configure.ac: add '--with-external-talloc' option
+
+	* m4/rt_lib_talloc.m4: new autoconf macro to locate external talloc
+
 	* m4/vl_lib_readline.m4: correct macro behaviour when configure cache
 	  is used
 
