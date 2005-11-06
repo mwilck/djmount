@@ -20,17 +20,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include "object_p.h"
 
 #include <string.h>
-#include <stdarg.h>	/* missing from "talloc.h" */
 #include <stdio.h>
 #include <stdbool.h>
 #include <upnp/ithread.h>
 
 #include "log.h"
-
-#include <talloc.h>
+#include "talloc_util.h"
 
 
 

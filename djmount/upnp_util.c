@@ -23,13 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include "upnp_util.h"
 #include "log.h"
 #include "xml_util.h"
-
-#include <stdarg.h>	/* missing from "talloc.h" */
-
-#include <talloc.h>
+#include "talloc_util.h"
 
 
 

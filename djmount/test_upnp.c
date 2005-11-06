@@ -33,8 +33,7 @@
 #include "djfs.h"
 #include "log.h"
 #include "charset.h"
-
-#include <talloc.h>
+#include "talloc_util.h"
 
 #include <string.h>
 #include <signal.h>

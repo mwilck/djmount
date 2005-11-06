@@ -34,14 +34,14 @@
 #include <errno.h>
 #include <sys/statfs.h>
 #ifdef HAVE_SETXATTR
-#   include <sys/xattr.h>
+#	include <sys/xattr.h>
 #endif
 #include <stdarg.h>	
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <talloc.h>
 
+#include "talloc_util.h"
 #include "device_list.h"
 #include "log.h"
 #include "upnp_util.h"

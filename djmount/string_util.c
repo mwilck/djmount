@@ -25,7 +25,6 @@
 #endif
 
 #include "string_util.h"
-#include <talloc.h>
 #include <ctype.h>
 
 

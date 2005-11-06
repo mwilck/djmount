@@ -28,11 +28,7 @@
 #include "charset.h"
 
 #include "log.h"
-
-#include <stdio.h>	// Needed to compile "talloc.h"
-#include <stdarg.h>	// Needed to compile "talloc.h"
-#include <stdlib.h>	// Needed to compile "talloc.h"
-#include "talloc.h"
+#include "talloc_util.h"
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>

@@ -24,14 +24,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
+
 #include "device.h"
 #include "service.h"
 #include "upnp_util.h"
 #include "xml_util.h"
 #include "log.h"
+#include "talloc_util.h"
 
 #include <time.h>
-#include <talloc.h>
 #include <stdbool.h>
 #include <upnp/upnp.h>
 #include <upnp/LinkedList.h>

@@ -24,14 +24,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
  
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
 
 #include "charset.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include "talloc.h"
 #include <ctype.h>
+#include "talloc_util.h"
 
 
 /*****************************************************************************

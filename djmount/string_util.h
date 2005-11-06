@@ -25,17 +25,12 @@
 #define STRING_UTIL_H_INCLUDED
 
 #include <string.h>
-#include <stdio.h>	// Needed to compile "talloc.h"
-#include <stdarg.h>	// Needed to compile "talloc.h"
-#include <stdlib.h>	// Needed to compile "talloc.h"
 #include <inttypes.h>
+#include "talloc_util.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <talloc.h>
-
 
 #define NUL	'\0'
 

@@ -23,15 +23,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>
+#endif
 
 #include "xml_util.h"
 #include "log.h"
+#include "talloc_util.h"
 
 #include <upnp/ixml.h>
-#include <stdarg.h>	/* missing from "talloc.h" */
 #include <stdlib.h>	
-
-#include <talloc.h>
 
 
 

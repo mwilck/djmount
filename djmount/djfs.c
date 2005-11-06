@@ -27,13 +27,12 @@
 
 #include "djfs.h"
 
-#include <stdarg.h>	/* missing from "talloc.h" */
 #include <stdio.h>
 #include <errno.h>
 #include <dirent.h>
 #include <time.h>
-#include <talloc.h>
 
+#include "talloc_util.h"
 #include "log.h"
 #include "content_dir.h"
 #include "device_list.h"
