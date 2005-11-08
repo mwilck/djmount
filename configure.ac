@@ -120,18 +120,19 @@ if test x"$with_external_talloc" = xyes; then
 	AC_MSG_RESULT([yes])
 	# Find the library. This macro handles the --with-talloc-prefix arg.
 	RT_LIB_TALLOC([],[AC_MSG_ERROR([
-** Can't find external talloc library **
-Try to configure again --without-external-talloc (this is the default)
-to use the internal bundled library, or try --with-talloc-prefix=DIR 
-if the library is installed in non-standard location DIR/include and DIR/lib.
+** Can't find external talloc library 
+** Try to configure again --without-external-talloc (this is the default)
+** to use the internal bundled library. Or try --with-talloc-prefix=DIR 
+** if the library is installed in non-standard location DIR/include and 
+** DIR/lib ; alternatively, you can set the TALLOC_CFLAGS and/or TALLOC_LIBS 
+** environment variables before calling 'configure'.
 	])])
 else
 	AC_MSG_RESULT([no (bundled library)])
 	# Configure bundled talloc
 	sinclude(talloc/talloc/config.m4)
-	AC_SUBST(TALLOC_CPPFLAGS, ['-I$(top_srcdir)/talloc/talloc'])
-	AC_SUBST(TALLOC_LDFLAGS, ['-L$(top_builddir)/talloc'])
-	AC_SUBST(TALLOC_LIBS, [-ltalloc])
+	AC_SUBST(TALLOC_CFLAGS, '-I$(top_srcdir)/talloc/talloc')
+	AC_SUBST(TALLOC_LIBS, '-L$(top_builddir)/talloc -ltalloc')
 fi
 AM_CONDITIONAL(INTERNAL_TALLOC, test x"$with_external_talloc" != xyes)
 
