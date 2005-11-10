@@ -53,6 +53,8 @@ AC_MSG_RESULT($TALLOC_CFLAGS)
 AC_MSG_CHECKING([TALLOC_LIBS])
 if test x"$with_talloc_prefix" != x ; then
 	TALLOC_LIBS="$TALLOC_LIBS -L$with_talloc_prefix/lib -ltalloc"
+elif test -z "$TALLOC_LIBS"; then
+	TALLOC_LIBS="-ltalloc"
 fi
 AC_MSG_RESULT($TALLOC_LIBS)
 
