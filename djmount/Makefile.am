@@ -19,30 +19,30 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+AM_CPPFLAGS		= -I$(top_srcdir)/gl
 
-UPNP_BUILDDIR	= $(top_builddir)/libupnp
+if INTERNAL_LIBUPNP
 
-# Local install of UPnP headers, to find <upnp/*.h> even when 
-# they are not installed
-UPNP_TMPINC	= @abs_builddir@/_upnp_temp_install
+    # Local install of UPnP headers, to find <upnp/*.h> even when
+    # they are not installed
+    UPNP_TMPINC		= @abs_builddir@/_upnp_temp_install
+
+    LIBUPNP_CFLAGS	+= -I$(UPNP_TMPINC)
+
+endif
+
+AM_CFLAGS		= $(PTHREAD_CFLAGS) $(TALLOC_CFLAGS) $(FUSE_CFLAGS) \
+		  	  $(LIBUPNP_CFLAGS)
+
+LDADD			= $(PTHREAD_LIBS) $(TALLOC_LIBS) $(FUSE_LIBS) \
+			  $(LIBUPNP_LIBS) $(LIBICONV)
 
 
-AM_CFLAGS	= $(PTHREAD_CFLAGS) $(TALLOC_CFLAGS) $(FUSE_CFLAGS)
+bin_PROGRAMS 		= djmount
 
-AM_CPPFLAGS	= -I$(UPNP_TMPINC) -I$(top_srcdir)/gl
-
-AM_LDFLAGS	= -L$(UPNP_BUILDDIR)/ixml -L$(UPNP_BUILDDIR)/threadutil \
-		  -L$(UPNP_BUILDDIR)/upnp
-
-LDADD		= $(PTHREAD_LIBS) $(TALLOC_LIBS) $(LIBICONV) $(FUSE_LIBS) \
-		  -lupnp -lthreadutil -lixml
-
-
-bin_PROGRAMS 	= djmount
-
-check_PROGRAMS 	= test_charset test_upnp 
+check_PROGRAMS 		= test_charset test_upnp 
 # TBD auto run test ?
-# TESTS		= test_charset
+# TESTS			= test_charset
 
 
 COMMON_SRCS 		= log.c object.c service.c \
@@ -69,25 +69,31 @@ test_upnp_LDADD		= $(LDADD) $(READLINE_LIBS)
 test_charset_SOURCES	= $(COMMON_SRCS) test_charset.c
 
 
-#
-# Local install of UPnP headers, to find <upnp/*.h> even when 
-# they are not installed
-#
-UPNP_HDRS	= $(UPNP_TMPINC)/upnp/upnp.h \
-		  $(UPNP_TMPINC)/upnp/ithread.h \
-		  $(UPNP_TMPINC)/upnp/ixml.h 
+CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt
 
-BUILT_SOURCES 	= $(UPNP_HDRS)
 
-$(UPNP_HDRS) :
+if INTERNAL_LIBUPNP
+
+    #
+    # Local install of UPnP headers, to find <upnp/*.h> even when
+    # they are not installed
+    #
+    UPNP_TMPHEADERS	= $(UPNP_TMPINC)/upnp/upnp.h \
+			  $(UPNP_TMPINC)/upnp/ithread.h \
+			  $(UPNP_TMPINC)/upnp/ixml.h
+
+    BUILT_SOURCES	= $(UPNP_TMPHEADERS)
+
+$(UPNP_TMPHEADERS) :
 	-rm -fr $(UPNP_TMPINC)
-	$(MAKE) -C $(UPNP_BUILDDIR) install-data includedir=$(UPNP_TMPINC)
+	$(MAKE) -C $(top_builddir)/libupnp install-data \
+		includedir=$(UPNP_TMPINC)
 
 
 clean-local:
 	-rm -fr $(UPNP_TMPINC)
-	-rm -f IUpnpInfoFile.txt IUpnpErrFile.txt
 
+endif
 
 
 
