@@ -84,7 +84,7 @@ AC_DEFUN([VL_LIB_READLINE], [
   if test "$vl_cv_lib_readline" != "no"; then
 
     # patch R. Turboult 2005-11-06
-    READLINE_LIBS=$vl_cv_lib_readline
+    READLINE_LIBS="$vl_cv_lib_readline"
 
     AC_DEFINE(HAVE_LIBREADLINE, 1,
               [Define if you have a readline compatible library])
@@ -92,7 +92,11 @@ AC_DEFUN([VL_LIB_READLINE], [
     AC_CACHE_CHECK([whether readline supports history],
                    vl_cv_lib_readline_history, [
       vl_cv_lib_readline_history="no"
+      # patch R. Turboult 2005-11-06
+      ORIG_LIBS="$LIBS"
+      LIBS="$ORIG_LIBS $READLINE_LIBS"
       AC_TRY_LINK_FUNC(add_history, vl_cv_lib_readline_history="yes")
+      LIBS="$ORIG_LIBS"
     ])
     if test "$vl_cv_lib_readline_history" = "yes"; then
       AC_DEFINE(HAVE_READLINE_HISTORY, 1,
