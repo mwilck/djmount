@@ -69,8 +69,8 @@ Note: the FUSE  kernel module shall be loaded before running djmount
 "fusermount: fuse device not found, try 'modprobe fuse' first").
 
 
-Installation
-------------
+Building and Installation
+-------------------------
 
 djmount has been tested on the following configurations:
 
@@ -78,17 +78,77 @@ djmount has been tested on the following configurations:
   FUSE 2.2.1, 2.3.0 or 2.4.0
 
 
+A) Basic build instruction:
+
 1) Prerequisites for compilation:
 
-* the FUSE package : http://fuse.sourceforge.net/ 
+   * the FUSE package : http://fuse.sourceforge.net/ 
+
+2) Use 'configure' and 'make' in the top directory to compile.
+   Example :
+	./configure
+	make
+
+3) if you want to install djmount on your system, run :
+	make install
+
+   or to strip the resulting executable :
+	make install-strip
 
 
-2) Use 'make' in this top directory to compile.
+B) Advanced build instruction:
 
-3) as root : 'modprobe fuse' to load the FUSE  kernel module
+"configure" as a few options to customise djmount: see --help option.
+In particular,
+	
+  --disable-debug             extra debugging code [default=enabled]
+  --with-fuse-prefix=DIR      search for fuse in DIR/include and DIR/lib
+  --with-libiconv-prefix=DIR  search for libiconv in DIR/include and DIR/lib
+  --with-external-talloc      use external talloc library (not recommended)
+                              [default = use internal bundled library]
+  --with-talloc-prefix=DIR    search for talloc in DIR/include and DIR/lib
+  --with-external-libupnp     use external libupnp library (not recommended)
+                              [default = use internal bundled library]
+  --with-libupnp-prefix=DIR   search for libupnp in DIR/include and DIR/lib
 
-4) To run, simply use the 'djmount/djmount' executable
-   (there is no 'make install' yet).
+configure with also checks the following environment variables in
+case there is a custom installation:
+	FUSE_CFLAGS, FUSE_LIBS, 
+	TALLOC_CFLAGS, TALLOC_LIBS, 
+	LIBUPNP_CFLAGS, LIBUPNP_LIBS.
+
+Examples:
+	./configure --with-external-talloc --with-talloc-prefix=/opt/local
+	TALLOC_CFLAGS='-I/opt/include' ./configure --with-external-talloc
+
+Note: djmount requires the patches included in the bundled libupnp library.
+However, this library can be built and configured separately:
+
+	cd libupnp
+	./configure --enable-debug
+	make
+	make install
+	cd ..
+	./configure --with-external-libupnp 
+	make
+
+
+Usage 
+-----
+
+1) as root : 'modprobe fuse' to load the FUSE kernel module
+
+2) To run, simply use the 'djmount' executable
+   (no extra file is needed).
+   The FUSE mountpoint is a required argument (see Example above).
+
+   djmount supports the usual --help option. Another useful option is "-o"
+   which can set mount options, in particular "-o iocharset=<charset>" 
+   for proper encoding of filenames, in case djmount has not autodetected 
+   your settings (which should be the default).
+   Example :
+
+	djmount -o iocharset=iso-8859-15 /mnt/upnp
 
 
 Known Compatible Devices
@@ -111,7 +171,7 @@ Devices / Media Servers :
   requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
 
 * GeeXboX uShare on Linux ( http://ushare.geexbox.org/ )
-  version 0.9.0
+  version 0.9.1
 
 
 This page describes how to share A/V content with some of the above servers :
@@ -132,10 +192,11 @@ This project uses the following main libraries :
 
 * the Linux SDK for UPnP Devices (libupnp), initially created by Intel:
   http://upnp.sourceforge.net/ .
-  The "libupnp" directory contains a copy with some mandatory patches.
+  "djmount" is bundled with a copy of this library (in the "libupnp" 
+  directory), with some mandatory patches.
 
 * the "talloc" library : http://talloc.samba.org/
-  A local copy is included in the "talloc" directory for convenience.
+  "djmount" is bundled with a copy of this library, for convenience.
 
 * for testing only (test_upnp executable) : "readline" library (optionnal)
 

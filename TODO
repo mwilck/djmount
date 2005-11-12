@@ -14,8 +14,9 @@ Roadmap
 0.30 (done)
    i18n / unicode file names handling
 
-0.40 (in progress)
-   add embedded / uClibc support
+0.40 (done)
+   add embedded / uClibc support 
+   (with automake + autoconf support)
 
 0.50
    share image files
@@ -40,8 +41,6 @@ To Be Done
 - provide access to DeviceDescription.xml file
 
 - make 'df' returns meaningful values
-
-- autoconfiscate (automake + autoconf)
 
 
 To Be Decided

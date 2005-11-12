@@ -1,4 +1,16 @@
 
+What is new in 0.40
+
+* new build system : standard autoconf + automake support for all packages,
+  including bundled libupnp.
+
+* tested ok with GeeXboX uShare ( http://ushare.geexbox.org/ )
+
+* fix: additional checks and logs for devices with incorrect ServiceType 
+  or ServiceId values
+
+============================================================================
+
 What is new in 0.31
 
 * fix small memory leak when reading '/devices' file

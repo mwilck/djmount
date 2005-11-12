@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.392, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.40, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
@@ -180,6 +180,13 @@ AM_LANGINFO_CODESET
 # -------------
 #
 ACX_PTHREAD([],[AC_MSG_ERROR([POSIX threads are required to build this program])])
+
+# We are only building threads programs so we add the pthread flags directly
+# to the default compilation variables. This will also allow the tests below
+# (fuse, libupnp, ...) to pick these flags.
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+CC="$PTHREAD_CC"
 
 
 #

@@ -1,7 +1,11 @@
+2005-11-12  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* version 0.40
+
 2005-11-11  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* configure.ac: add '--with-external-libupnp' and '--with-fuse-prefix'
-	  options
+	  options (suggested by Benjamin Zores)
 	
 	* m4/rt_package_find.m4 : new autoconf macro to locate
 	  external packages
@@ -9,7 +13,8 @@
 2005-11-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* configure.ac: add '--with-external-talloc' option
-
+	  (suggested by Amir Shalem)
+	
 	* m4/vl_lib_readline.m4: correct macro behaviour when configure cache
 	  is used
 
