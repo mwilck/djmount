@@ -136,11 +136,15 @@ However, this library can be built and configured separately:
 Usage 
 -----
 
-1) as root : 'modprobe fuse' to load the FUSE kernel module
+1) as root : load the FUSE kernel module
+
+	modprobe fuse
 
 2) To run, simply use the 'djmount' executable
    (no extra file is needed).
-   The FUSE mountpoint is a required argument (see Example above).
+   The FUSE mountpoint is a required argument. For example:
+
+	djmount /mnt/upnp
 
    djmount supports the usual --help option. Another useful option is "-o"
    which can set mount options, in particular "-o iocharset=<charset>" 
@@ -149,6 +153,11 @@ Usage
    Example :
 
 	djmount -o iocharset=iso-8859-15 /mnt/upnp
+
+3) when finished, unmount the mountpoint (see details in FUSE documentation):
+
+	fusermount -u /mnt/upnp
+
 
 
 Known Compatible Devices
