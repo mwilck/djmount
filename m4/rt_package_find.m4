@@ -129,7 +129,7 @@ AC_LANG_POP(C)
 
 AC_MSG_RESULT($link_ok)
 if test x"$link_ok" = xyes ; then
-	AC_DEFINE([HAVE_]NAME)
+	AC_DEFINE([HAVE_]NAME,1)
      	m4_ifvaln([$7], [$7], [:])dnl
 else
 	NAME[]_CFLAGS=""
@@ -147,9 +147,11 @@ fi
 # 
 # Now just export out symbols
 #
-
-AC_SUBST(NAME[_CFLAGS])
-AC_SUBST(NAME[_LIBS])
+dnl We declare the variables as "precious", instead of simply AC_SUBST,
+dnl in order to add some documentation, and to detect some inconsistencies 
+dnl when using cache.
+AC_ARG_VAR(NAME[_CFLAGS], [set compiler flags for $1])
+AC_ARG_VAR(NAME[_LIBS], [set linker flags and libraries for $1])
 
 AS_VAR_POPDEF([pkg_config_ok])dnl
 AS_VAR_POPDEF([link_ok])dnl
