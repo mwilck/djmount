@@ -601,7 +601,11 @@ usage (FILE* stream, const char* progname)
      "    -f                     foreground operation (default: daemonized)\n"
      "\n"
      "Mount options (one or more comma separated options) :\n"
+#if HAVE_CHARSET
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
+#else
+     "    (none implemented)\n"
+#endif
      "\n"
      "Debug levels are one or more comma separated words :\n"
 #ifdef DEBUG
@@ -824,7 +828,7 @@ main (int argc, char *argv[])
 	Log_Printf (LOG_DEBUG, "Shutting down ...");
 	DeviceList_Stop();
 	
-	Charset_Finish();
+	(void) Charset_Finish();
 	Log_Finish();
 
 	return rc; 

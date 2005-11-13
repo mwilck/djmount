@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.40, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.41, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
@@ -28,12 +28,21 @@ AC_REVISION([$Revision$])
 
 
 #
-# Check for DEBUG flag
+# --enable-FEATURE flags
+# ----------------------
 #
+
 RT_BOOL_ARG_ENABLE([debug], [yes], [extra debugging code])
-AM_CONDITIONAL(ENABLE_DEBUG, test x"$enable_debug" = xyes)
 if test x"$enable_debug" = xyes; then
 	AC_DEFINE([DEBUG],1,[Define to 1 to compile debug code])
+fi
+
+
+RT_BOOL_ARG_ENABLE([charset], [yes], 
+	[charset conversion code and -o iocharset option (assume all UTF-8 when disabled)])
+if test x"$enable_charset" = xyes; then
+	AC_DEFINE([HAVE_CHARSET],1,
+		  [Define to 1 to have charset conversion code])
 fi
 
 
@@ -75,8 +84,10 @@ AX_CFLAGS_WARN_ALL
 #
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([inttypes.h locale.h stddef.h stdint.h stdarg.h])
-
+AC_CHECK_HEADERS([inttypes.h stddef.h stdint.h stdarg.h])
+if test x"$enable_charset" = xyes; then
+	AC_CHECK_HEADERS([locale.h langinfo.h])
+fi
 
 
 #
@@ -90,7 +101,10 @@ AC_C_INLINE
 #
 # Checks for library functions
 #
-AC_CHECK_FUNCS([setlocale setxattr mktime])
+AC_CHECK_FUNCS([setxattr mktime])
+if test x"$enable_charset" = xyes; then
+	AC_CHECK_FUNCS([setlocale])
+fi
 
 
 #
@@ -162,17 +176,19 @@ VL_LIB_READLINE
 
 
 #
-# iconv
-# -----
-# Checks for function in C library or libiconv 
-# (AM macros from "gettext" package)
+# iconv & langinfo
+# ----------------
 #
 
-AM_ICONV
-AM_CONDITIONAL(WANT_ICONV, test x"$am_cv_func_iconv" = xyes)
-AC_CHECK_HEADERS([langinfo.h])
-AM_LANGINFO_CODESET
-# TBD print warning if  no setlocale or nl_langinfo(CODESET) implemented
+if test x"$enable_charset" = xyes; then
+	# Checks for function in C library or libiconv 
+	# (AM macros from "gettext" package)
+	AM_ICONV
+	AM_LANGINFO_CODESET
+	# TBD print warning if no setlocale or nl_langinfo(CODESET) implemented
+fi
+AM_CONDITIONAL(WANT_ICONV, 
+   	  test x"$enable_charset" = xyes && test x"$am_cv_func_iconv" = xyes)
 
 
 #

@@ -1,3 +1,11 @@
+2005-11-13  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* configure.ac: add --disable-charset option to suppress all
+	  character conversion code (assume all is UTF-8)
+
+	* m4/rt_package_find.m4 (RT_PACKAGE_FIND): use AC_ARG_VAR for
+	  "precious" variables instead of AC_SUBST
+
 2005-11-12  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* version 0.40

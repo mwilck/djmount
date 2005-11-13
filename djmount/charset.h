@@ -26,6 +26,10 @@
 #ifndef CHARSET_H_INCLUDED
 #define CHARSET_H_INCLUDED 1
 
+#ifdef HAVE_CONFIG_H
+#	include <config.h>	/* import "HAVE_CHARSET" definition */
+#endif
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -86,8 +90,12 @@ typedef enum _Charset_Direction {
  *	is selected based on the user environment e.g. current locale.
  * @return 0 if ok, non 0 if error e.g. non-supported charset
  *****************************************************************************/
+#if HAVE_CHARSET
 int
 Charset_Initialize (const char* charset);
+#else
+#	define Charset_Initialize(C)	0
+#endif
 
 
 /*****************************************************************************
@@ -96,8 +104,12 @@ Charset_Initialize (const char* charset);
  *	  Returns false if charset is UTF-8, or not yet initialized, or not 
  *	  supported. In this case, all conversion functions below are no-op.
  *****************************************************************************/
+#if HAVE_CHARSET
 bool
 Charset_IsConverting();
+#else
+#	define Charset_IsConverting()	false
+#endif
 
 
 /*****************************************************************************
@@ -114,10 +126,14 @@ Charset_IsConverting();
  *	character sequences do not abort the conversion but are handled 
  *	internally). 
  *****************************************************************************/
+#if HAVE_CHARSET
 char*
 Charset_ConvertString (Charset_Direction, const char* str, 
 		       char* buffer, size_t bufsize,
 		       void* talloc_context);
+#else
+#	define Charset_ConvertString(DIR,STR,BUF,SIZ,CTX)   ((char*)(STR))
+#endif
 
 
 /*****************************************************************************
@@ -129,16 +145,23 @@ Charset_ConvertString (Charset_Direction, const char* str,
  *	  and printing the result because there is never dynamic memory
  *	  allocation.
  *****************************************************************************/
+#if HAVE_CHARSET
 int
 Charset_PrintString (Charset_Direction, const char* str, FILE* stream);
+#else
+#	define Charset_PrintString(DIR,STR,STREAM) fputs(STR, STREAM)
+#endif
 
 
 /*****************************************************************************
  * Releases resources held by the charset converter.
  *****************************************************************************/
+#if HAVE_CHARSET
 int
 Charset_Finish();
-
+#else
+#	define Charset_Finish()	   0
+#endif
 
 
 #endif // CHARSET_H_INCLUDED

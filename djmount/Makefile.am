@@ -35,7 +35,10 @@ AM_CFLAGS		= $(TALLOC_CFLAGS) $(FUSE_CFLAGS) \
 		  	  $(LIBUPNP_CFLAGS)
 
 LDADD			= $(TALLOC_LIBS) $(FUSE_LIBS) \
-			  $(LIBUPNP_LIBS) $(LIBICONV)
+			  $(LIBUPNP_LIBS)
+if ENABLE_CHARSET
+    LDADD		+= $(LIBICONV)
+endif
 
 
 bin_PROGRAMS 		= djmount
@@ -48,10 +51,12 @@ check_PROGRAMS 		= test_charset test_upnp
 COMMON_SRCS 		= log.c object.c service.c \
 			  device.c device_list.c \
 			  content_dir.c djfs.c upnp_util.c \
-			  string_util.c xml_util.c \
-			  charset.c
+			  string_util.c xml_util.c 
+if ENABLE_CHARSET
+    COMMON_SRCS 	+= charset.c
 if !WANT_ICONV
     COMMON_SRCS 	+= charset_internal.c
+endif
 endif
 
 noinst_HEADERS		= \
