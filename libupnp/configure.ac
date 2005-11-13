@@ -27,7 +27,6 @@ AC_REVISION([$Revision$])
 # Check for DEBUG flag
 #
 RT_BOOL_ARG_ENABLE([debug], [no], [extra debugging code])
-AM_CONDITIONAL(ENABLE_DEBUG, test x"$enable_debug" = xyes)
 
 
 #
@@ -35,22 +34,21 @@ AM_CONDITIONAL(ENABLE_DEBUG, test x"$enable_debug" = xyes)
 #
 
 RT_BOOL_ARG_ENABLE([client], [yes], [control point code (client)])
-AM_CONDITIONAL(ENABLE_CLIENT, test x"$enable_client" = xyes)
 
 
 RT_BOOL_ARG_ENABLE([device], [yes],
      [device specific code (implies --disable-webserver if disabled)])
-AM_CONDITIONAL(ENABLE_DEVICE, test x"$enable_device" = xyes)
 
 
-test "x$enable_device" = xno && enable_webserver=no
-RT_BOOL_ARG_ENABLE([webserver], [yes], [integrated mini web server])
-test "x$enable_device" = xno && enable_webserver=no
+if test "x$enable_device" = xno ; then 
+	enable_webserver=no
+else 
+	RT_BOOL_ARG_ENABLE([webserver], [yes], [integrated mini web server])
+fi
 AM_CONDITIONAL(ENABLE_WEBSERVER, test x"$enable_webserver" = xyes)
 
 
 RT_BOOL_ARG_ENABLE([tools], [yes], [helper APIs in upnptools.h])
-AM_CONDITIONAL(ENABLE_TOOLS, test x"$enable_tools" = xyes)
 
 
 
