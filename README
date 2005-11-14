@@ -112,7 +112,7 @@ In particular,
   --with-libupnp-prefix=DIR   search for libupnp in DIR/include and DIR/lib
 
 configure with also checks the following environment variables in
-case there is a custom installation:
+case there is a custom installation (see also configure --help):
 	FUSE_CFLAGS, FUSE_LIBS, 
 	TALLOC_CFLAGS, TALLOC_LIBS, 
 	LIBUPNP_CFLAGS, LIBUPNP_LIBS.
