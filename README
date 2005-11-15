@@ -72,10 +72,14 @@ Note: the FUSE  kernel module shall be loaded before running djmount
 Building and Installation
 -------------------------
 
-djmount has been tested on the following configurations:
+djmount has been built and tested on the following configurations:
 
-* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1), 
+* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1, glibc-2.3.3), 
   FUSE 2.2.1, 2.3.0 or 2.4.0
+
+* GeeXboX 0.98.7 (Linux kernel 2.6.14, gcc 3.4.4, uClibc 0.9.28),
+  FUSE 2.4.1
+
 
 
 A) Basic build instruction:
