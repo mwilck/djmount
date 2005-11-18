@@ -782,12 +782,25 @@ main (int argc, char *argv[])
 #endif
 
 	/*
+	 * Set charset encoding
+	 */
+	rc = Charset_Initialize (charset);
+	if (rc) {
+		Log_Printf (LOG_ERROR, "Error initialising charset='%s'",
+			    NN(charset));
+	}
+
+	/*
 	 * Daemonize process if necessary (must be done before UPnP
 	 * initialisation, so not relying on fuse_main function).
 	 */
 	FUSE_ARG ("-f");
 	if (background) {
-	        rc = daemon (0, 0);
+		// Avoid chdir, else a relative mountpoint given as 
+		// argument to FUSE won't work.
+		//  TBD FIXME  close stdout/stderr : how do we see errors 
+		//  TBD FIXME  if UPnP or FUSE fails in background mode ?
+	        rc = daemon (/* nochdir => */ 1, /* noclose => */ 0);
 		if (rc == -1) {
 			int const err = errno;
 			Log_Printf (LOG_ERROR, 
@@ -797,17 +810,6 @@ main (int argc, char *argv[])
 		}
 	}
 	
-
-	/*
-	 * Set charset encoding
-	 */
-	rc = Charset_Initialize (charset);
-	if (rc) {
-		Log_Printf (LOG_ERROR, "Error initialising charset='%s'",
-			    NN(charset));
-	}
-
-
 	/*
 	 * Initialise UPnP Control point and starts FUSE file system
 	 */

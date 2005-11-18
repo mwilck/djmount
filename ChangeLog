@@ -1,3 +1,8 @@
+2005-11-18  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/fuse_main.c (main): fix relative paths to mount points 
+	  not working in daemon mode (reported by Andre Landwehr)
+
 2005-11-13  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* configure.ac: add --disable-charset option to suppress all
