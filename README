@@ -80,6 +80,8 @@ djmount has been built and tested on the following configurations:
 * GeeXboX 0.98.7 (Linux kernel 2.6.14, gcc 3.4.4, uClibc 0.9.28),
   FUSE 2.4.1
 
+* Debian sid (Linux kernel 2.6.14, gcc 4.0.3 20051023 prerelease)
+
 
 
 A) Basic build instruction:
