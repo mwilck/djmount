@@ -388,8 +388,12 @@ Charset_ConvertString (Charset_Direction dir, const char* const str,
 	 */
 	if (outbytesleft < 1)
 		result[bufsize-1] = '\0'; // error, truncate result
-	else
-		memset (outbuf, '\0', MIN (outbytesleft, 4));
+	else {
+		int const nb_nuls = MIN (outbytesleft, 4);
+		memset (outbuf, '\0', nb_nuls);
+		outbuf += nb_nuls;
+		outbytesleft -= nb_nuls;
+	}
 #endif
 
         // If necessary, shrink result to save space
