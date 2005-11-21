@@ -618,7 +618,7 @@ usage (FILE* stream, const char* progname)
      "\n"
      "Report bugs to <" PACKAGE_BUGREPORT ">.\n",
      progname);
-  exit (0); // ---------->
+  exit (EXIT_SUCCESS); // ---------->
 }
 
 
@@ -633,7 +633,7 @@ bad_usage (const char* progname, ...)
 	va_end (ap);
 	fprintf (stderr, "\nTry '%s --help' for more information.\n",
 		 progname);
-	exit (1); // ---------->
+	exit (EXIT_FAILURE); // ---------->
 }
 
 
@@ -648,7 +648,7 @@ This is free software.  You may redistribute copies of it under the terms of\n\
 the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
 \n", stream);
-	exit (0); // ---------->
+	exit (EXIT_SUCCESS); // ---------->
 }
 
 
