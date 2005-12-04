@@ -212,12 +212,11 @@ CC="$PTHREAD_CC"
 
 # Find the library. This macro handles the FUSE_CFLAGS and FUSE_LIBS,
 # the --with-fuse-prefix arg, and pkg-config (if any).
-RT_PACKAGE_FIND([fuse], [-D_FILE_OFFSET_BITS=64], [-lfuse], [fuse >= 2.2], 
+RT_PACKAGE_FIND([fuse], [-D_FILE_OFFSET_BITS=64], [-lfuse], [fuse >= 2.4], 
 	[ 
-#define FUSE_USE_VERSION 22
+#define FUSE_USE_VERSION 24
 #include <fuse.h> 
-#define MY_FUSE_VERSION (FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
-#if MY_FUSE_VERSION < 22
+#if !defined(FUSE_VERSION) || FUSE_VERSION < 24
 #	error FUSE version is too old
 #endif
 	],
