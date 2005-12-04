@@ -37,6 +37,8 @@
 #else
 #	include <varargs.h>
 #endif
+#include <sys/types.h>		// Import "off_t"
+
 
 #ifdef __cplusplus
 extern "C" {
