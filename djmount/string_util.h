@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * String utilities.
@@ -83,6 +84,26 @@ String_StripSpaces (void* talloc_context, const char* s);
  *****************************************************************************/
 char*
 String_CleanFileName (void* talloc_context, const char* s);
+
+
+/*****************************************************************************
+ * @brief  	Convert string to a (signed) integer.
+ *
+ * @param s		the string
+ * @param error_value	Value to return in case of error e.g. conversion error.
+ *****************************************************************************/
+intmax_t
+String_ToInteger (const char* s, intmax_t error_value);
+
+
+/*****************************************************************************
+ * @brief  	Convert string to an unsigned integer.
+ *
+ * @param s		the string
+ * @param error_value	Value to return in case of error e.g. conversion error.
+ *****************************************************************************/
+uintmax_t
+String_ToUnsigned (const char* s, uintmax_t error_value);
 
 
 /*****************************************************************************

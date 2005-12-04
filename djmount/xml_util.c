@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * XML Utilities
@@ -30,6 +31,7 @@
 #include "xml_util.h"
 #include "log.h"
 #include "talloc_util.h"
+#include "string_util.h"
 
 #include <upnp/ixml.h>
 #include <stdlib.h>	
@@ -105,15 +107,8 @@ XMLUtil_GetFirstNodeValueInteger (IN const IXML_Node* node,
 				  IN const char* item,
 				  IN intmax_t error_value)
 {
-  intmax_t ret = error_value;
-  char* s = XMLUtil_GetFirstNodeValue (node, item);
-  if (s && *s) {
-    char* endptr = 0;
-    long val = strtoimax (s, &endptr, 10);
-    if (endptr && *endptr == '\0')
-      ret = val;
-  }
-  return ret;
+	const char* const s = XMLUtil_GetFirstNodeValue (node, item);
+	return String_ToInteger (s, error_value);
 }
 
 

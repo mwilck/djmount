@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * String utilities.
@@ -28,6 +29,9 @@
 #include <ctype.h>
 
 
+/*****************************************************************************
+ * String_StripSpaces
+ *****************************************************************************/
 char*
 String_StripSpaces (void* talloc_context, const char* s)
 {
@@ -49,6 +53,10 @@ String_StripSpaces (void* talloc_context, const char* s)
   return r;
 }
 
+
+/*****************************************************************************
+ * String_CleanFileName
+ *****************************************************************************/
 char*
 String_CleanFileName (void* talloc_context, const char* s)
 {
@@ -62,6 +70,41 @@ String_CleanFileName (void* talloc_context, const char* s)
   }
   return r;
 }
+
+
+/*****************************************************************************
+ * String_ToInteger
+ *****************************************************************************/
+intmax_t
+String_ToInteger (const char* s, intmax_t error_value)
+{
+	intmax_t ret = error_value;
+	if (s && *s) {
+		char* endptr = 0;
+		intmax_t val = strtoimax (s, &endptr, 10);
+		if (endptr && *endptr == '\0')
+			ret = val;
+	}
+	return ret;
+}
+
+
+/*****************************************************************************
+ * String_ToUnsigned
+ *****************************************************************************/
+uintmax_t
+String_ToUnsigned (const char* s, uintmax_t error_value)
+{
+	uintmax_t ret = error_value;
+	if (s && *s) {
+		char* endptr = 0;
+		uintmax_t val = strtoumax (s, &endptr, 10);
+		if (endptr && *endptr == '\0')
+			ret = val;
+	}
+	return ret;
+}
+
 
 /*****************************************************************************
  * String_Hash
