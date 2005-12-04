@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * Testing of UPnP classes.
@@ -66,28 +67,28 @@
  * Tags for valid commands issued at the command prompt 
  */
 typedef enum CommandType {
-  CMD_HELP = 0, 
-  CMD_LOGLEVEL, 
-  CMD_LEAK, 
-  CMD_LEAK_FULL,
-  CMD_BROWSE, 
-  CMD_METADATA, 
-  CMD_LS,
-  CMD_ACTION, 
-  CMD_PRINTDEV, 
-  CMD_LISTDEV, 
-  CMD_REFRESH, 
-  CMD_EXIT
+	CMD_HELP = 0, 
+	CMD_LOGLEVEL, 
+	CMD_LEAK, 
+	CMD_LEAK_FULL,
+	CMD_BROWSE, 
+	CMD_METADATA, 
+	CMD_LS,
+	CMD_ACTION, 
+	CMD_PRINTDEV, 
+	CMD_LISTDEV, 
+	CMD_REFRESH, 
+	CMD_EXIT
 } CommandType;
 
 /*
  * Data structure for parsing commands from the command line 
  */
 struct CommandStruct {
-  const char*  str;             // the string 
-  CommandType  cmdnum;         	// the command
-  int          numargs;		// the number of arguments
-  const char*  args;            // the args
+	const char*  str;             // the string 
+	CommandType  cmdnum;          // the command
+	int          numargs;	      // the number of arguments
+	const char*  args;            // the args
 };
 
 
@@ -163,16 +164,18 @@ stdout_print (Log_Level level, const char* const msg)
 static void
 print_commands()
 {
-  int i;
-  
-  Log_Lock();
-  Log_Printf (LOG_MAIN, "Valid Commands:");
-  for (i = 0; i < CMDNUM; i++) {
-    Log_Printf (LOG_MAIN, "  %-14s %s", CMDLIST[i].str, CMDLIST[i].args );
-  }
-  Log_Print (LOG_MAIN, "");
-  Log_Unlock();
+	int i;
+	
+	Log_Lock();
+	Log_Printf (LOG_MAIN, "Valid Commands:");
+	for (i = 0; i < CMDNUM; i++) {
+		Log_Printf (LOG_MAIN, "  %-14s %s", 
+			    CMDLIST[i].str, CMDLIST[i].args );
+	}
+	Log_Print (LOG_MAIN, "");
+	Log_Unlock();
 }
+
 
 /*****************************************************************************
  * process_command
@@ -183,153 +186,164 @@ print_commands()
 static int
 process_command (const char* cmdline)
 {
-  int rc = UPNP_E_SUCCESS;  
+//	Log_Printf (LOG_DEBUG, "cmdline = '%s'", cmdline);
 
-  // Create a working context for temporary memory allocations
-  void* tmp_ctx = talloc_new (NULL);
-
-  // Convert from display charset
-  cmdline = Charset_ConvertString (CHARSET_TO_UTF8, cmdline, NULL, 0, tmp_ctx);
-
-  char cmd[100];
-  char strarg1[100];
-  char strarg2[100];
-  char strarg3[100];
-  int validargs = sscanf (cmdline, "%99s %99s %99s %99s", 
-			  cmd, strarg1, strarg2, strarg3);
-  int invalidargs = 0;
-  int cmdnum = -1;
-
-  int i;
-  for (i = 0; i < CMDNUM; i++) {
-    if (strcasecmp (cmd, CMDLIST[i].str) == 0 ) {
-      cmdnum = CMDLIST[i].cmdnum;
-      if (validargs != CMDLIST[i].numargs) {
-	invalidargs++;
-	goto cleanup; // ---------->
-      }
-    }
-  }
-  
-  switch (cmdnum) {
-  case CMD_HELP:
-    print_commands();
-    break;
-    
-  case CMD_LOGLEVEL: 
-    {
-      // Parse log level
-      int level;
-      if (sscanf (strarg1, "%d", &level) == 1)
-	Log_SetMaxLevel ((Log_Level) level);
-      else
-	invalidargs++;
-    }
-    break;
-
-  case CMD_LEAK:
-    talloc_report (NULL, stdout);
-    break;
-
-  case CMD_LEAK_FULL:
-    talloc_report_full (NULL, stdout);
-    break;
-
-  case CMD_BROWSE:
-    {
-      const ContentDir_BrowseResult* res = NULL;
-      DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIR_SERVICE_ID,
-				ContentDir, BrowseChildren, 
-				tmp_ctx, strarg2);
-      if (res) {
-	const ContentDir_Object* o = res->children->objects;
-	while (o) {
-	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
-	  o = o->next;
+	int rc = UPNP_E_SUCCESS;  
+	
+	// Create a working context for temporary memory allocations
+	void* tmp_ctx = talloc_new (NULL);
+	
+	// Convert from display charset
+	cmdline = Charset_ConvertString (CHARSET_TO_UTF8, cmdline, 
+					 NULL, 0, tmp_ctx);
+	
+	char cmd[100];
+	char strarg1[100];
+	char strarg2[100];
+	char strarg3[100];
+	int validargs = sscanf (cmdline, "%99s %99s %99s %99s", 
+				cmd, strarg1, strarg2, strarg3);
+	int invalidargs = 0;
+	int cmdnum = -1;
+	
+	int i;
+	for (i = 0; i < CMDNUM; i++) {
+		if (strcasecmp (cmd, CMDLIST[i].str) == 0 ) {
+			cmdnum = CMDLIST[i].cmdnum;
+			if (validargs != CMDLIST[i].numargs) {
+				invalidargs++;
+				goto cleanup; // ---------->
+			}
+		}
 	}
-      }
-    }
-    break;
-
-  case CMD_METADATA:
-    {
-      const ContentDir_Object* o = NULL;
-      DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIR_SERVICE_ID,
-				ContentDir, BrowseMetadata,
-				tmp_ctx, strarg2);
-      if (o) {
-	Log_Printf (LOG_MAIN, "  %s", NN(o->title));
-      }
-    }
-    break;
-
-  case CMD_LS:
-    {
-      size_t nb_matched = 0;
-      const ContentDir_BrowseResult* res = 
-	_DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, &nb_matched);
-      if (res) {
-	const ContentDir_Object* o = res->children->objects;
-	while (o) {
-	  Log_Printf (LOG_MAIN, "  %s", NN(o->title));
-	  o = o->next;
+	
+	switch (cmdnum) {
+	case CMD_HELP:
+		print_commands();
+		break;
+		
+	case CMD_LOGLEVEL: 
+	{
+		// Parse log level
+		int level;
+		if (sscanf (strarg1, "%d", &level) == 1)
+			Log_SetMaxLevel ((Log_Level) level);
+		else
+			invalidargs++;
 	}
-      }
-    }
-    break;
-
-  case CMD_ACTION:
-    rc = DeviceList_SendActionAsync (strarg1, strarg2, strarg3, 0, NULL);
-    break;
-    
-  case CMD_PRINTDEV:
-    {
-      char* s = DeviceList_GetDeviceStatusString (tmp_ctx, strarg1, true);
-      Log_Print (LOG_MAIN, s);
-    }
-    break;
-    
-  case CMD_LISTDEV:
-    {
-      char* s = DeviceList_GetStatusString (tmp_ctx);
-      Log_Printf (LOG_MAIN, "DeviceList:\n%s", NN(s));
-    }
-    break;
-    
-  case CMD_REFRESH:
-    rc = DeviceList_RefreshAll (UPNP_TARGET);
-    break;
-    
-  case CMD_EXIT:
-    rc = DeviceList_Stop();
-    exit (rc); // ---------->
-    break;
-
-  default:
-    cmdnum = -1;
-    break;
-  }
-
- cleanup:
-  
-  if (cmdnum < 0) {
-    Log_Printf (LOG_ERROR, "Command not found: '%s' ; try 'Help'", cmd);
-    rc = UPNP_E_INVALID_PARAM;
-
-  } else if (invalidargs) { 
-    Log_Printf (LOG_ERROR, "Invalid args in command; see 'Help'" );
-    rc = UPNP_E_INVALID_PARAM;
-
-  } else if (rc != UPNP_E_SUCCESS) {
-    Log_Printf (LOG_ERROR, "Error executing '%s' : %d (%s)",
-		cmd, rc, UpnpGetErrorMessage (rc));
-  }
-    
-  // Delete all temporary storage
-  talloc_free (tmp_ctx);
-  tmp_ctx = NULL;
-
-  return rc;
+	break;
+	
+	case CMD_LEAK:
+		talloc_report (NULL, stdout);
+		break;
+		
+	case CMD_LEAK_FULL:
+		talloc_report_full (NULL, stdout);
+		break;
+		
+	case CMD_BROWSE:
+	{
+		const ContentDir_BrowseResult* res = NULL;
+		DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIR_SERVICE_ID,
+					  ContentDir, BrowseChildren, 
+					  tmp_ctx, strarg2);
+		if (res) {
+			const DIDLObject* o = NULL;
+			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+				Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+			} PTR_LIST_FOR_EACH_PTR_END;
+		}
+	}
+	break;
+	
+	case CMD_METADATA:
+	{
+		const DIDLObject* o = NULL;
+		DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIR_SERVICE_ID,
+					  ContentDir, BrowseMetadata,
+					  tmp_ctx, strarg2);
+		if (o) {
+			Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+		}
+	}
+	break;
+	
+	case CMD_LS:
+	{
+		Log_Printf (LOG_MAIN, "ls '%s' :", strarg2);
+		size_t nb_matched = 0;
+		const ContentDir_BrowseResult* res = 
+			_DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, 
+					 &nb_matched);
+		if (res) {
+			const DIDLObject* o = NULL;
+			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+				Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+			} PTR_LIST_FOR_EACH_PTR_END;
+			if (nb_matched > 0) {
+				Log_Printf (LOG_MAIN, 
+					    "-> path left to match : '%s'",
+					    strarg2 + nb_matched);
+			}
+		}
+	}
+	break;
+	
+	case CMD_ACTION:
+		rc = DeviceList_SendActionAsync (strarg1, strarg2, strarg3, 
+						 0, NULL);
+		break;
+		
+	case CMD_PRINTDEV:
+	{
+		char* s = DeviceList_GetDeviceStatusString (tmp_ctx, strarg1, 
+							    true);
+		Log_Print (LOG_MAIN, s);
+	}
+	break;
+	
+	case CMD_LISTDEV:
+	{
+		char* s = DeviceList_GetStatusString (tmp_ctx);
+		Log_Printf (LOG_MAIN, "DeviceList:\n%s", NN(s));
+	}
+	break;
+	
+	case CMD_REFRESH:
+		rc = DeviceList_RefreshAll (UPNP_TARGET);
+		break;
+		
+	case CMD_EXIT:
+		rc = DeviceList_Stop();
+		exit (rc); // ---------->
+		break;
+		
+	default:
+		cmdnum = -1;
+		break;
+	}
+	
+cleanup:
+	
+	if (cmdnum < 0) {
+		Log_Printf (LOG_ERROR, "Command not found: '%s' ; try 'Help'",
+			    cmd);
+		rc = UPNP_E_INVALID_PARAM;
+		
+	} else if (invalidargs) { 
+		Log_Printf (LOG_ERROR, "Invalid args in command; see 'Help'" );
+		rc = UPNP_E_INVALID_PARAM;
+		
+	} else if (rc != UPNP_E_SUCCESS) {
+		Log_Printf (LOG_ERROR, "Error executing '%s' : %d (%s)",
+			    cmd, rc, UpnpGetErrorMessage (rc));
+	}
+	
+	// Delete all temporary storage
+	talloc_free (tmp_ctx);
+	tmp_ctx = NULL;
+	
+	return rc;
 }
 
 

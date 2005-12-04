@@ -26,6 +26,7 @@
 #define DJFS_H_INCLUDED 1
 
 #include <fuse.h>
+#include "file_buffer.h"
 
 
 
@@ -41,10 +42,10 @@
  *
  *****************************************************************************/
 int
-DJFS_Browse (const char* path, 
+DJFS_Browse (const char* path, bool playlists,
 	     /* for STAT => */	    struct stat* stbuf, 
 	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
-	     /* for READ => */	    void* talloc_context, char** file_content);
+	     /* for READ => */	    void* talloc_context, FileBuffer** file);
 
 
 

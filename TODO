@@ -18,7 +18,7 @@ Roadmap
    add embedded / uClibc support 
    (with automake + autoconf support)
 
-0.50
+0.50 (in progress)
    share image files
 
 0.60

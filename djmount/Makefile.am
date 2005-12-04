@@ -42,16 +42,18 @@ endif
 
 
 bin_PROGRAMS 		= djmount
+noinst_PROGRAMS		= test_upnp
 
-check_PROGRAMS 		= test_charset test_upnp 
-# TBD auto run test ?
-# TESTS			= test_charset
+check_PROGRAMS 		= test_charset test_ptr_list
+# auto run some tests
+TESTS			= test_ptr_list
 
 
 COMMON_SRCS 		= log.c object.c service.c \
-			  device.c device_list.c \
+			  device.c device_list.c didl_object.c \
+			  media_file.c file_buffer.c \
 			  content_dir.c djfs.c upnp_util.c \
-			  string_util.c xml_util.c 
+			  string_util.c xml_util.c ptr_list.c
 if ENABLE_CHARSET
     COMMON_SRCS 	+= charset.c
 if !WANT_ICONV
@@ -61,9 +63,10 @@ endif
 
 noinst_HEADERS		= \
 			log.h object.h object_p.h service.h service_p.h \
-		  	device.h device_list.h \
+		  	device.h device_list.h didl_object.h \
+			media_file.h file_buffer.h \
 		  	content_dir.h content_dir_p.h djfs.h upnp_util.h \
-		  	string_util.h xml_util.h talloc_util.h \
+		  	string_util.h xml_util.h ptr_list.h talloc_util.h \
 		  	charset.h charset_internal.h
 
 djmount_SOURCES		= $(COMMON_SRCS) fuse_main.c
@@ -72,6 +75,8 @@ test_upnp_SOURCES	= $(COMMON_SRCS) test_upnp.c
 test_upnp_LDADD		= $(LDADD) $(READLINE_LIBS)
 
 test_charset_SOURCES	= $(COMMON_SRCS) test_charset.c
+
+test_ptr_list_SOURCES	= $(COMMON_SRCS) test_ptr_list.c
 
 
 CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt

@@ -31,7 +31,11 @@
 #include <errno.h>
 #include <dirent.h>
 #include <time.h>
+#include <inttypes.h>	// Import uintmax_t and PRIuMAX
 
+#include "didl_object.h"
+#include "file_buffer.h"
+#include "media_file.h"
 #include "talloc_util.h"
 #include "log.h"
 #include "content_dir.h"
@@ -73,15 +77,16 @@
 static const char*
 match_start_of_path (const char* path, const char* name) 
 {
-  size_t const len = strlen (name);
-  if (strncmp (path, name, len) == 0 && (path[len]==NUL || path[len]=='/')) {
-    path += len; 
-    while (*path == '/') 
-      path++;								
-    Log_Printf (LOG_DEBUG, "matched '%s' left '%s'", name, path);
-    return path;
-  }
-  return NULL;
+	size_t const len = strlen (name);
+	if (strncmp (path, name, len) == 0 && 
+	    (path[len] == NUL || path[len] == '/')) {
+		path += len; 
+		while (*path == '/') 
+			path++;					
+		Log_Printf (LOG_DEBUG, "matched '%s' left '%s'", name, path);
+		return path;
+	}
+	return NULL;
 }
 
 
@@ -93,196 +98,106 @@ _DJFS_BrowseCDS (void* result_context,
 		 const char* deviceName, const char* const path, 
 		 size_t* nb_char_matched)
 {
-  if (path == NULL)
-    return NULL; // ---------->
-
-  // Create a working context for temporary memory allocations
-  void* tmp_ctx = talloc_new (NULL);
-
-  // Browse root 
-  const char* ptr = path;
-  while (*ptr == '/')
-    ptr++;
-
-  const ContentDir_BrowseResult* current = NULL;
-  DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIR_SERVICE_ID,
-			    ContentDir, BrowseChildren,
-			    tmp_ctx, "0");
-
-  // Walk path, or until error
-  while (*ptr && current && current->children) {
-    // Find current directory
-    const ContentDir_Object* o = current->children->objects;
-    while (o) {
-      if (o->is_container) {
-	const char* const p = match_start_of_path (ptr, o->title);
-	if (p) {
-	  ptr = p;
-	  break; // ---------->
-	}
-      }
-      o = o->next;
-    }
-    if (o == NULL) {
-      Log_Printf (LOG_DEBUG, "browse '%s' stops at '%s'", path, ptr);
-      goto cleanup; // ---------->
-    } else {
-      char* id = o->id; // valid as long as tmp_ctx is not deallocated
-      DEVICE_LIST_CALL_SERVICE (current, deviceName,
-				CONTENT_DIR_SERVICE_ID,
-				ContentDir, BrowseChildren,
-				tmp_ctx, id);
-    }
-  }
-
- cleanup:
-  
-  if (current)
-    current = talloc_steal (result_context, current);
-  else
-    Log_Printf (LOG_ERROR, "CDS can't browse '%s' for path='%s'",
-		deviceName, path); 
-
-  // Delete all temporary storage
-  talloc_free (tmp_ctx);
-  tmp_ctx = NULL;
-
-  if (nb_char_matched) {
-    // Suppress terminating "/" in nb. of character matched
-    while (ptr > path && *(ptr-1) == '/')
-      ptr--;
-    *nb_char_matched = (ptr - path);
-  }
-
-  return current;
-}
-
-
-/*****************************************************************************
- * @fn object_to_file
- *****************************************************************************/
-
-enum GetMode {
-	GET_EXTENSION,
-	GET_CONTENT
-};
-
-typedef struct _FileFormat {
-	const char* mimetype; 
-	const char* extension;
-} FileFormat;
-
-const FileFormat FORMATS[] = {
-	/*
-	 * The match on mimetype is done on the begining of the string
-	 * so the order of this list matters.
-	 */
-	{ "application/vnd.rn-realmedia",	"ram" },
-	{ "audio/vnd.rn-realaudio",	   	"ram" },
-	{ "audio/x-pn-realaudio", 	   	"ram" }, 
-	// also "audio/x-pn-realaudio-plugin"
-	{ "audio/x-realaudio", 	        	"ram" },
-	{ "video/vnd.rn-realvideo", 	   	"ram" },
-	{ "audio/",				"m3u" },
-	{ "video/",			   	"m3u" },
-	{ NULL,					NULL }
-};
-
-static char*
-object_to_file_content (void* talloc_context, 
-			const ContentDir_Object* const o, 
-			const FileFormat* const format,
-			const char* const uri,
-			IXML_Element* const res)
-{
-	char* str = NULL;
-	
-	/*
-	 * See description of various playlist formats at:
-	 * http://gonze.com/playlists/playlist-format-survey.html
-	 */
-	if (strcmp (format->extension, "ram") == 0) {
-		/*
-		 * 1) "RAM" playlist - Real Audio content
-		 */
-		str = talloc_asprintf (talloc_context, "%s?title=%s\n", 
-				       uri, o->title);
-	} else if (strcmp (format->extension, "m3u") == 0) {
-		/*
-		 * 2) "M3U" playlist - Winamp, MP3, ... 
-		 *     and default for all audio files 
-		 */
-		const char* const duration = 
-			ixmlElement_getAttribute (res, "duration");
-		int seconds = -1;
-		if (duration) {
-			int hh = 0;
-			unsigned int mm = 0, ss = 0;
-			if (sscanf (duration, "%d:%u:%u", &hh, &mm, &ss) == 3 
-			    && hh >= 0)
-				seconds = ss + 60*(mm + 60*hh);
-		}
-		str = talloc_asprintf (talloc_context,
-				       "#EXTM3U\n"
-				       "#EXTINF:%d,%s\n"
-				       "%s\n", seconds, o->title, uri);
-	}
-	return str;
-}
-
-
-static char*
-object_to_file (void* talloc_context, 
-		const ContentDir_Object* const o, enum GetMode get)
-{
-	char* str = NULL;
-	IXML_NodeList* const reslist = 
-		ixmlElement_getElementsByTagName (o->element, "res");
-	if (reslist == NULL)
+	if (path == NULL)
 		return NULL; // ---------->
 
-	int i;
-	// Loop until first result
-	for (i = 0; i < ixmlNodeList_length (reslist) && str == NULL; i++) {
-		IXML_Element* const res = 
-			(IXML_Element*) ixmlNodeList_item (reslist, i);
-		
-		const char* const protocol = 
-			ixmlElement_getAttribute (res, "protocolInfo");
-		const char* const uri = XMLUtil_GetElementValue (res);
-		char mimetype [64] = "";
-		if (uri == NULL || protocol == NULL || 
-		    sscanf (protocol, "http-get:*:%63[^:;]", mimetype) != 1) 
-			continue; // ---------->
-			
-		const FileFormat* format = FORMATS;
-		while (format->mimetype != NULL && str == NULL) {
-			if (strncmp (mimetype, format->mimetype, 
-				     strlen (format->mimetype)) == 0) {
-				if (get == GET_EXTENSION) {
-					str = (char*) format->extension;
-				} else {
-					str = object_to_file_content 
-						(talloc_context, o, format,
-						 uri, res);
+	// Create a working context for temporary memory allocations
+	void* tmp_ctx = talloc_new (NULL);
+	
+	// Browse root 
+	const char* ptr = path;
+	while (*ptr == '/')
+		ptr++;
+	
+	const ContentDir_BrowseResult* current = NULL;
+	DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIR_SERVICE_ID,
+				  ContentDir, BrowseChildren,
+				  tmp_ctx, "0");
+	
+	// Walk path, or until error
+	while (*ptr && current && current->children) {
+		// Find current directory
+		PtrList_Iterator it = PtrList_IteratorStart
+			(current->children->objects);
+		const DIDLObject* found = NULL;
+		while (PtrList_IteratorLoop (&it)) {
+			const DIDLObject* o = PtrList_IteratorGetElement (&it);
+			if (o->is_container) {
+				const char* const p = 
+					match_start_of_path (ptr, o->title);
+				if (p) {
+					ptr = p;
+					found = o;
+					break; // ---------->
 				}
 			}
-			format++;
+		}
+		if (found == NULL) {
+			Log_Printf (LOG_DEBUG, "browse '%s' stops at '%s'", 
+				    path, ptr);
+			goto cleanup; // ---------->
+		} else {
+			// "id" valid as long as tmp_ctx is not deallocated
+			char* id = found->id; 
+			DEVICE_LIST_CALL_SERVICE (current, deviceName,
+						  CONTENT_DIR_SERVICE_ID,
+						  ContentDir, BrowseChildren,
+						  tmp_ctx, id);
 		}
 	}
-	ixmlNodeList_free (reslist);
-	return str;
+	
+ cleanup:
+	
+	if (current)
+		current = talloc_steal (result_context, current);
+	else
+		Log_Printf (LOG_ERROR, "CDS can't browse '%s' for path='%s'",
+			    deviceName, path); 
+	
+	// Delete all temporary storage
+	talloc_free (tmp_ctx);
+	tmp_ctx = NULL;
+	
+	if (nb_char_matched) {
+		// Suppress terminating "/" in nb. of character matched
+		while (ptr > path && *(ptr-1) == '/')
+			ptr--;
+		*nb_char_matched = (ptr - path);
+	}
+	
+	return current;
 }
 
 
 /*****************************************************************************
  * DJFS_Browse
  *****************************************************************************/
+
+static inline void
+stbuf_set_dir (struct stat* const stbuf)
+{
+	if (stbuf) {
+		stbuf->st_mode  = S_IFDIR | 0555;
+		stbuf->st_nlink = 2;			
+		stbuf->st_size  = 512;
+	}	
+}
+
+static inline void
+stbuf_set_file (struct stat* const stbuf)
+{
+	if (stbuf) {	
+		stbuf->st_mode  = S_IFREG | 0444;     
+		stbuf->st_nlink = 1;
+		stbuf->st_size  = 0; // to be computed latter
+	}								
+}
+
 int
-DJFS_Browse (const char* path, 
-	     /* for STAT => */	    struct stat* stbuf, 
+DJFS_Browse (const char* const path, bool playlists,
+	     /* for STAT => */	    struct stat* const stbuf, 
 	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
-	     /* for READ => */	    void* talloc_context, char** file_content)
+	     /* for READ => */	    void* _context, FileBuffer** _file)
 {
   int rc = 0;
 
@@ -295,6 +210,16 @@ DJFS_Browse (const char* path,
   // Create a working context for temporary memory allocations
   void* tmp_ctx = talloc_new (NULL);
 
+  // Keep a pointer to acquired lock, if any
+  ithread_mutex_t* lock = NULL;
+
+
+#define ABORT_BROWSE(RC)			\
+  do {						\
+	  rc = RC;				\
+	  goto cleanup;				\
+  } while(0)
+
 #define DIR_BEGIN(X)						\
   if (*ptr == NUL) {						\
     if (stbuf) stbuf->st_nlink++;				\
@@ -306,11 +231,7 @@ DJFS_Browse (const char* path,
     const char* const _p = match_start_of_path (ptr, X);	\
     if (_p) {							\
       ptr = _p;							\
-      if (*ptr == NUL && stbuf) {				\
-	stbuf->st_mode  = S_IFDIR | 0555;			\
-        stbuf->st_nlink = 2;					\
-        stbuf->st_size  = 512;					\
-      }								\
+      if (*ptr == NUL) stbuf_set_dir (stbuf);			\
       if (*ptr == NUL && filler) {				\
 	rc = filler (h, ".", DT_DIR, 0);			\
 	if (rc == 0) rc = filler (h, "..", DT_DIR, 0);		\
@@ -335,23 +256,33 @@ DJFS_Browse (const char* path,
         rc = -ENOTDIR ;						\
 	goto cleanup;						\
       }								\
-      if (stbuf) {						\
-	stbuf->st_mode  = S_IFREG | 0444;			\
-        stbuf->st_nlink = 1;					\
-      }								\
-      char* talloc_string = NULL;
+      Log_Printf (LOG_DEBUG, "FILE_BEGIN '%s'", path);		\
+      stbuf_set_file (stbuf);					\
+      if (_file) *_file = NULL;
 
-#define FILE_END							\
-      Log_Printf (LOG_DEBUG, "FILE_BEGIN '%s' size = %d",		\
-		  path, talloc_string ? strlen(talloc_string) : -1 );	\
-      if (stbuf)							\
-        stbuf->st_size = talloc_string ? strlen(talloc_string) : 0;	\
-      if (file_content) {						\
-        if (talloc_string)						\
-          talloc_set_name(talloc_string,"file[%s] at " __location__, path); \
-        *file_content = talloc_string;					\
-      } else talloc_free (talloc_string);				\
-    } if (*ptr == NUL) goto cleanup;					\
+#define FILE_SET_SIZE(SIZE)					\
+      if (stbuf) {						\
+        stbuf->st_size = (SIZE);				\
+        Log_Printf (LOG_DEBUG, "FILE_SET_SIZE = %" PRIuMAX,	\
+                    (uintmax_t) stbuf->st_size);		\
+      } 
+
+#define FILE_SET_STRING(CONTENT)					\
+      if (_file) {							\
+	*_file = FileBuffer_CreateFromString (_context, (CONTENT));	\
+        if (*_file)							\
+          talloc_set_name (*_file, "file[%s] at " __location__, path);	\
+      }
+
+#define FILE_SET_URL(URL)						\
+      if (_file) {							\
+	*_file = FileBuffer_CreateFromURL (_context, (URL));		\
+        if (*_file)							\
+          talloc_set_name (*_file, "file[%s] at " __location__, path);	\
+      }
+
+#define FILE_END				\
+    } if (*ptr == NUL) goto cleanup;		\
   }
   
 
@@ -361,14 +292,17 @@ DJFS_Browse (const char* path,
 
     FILE_BEGIN("devices") {
       if (names) {
-        talloc_string = talloc_strdup (talloc_context, "");
+        char* str = talloc_strdup (tmp_ctx, "");
         int i;
 	for (i = 0; i < names->nb; i++) {
-          talloc_string = talloc_asprintf_append (talloc_string, "%s\n",
-						  names->str[i]);
+          str = talloc_asprintf_append (str, "%s\n", names->str[i]);
+	}
+	if (str) {
+ 	  FILE_SET_STRING (str);
+          FILE_SET_SIZE (strlen (str));
 	}
       }
-      // else talloc_string stays NULL if no devices
+      // else content defaults to NULL if no devices
     } FILE_END;
 
     if (names) {
@@ -377,8 +311,10 @@ DJFS_Browse (const char* path,
 	const char* const devName = names->str[i];
 	DIR_BEGIN(devName) {
 	  FILE_BEGIN("status") {
-	    talloc_string = DeviceList_GetDeviceStatusString (talloc_context,
-							      devName, true);
+	    const char* const str = DeviceList_GetDeviceStatusString 
+	      (tmp_ctx, devName, true);
+	    FILE_SET_STRING (str);
+	    FILE_SET_SIZE (str ? strlen (str) : 0);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    size_t nb_matched = 0;
@@ -391,33 +327,46 @@ DJFS_Browse (const char* path,
 		goto skip_dir;
 	      DIR_BEGIN (dirname) {
 	      skip_dir: ;
-		const ContentDir_Object* o = res->children->objects;
-		while (o) {
+  	        DIDLObject* o = NULL;               
+		ithread_mutex_lock (&res->children->mutex);
+                lock = &res->children->mutex;
+		PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
 		  if (o->is_container) {
 		    DIR_BEGIN (o->title) {
 		    } DIR_END;
 		  } else {
-		    char* ext = object_to_file (tmp_ctx, o, GET_EXTENSION);
-		    if (ext) {
-		      char* name = talloc_asprintf (tmp_ctx, "%s.%s", 
-						    o->title, ext);
-		      FILE_BEGIN (name) {
-			talloc_string = object_to_file (talloc_context, o,
-							GET_CONTENT);
-		      } FILE_END;
+		    MediaFile file = { .o = NULL };
+		    if (MediaFile_GetPreferred (o, &file)) {
+		      if (playlists && file.playlist) {
+		        char* name = MediaFile_GetName (tmp_ctx, o, 
+							file.playlist);
+			FILE_BEGIN (name) {
+			  const char* str = MediaFile_GetContent (&file, 
+								  tmp_ctx);
+			  FILE_SET_STRING (str);
+			  FILE_SET_SIZE (str ? strlen (str) : 0);
+			} FILE_END;
+		      } else {
+		        char* name = MediaFile_GetName (tmp_ctx, o, 
+							file.extension);
+			FILE_BEGIN (name) {
+			  FILE_SET_URL (file.uri);
+		          FILE_SET_SIZE (MediaFile_GetResSize (&file));
+			} FILE_END;
+		      }
 		    }
-		    char* name = talloc_asprintf (tmp_ctx, "%s.xml", o->title);
+		    char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
 		    FILE_BEGIN (name) {
-		      talloc_string = 
-			talloc_asprintf 
-			(talloc_context, 
+		      const char* const str = talloc_asprintf 
+			(tmp_ctx, 
 			 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
 			 XMLUtil_GetNodeString (tmp_ctx, 
 						(IXML_Node*) o->element));
+		      FILE_SET_STRING (str);
+		      FILE_SET_SIZE (str ? strlen (str) : 0);
 		    } FILE_END;
 		  }
-		  o = o->next;
-		}
+		} PTR_LIST_FOR_EACH_PTR_END;
 	      } DIR_END;
 	    }
 	  } DIR_END; // "browse"
@@ -436,11 +385,9 @@ DJFS_Browse (const char* path,
       DIR_BEGIN("a2") {
 	DIR_BEGIN("b1") {
 	  FILE_BEGIN("f1") {
-	    talloc_string = talloc_strdup (talloc_context, "essais");
-	    if (talloc_string == NULL) {
-	      rc = -ENOMEM; 
-	      goto cleanup; // ----------> 
-	    }
+	    const char* const str = "essais";
+	    FILE_SET_SIZE (strlen (str));
+	    FILE_SET_STRING (str);
 	  } FILE_END;
 	} DIR_END;
 	
@@ -472,6 +419,10 @@ DJFS_Browse (const char* path,
   } DIR_END;
 
  cleanup:
+
+  // Release any acquired lock
+  if (lock)
+    ithread_mutex_unlock (lock);
 
   // Delete all temporary storage
   talloc_free (tmp_ctx);

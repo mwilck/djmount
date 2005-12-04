@@ -31,8 +31,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <upnp/ixml.h>
+#include <upnp/ithread.h>
 
 #include "service.h"
+#include "ptr_list.h"
+#include "didl_object.h"
 
 
 // ContentDirectory Service types
@@ -64,48 +67,15 @@ OBJECT_DECLARE_CLASS(ContentDir, Service);
 
 
 /**
- * This structure represents a DIDL-Lite object, as specified in 
- * the ContentDirectory UPnP documentation. 
- */
-// TBD rename to CDS_DIDLObject ?
-
-typedef struct _ContentDir_Object {
-
-  bool  is_container; // else is_item
-
-  /*
-   * The following members are required properties of every DIDL-Lite object. 
-   */
-  char* id;
-  // TBD char* parentId;
-  char* title;
-  char* cds_class;
-  // TBD bool  restricted; // TBD Not Yet Implemented
-
-  /*
-   * full <item> or <container> element, to access optional properties
-   * e.g. "res"
-   */
-  IXML_Element* element;
-
-  struct _ContentDir_Object* next;
-
-} ContentDir_Object;
-
-
-
-// TBD to retrieve optional properties
-//_GetObjectProperty
-
-
-/**
- * Linked list of DIDL-object, returned by Browse functions
+ * List of DIDL-object pointers, returned by Browse functions.
  */
 typedef struct _ContentDir_Children {
 
-  ContentDir_Count   nb_objects;
-  ContentDir_Object* objects;
-  
+	PtrList* 	 objects; // List element type = "DIDLObject*"
+	ithread_mutex_t  mutex;   // to synchronise modifications to the list
+                                  // content
+	// TBD mutex used ?
+
 } ContentDir_Children;
 
 
@@ -161,7 +131,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
  * Return NULL if error, or a DIDL-object if ok.
  * Result should be freed using "talloc_free" when finished.
  */
-ContentDir_Object*
+DIDLObject*
 ContentDir_BrowseMetadata (ContentDir* cds,
 			   void* result_context, 
 			   const char* objectId);

@@ -52,30 +52,10 @@
 #include "minmax.h"
 
 
-#define MY_FUSE_VERSION (FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
-
-
-
-
-/*****************************************************************************
- * Types for operations on open files
- *****************************************************************************/
-
-enum FileMode {
-	
-	FILE_NONE = 0,
-	FILE_READ_STRING
-  
-};
-
-typedef struct _FileHandle {
-    
-	enum FileMode mode;
-	
-	char*  string;
-	size_t length;
-	
-} FileHandle;
+/*
+ * Global settings
+ */
+static bool g_playlists = true;
 
 
 
@@ -108,12 +88,12 @@ static int
 Browse (const char* path, 
 	/* for STAT => */	struct stat* stbuf, 
 	/* for GETDIR => */	fuse_dirh_t h, fuse_dirfil_t filler, 
-	/* for READ => */	void* talloc_context, char** file_content)
+	/* for READ => */	void* talloc_context, FileBuffer** file)
 {
 	int rc = -EIO;
 	if (! Charset_IsConverting()) {
-		rc = DJFS_Browse (path, stbuf, h, filler, 
-				  talloc_context, file_content);
+		rc = DJFS_Browse (path, g_playlists, stbuf, h, filler, 
+				  talloc_context, file);
 	} else {
 		// Convert filename from display charset 
 		char buffer [PATH_MAX];
@@ -121,10 +101,10 @@ Browse (const char* path,
 			(CHARSET_TO_UTF8, path, buffer, sizeof (buffer), NULL);
 		my_dir_handle my_h = { .h = h, .filler = filler };
 		
-		rc = DJFS_Browse (utf_path, stbuf, 
+		rc = DJFS_Browse (utf_path, g_playlists, stbuf, 
 				  (filler ? (void*)&my_h : h), 
 				  (filler ? filler_from_utf8 : NULL),
-				  talloc_context, file_content);
+				  talloc_context, file);
 		if (utf_path != buffer && utf_path != path)
 			talloc_free (utf_path);
 	}
@@ -369,22 +349,23 @@ fs_open (const char* path, struct fuse_file_info* fi)
 	} 
 	
 	void* context = NULL; // TBD
-	FileHandle* fh = talloc (context, FileHandle);
-	if (fh == NULL) 
-		return -ENOMEM; // ---------->
-	
-	char* content = NULL;
-	int rc = Browse (path, NULL, NULL, NULL, fh, &content);
-	if (rc == 0) {
-		*fh = (struct _FileHandle) { 
-			.mode   = FILE_READ_STRING,
-			.string = content,
-			.length = content ? strlen (content) : 0
-		};
-		fi->fh = (intptr_t) fh;
+	FileBuffer* file = NULL;
+	int rc = Browse (path, NULL, NULL, NULL, context, &file);
+	if (rc) {
+		talloc_free (file);
+		file = NULL;
 	}
-	if (rc)
-		talloc_free (fh);
+	fi->fh = (intptr_t) file;
+
+	/* 
+	 * Set 'direct_io' option for buffers constructed from URL, because :
+	 * 1) the size of the file if not always known in advance 
+	 *    (if the DIDL-Lite attribute <res@size> is not set)
+	 * 2) I am not sure that the HTTP Read method always return exactly 
+	 *    the number of bytes requested.
+	 */
+	fi->direct_io = FileBuffer_IsURL (file);
+
 	return rc;
 }
 
@@ -393,29 +374,8 @@ static int
 fs_read (const char* path, char* buf, size_t size, off_t offset,
 	 struct fuse_file_info* fi)
 {
-	int rc;
-	FileHandle* const fh = (FileHandle*) fi->fh;
-	
-	if (buf == NULL) {
-		rc = -EFAULT;
-	} else if (fh == NULL) {
-		rc = -EIO; // should not happen
-	} else {
-		switch (fh->mode) {
-		case FILE_READ_STRING:
-			if (offset >= fh->length) {
-				rc = 0; // EOF // TBD return error ??? XXX
-			} else {
-				size_t n = MIN (size, fh->length - offset);
-				memcpy (buf, fh->string + offset, n);
-				rc = n;
-			}
-			break;
-		default:
-			rc = -EIO; // should not happen
-			break;
-		}
-	}
+	FileBuffer* const file = (FileBuffer*) fi->fh;
+	int rc = FileBuffer_Read (file, buf, size, offset);
 	return rc;
 }
 
@@ -451,12 +411,11 @@ fs_statfs (const char* path, struct statfs* stbuf)
 static int 
 fs_release (const char* path, struct fuse_file_info* fi)
 {
-	FileHandle* const fh = (FileHandle*) fi->fh;
+	FileBuffer* const file = (FileBuffer*) fi->fh;
 	
-	if (fh) {
-		fh->mode = FILE_NONE;
-		talloc_free (fh);
-		fi->fh = 0;
+	if (file) {
+		talloc_free (file);
+		fi->fh = (intptr_t) NULL;
 	}
 	return 0;
 }
@@ -603,9 +562,8 @@ usage (FILE* stream, const char* progname)
      "Mount options (one or more comma separated options) :\n"
 #if HAVE_CHARSET
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
-#else
-     "    (none implemented)\n"
 #endif
+     "    noplaylists            use plain files instead of playlists for AV files\n"
      "\n"
      "Debug levels are one or more comma separated words :\n"
 #ifdef DEBUG
@@ -714,6 +672,8 @@ main (int argc, char *argv[])
 					charset = talloc_strdup 
 						(talloc_autofree_context(), 
 						 s+10);
+				} else if (strncmp (s,"noplaylists", 4) == 0) {
+					g_playlists = false;
 				} else {
 					bad_usage (argv[0], 
 						   "unknown mount option '%s'",
@@ -775,11 +735,9 @@ main (int argc, char *argv[])
 	// Force Read-only (write operations not implemented yet)
 	FUSE_ARG ("-r"); 
 
-#if MY_FUSE_VERSION >= 23
 	// try to fill in d_ino in readdir
 	FUSE_ARG ("-o");
 	FUSE_ARG ("readdir_ino");
-#endif
 
 	/*
 	 * Set charset encoding

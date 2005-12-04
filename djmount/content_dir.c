@@ -63,86 +63,47 @@
 
 
 enum BrowseFlag {
-  BROWSE_CHILDREN,
-  BROWSE_METADATA
+	BROWSE_CHILDREN,
+	BROWSE_METADATA
 };
 
 typedef struct _ContentDir_CacheEntry {
   
-  // "objectId" is either NULL or points to a valid talloc'ed string
-  // (independantly of cached data being valid or not)
-  char* 		objectId;
-  String_HashType 	hash;
+	// "objectId" is either NULL or points to a valid talloc'ed string
+	// (independantly of cached data being valid or not)
+	char* 			objectId;
+	String_HashType 	hash;
 
-  // Cached data "children" is valid iff current time <= limit. 
-  // In particular:
-  //  - "children == NULL" might be a valid cached result,
-  //  - "limit == 0" always means cached data is invalid.
-  time_t		limit;
-  Children*		children;
-
+	// Cached data "children" is valid iff current time <= limit. 
+	// In particular:
+	//  - "children == NULL" might be a valid cached result,
+	//  - "limit == 0" always means cached data is invalid.
+	time_t		limit;
+	Children*	children;
+	
 } CacheEntry;
 
 
 
 /******************************************************************************
- * DestroyObject
+ * DestroyChildren
  *
- * Description: 
- *	DIDL Object destructor, automatically called by "talloc_free".
+ * Description:
+ *      DIDL Object destructor, automatically called by "talloc_free".
  *
  *****************************************************************************/
 static int
-DestroyObject (void* ptr)
+DestroyChildren (void* ptr)
 {
-  if (ptr) {
-    ContentDir_Object* const o = (ContentDir_Object*) ptr;
-
-    ixmlElement_free (o->element);
-   
-    // The "talloc'ed" strings will be deleted automatically 
-  }
-  return 0; // ok -> deallocate memory
-}
-
-
-/******************************************************************************
- * CreateObject
- *****************************************************************************/
-static ContentDir_Object*
-CreateObject (IN void* talloc_context, IN IXML_Element* elem, 
-	      IN bool is_container) 
-{
-  ContentDir_Object* o = talloc(talloc_context, ContentDir_Object);
-  if (o) {
-    *o = (struct _ContentDir_Object) { 
-      .is_container = is_container,
-      .next = NULL
-    };
-
-    IXML_Node* node = NULL;
-    /* Steal the node from its parent (instead of copying it, given
-     * that the parent document is going to be deallocated anyway)
-     */
-    ixmlNode_removeChild (ixmlNode_getParentNode ((IXML_Node*) elem), 
-			  (IXML_Node*) elem, &node);
-    o->element = (IXML_Element*) node;
-
-    o->id = talloc_strdup (o, ixmlElement_getAttribute (o->element, "id"));
-    o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
-				     (node, "dc:title"));
-    o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
-				       (node, "upnp:class"));
-    Log_Printf 
-      (LOG_DEBUG,
-       "new ContentDir_Object : %s : id='%s' title='%s' class='%s'",
-       (is_container ? "container" : "item"), 
-       NN(o->id), NN(o->title), NN(o->cds_class));
-    
-    // Register destructor
-    talloc_set_destructor (o, DestroyObject);
-  }
-  return o;
+	if (ptr) {
+		ContentDir_Children* children = (ContentDir_Children*) ptr;
+		
+		ithread_mutex_destroy (&children->mutex);
+		
+		// Other "talloc'ed" fields will be deleted automatically :
+		// nothing to do
+	}
+	return 0; // ok -> deallocate memory
 }
 
 
@@ -156,12 +117,12 @@ CreateObject (IN void* talloc_context, IN IXML_Element* elem,
 static char*
 int_to_string (void* result_context, intmax_t val)
 {
-  // hardcode some common values for "BrowseAction"
-  switch (val) {
-  case 0:	return "0";
-  case 1:	return "1";
-  default:	return talloc_asprintf (result_context, "%" PRIdMAX, val);
-  }
+	// hardcode some common values for "BrowseAction"
+	switch (val) {
+	case 0:	  return "0";
+	case 1:	  return "1";
+	default:  return talloc_asprintf (result_context, "%" PRIdMAX, val);
+	}
 }
 
 
@@ -170,14 +131,14 @@ int_to_string (void* result_context, intmax_t val)
  *****************************************************************************/
 static int
 BrowseAction (ContentDir* cds,
-	      void* result_context, 
+	      void* result_context,
 	      const char* objectId, 
 	      enum BrowseFlag metadata,
 	      Index starting_index,
 	      Count requested_count,
 	      Count* nb_matched,
 	      Count* nb_returned,
-	      ContentDir_Object** objects)
+	      PtrList* objects)
 {
   if (cds == NULL || objectId == NULL) {
     Log_Printf (LOG_ERROR, "ContentDir_BrowseAction NULL parameter");
@@ -250,10 +211,9 @@ BrowseAction (ContentDir* cds,
       IXML_Element* const elem = (IXML_Element*)
 	ixmlNodeList_item (is_container ? containers : items, 
 			   is_container ? i : i - nb_containers);
-      ContentDir_Object* o = CreateObject (result_context, elem, is_container);
+      DIDLObject* o = DIDLObject_Create (result_context, elem, is_container);
       if (o) {
-	o->next = *objects;
-	*objects = o;
+        PtrList_AddTail (objects, o);
       }
     }
       
@@ -289,61 +249,70 @@ BrowseAll (ContentDir* cds,
 	   const char* objectId, 
 	   enum BrowseFlag metadata)
 {
-  ContentDir_Children* result = talloc (result_context, ContentDir_Children);
-  if (result == NULL) 
-    return NULL; // ---------->
+	ContentDir_Children* result = talloc (result_context, 
+					      ContentDir_Children);
+	if (result == NULL)
+		return NULL; // ---------->
 
-  *result = (ContentDir_Children) { 
-    .nb_objects = 0,
-    .objects 	= NULL
-  };
-  
-  // Request all objects
-  Count nb_matched  = 0;
-  Count nb_returned = 0;
-  
-  int rc = BrowseAction (cds,
-			 result,
+	PtrList* objects = PtrList_Create (result);
+	if (objects == NULL) 
+		goto FAIL; // ---------->
+
+	*result = (ContentDir_Children) {
+		.objects = objects
+	};		
+	ithread_mutex_init (&result->mutex, NULL);
+        talloc_set_destructor (result, DestroyChildren);
+
+	// Request all objects
+	Count nb_matched  = 0;
+	Count nb_returned = 0;
+	
+	int rc = BrowseAction (cds,
+			       objects,
+			       objectId, 
+			       metadata,
+			       /* starting_index  => */ 0,
+			       /* requested_count => */ 0,
+			       &nb_matched,
+			       &nb_returned,
+			       objects);
+	if (rc != UPNP_E_SUCCESS) 
+		goto FAIL; // ---------->
+	
+	// Loop if missing entries
+	// (this is not normal : "RequestedCount" == 0 means to request 
+	// all entries according to ContentDirectory specification)
+	int nb_retry = 0;
+	while (PtrList_GetSize (objects) < nb_matched && nb_retry++ < 2) {
+		Log_Printf (LOG_WARNING, 
+			    "ContentDir_BrowseId ObjectId=%s : "
+			    "got %d results, expected %d. Retry %d ...",
+			    objectId, (int) PtrList_GetSize (objects), 
+			    (int) nb_matched, nb_retry);
+    
+		// Workaround : request missing entries.
+		rc = BrowseAction 
+			(cds,
+			 objects,
 			 objectId, 
 			 metadata,
-			 /* starting_index  => */ 0,
-			 /* requested_count => */ 0,
+			 /* starting_index  => */ PtrList_GetSize (objects),
+			 /* requested_count => */ 
+			 nb_matched - PtrList_GetSize (objects),
 			 &nb_matched,
 			 &nb_returned,
-			 &(result->objects));
-  if (rc != UPNP_E_SUCCESS) {
-    talloc_free (result);
-    return NULL; // ---------->
-  }
-  
-  result->nb_objects = nb_returned;
-  // Loop if missing entries
-  while (result->nb_objects < nb_matched) {
-    // This is not normal : "RequestedCount" == 0 means to request all entries
-    // according to ContentDirectory specification.
-    Log_Printf 
-      (LOG_WARNING, 
-       "ContentDir_BrowseId ObjectId=%s : got %d results, expected %d",
-       objectId, (int) result->nb_objects, (int) nb_matched);
-    
-    // Workaround : request missing entries.
-    rc = BrowseAction(cds,
-		      result,
-		      objectId, 
-		      metadata,
-		      /* starting_index  => */ result->nb_objects,
-		      /* requested_count => */ nb_matched - result->nb_objects,
-		      &nb_matched,
-		      &nb_returned,
-		      &(result->objects));
-    // Stop if error, or no more results (to prevent infinite loop)
-    if (rc != UPNP_E_SUCCESS || nb_returned == 0)
-      break; // ---------->
-    
-    result->nb_objects += nb_returned;
-  }
-  
-  return result;
+			 objects);
+		// Stop if error, or no more results (to prevent infinite loop)
+		if (rc != UPNP_E_SUCCESS || nb_returned == 0)
+			break; // ---------->
+	}
+	
+	return result;
+
+FAIL:
+	talloc_free (result);
+	return NULL; 
 }
 
 
@@ -353,24 +322,24 @@ BrowseAll (ContentDir* cds,
 static int 
 DestroyResult (void* ptr)
 {
-  BrowseResult* br = ptr;
-  
-  if (br) {
-    if (br->cds && br->cds->m.cache)
-      ithread_mutex_lock (&br->cds->m.cache_mutex);
-
-    // Cached data will be really freed by talloc 
-    // when its reference count drops to zero.
-    if (talloc_free (br->children) == 0)
-      Log_Printf (LOG_DEBUG, "ContentDir CACHE_FREE");
-    
-    if (br->cds && br->cds->m.cache)
-      ithread_mutex_unlock (&br->cds->m.cache_mutex);
-
-    *br = (BrowseResult) { };
-  }
-
-  return 0;
+	BrowseResult* br = ptr;
+	
+	if (br) {
+		if (br->cds && br->cds->m.cache)
+			ithread_mutex_lock (&br->cds->m.cache_mutex);
+		
+		// Cached data will be really freed by talloc 
+		// when its reference count drops to zero.
+		if (talloc_free (br->children) == 0)
+			Log_Printf (LOG_DEBUG, "ContentDir CACHE_FREE");
+		
+		if (br->cds && br->cds->m.cache)
+			ithread_mutex_unlock (&br->cds->m.cache_mutex);
+		
+		*br = (BrowseResult) { };
+	}
+	
+	return 0;
 }
 
 /******************************************************************************
@@ -467,24 +436,28 @@ ContentDir_BrowseChildren (ContentDir* cds,
 /******************************************************************************
  * ContentDir_BrowseMetadata
  *****************************************************************************/
-ContentDir_Object*
+DIDLObject*
 ContentDir_BrowseMetadata (ContentDir* cds,
 			   void* result_context, 
 			   const char* objectId)
 {
-  // TBD: no cache in BrowseMetadata method for the time being
+	// TBD: no cache in BrowseMetadata method for the time being
   
-  ContentDir_Object* res = NULL;
-  Count nb_matched  = 0;
-  Count nb_returned = 0;
-  int rc = BrowseAction (cds, result_context, objectId, BROWSE_METADATA,
-			 0, 1, &nb_matched, &nb_returned, &res);
-  if (rc == UPNP_E_SUCCESS && nb_returned != 1) {
-    Log_Printf (LOG_ERROR, 
-		"ContentDir_BrowseMetadata : not 1 result exactly Id=%s",
-		NN(objectId));
-  }
-  return res;
+	PtrList* objects = PtrList_Create (NULL);
+	if (objects == NULL)
+		return NULL; // ---------->
+
+	Count nb_matched  = 0;
+	Count nb_returned = 0;
+	int rc = BrowseAction (cds, result_context, objectId, BROWSE_METADATA,
+			       0, 1, &nb_matched, &nb_returned, objects);
+	if (rc == UPNP_E_SUCCESS && nb_returned != 1) {
+		Log_Printf (LOG_ERROR, "ContentDir_BrowseMetadata : "
+			    "not 1 result exactly Id=%s", NN(objectId));
+	}
+	DIDLObject* res = PtrList_GetHead (objects);
+	talloc_free (objects);
+	return res;
 }
 
 
@@ -548,12 +521,13 @@ get_status_string (const Service* serv,
 static void
 finalize (Object* obj)
 {
-  ContentDir* const cds = (ContentDir*) obj;
+	ContentDir* const cds = (ContentDir*) obj;
 
-  if (cds && cds->m.cache)
-    ithread_mutex_destroy (&cds->m.cache_mutex);
-
-  // Other "talloc'ed" fields will be deleted automatically : nothing to do 
+	if (cds && cds->m.cache)
+		ithread_mutex_destroy (&cds->m.cache_mutex);
+	
+	// Other "talloc'ed" fields will be deleted automatically : 
+	// nothing to do 
 }
 
 
@@ -563,38 +537,39 @@ finalize (Object* obj)
 
 const ContentDirClass* OBJECT_CLASS_PTR(ContentDir)
 {
-  static ContentDirClass the_class = { .o.size = 0 };
-  static const ContentDir the_default_object = { .isa = &the_class };
-
-  // Initialize non-const fields on first call 
-  if (the_class.o.size == 0) {
-
-    _ObjectClass_Lock();
-
-    // 1. Copy superclass methods
-    const ServiceClass* super = OBJECT_CLASS_PTR(Service);
-    the_class.m._ = *super;
-
-    // 2. Initialize specific fields
-    the_class.o = (ObjectClass) {
-      .magic		= super->o.magic,
-      .name 		= "ContentDir",
-      .super		= &super->o,
-      .size		= sizeof (ContentDir),
-      .initializer 	= &the_default_object,
-      .finalize 	= finalize,
-    };
-    the_class.m._.m.get_status_string = get_status_string;
-
-    // Class-specific initialization :
-    // Increase maximum permissible content-length for SOAP messages
-    // because "Browse" answers can be very large if contain lot of objects.
-    UpnpSetMaxContentLength (MAX_CONTENT_LENGTH);
-
-    _ObjectClass_Unlock();
-  }
-  
-  return &the_class;
+	static ContentDirClass the_class = { .o.size = 0 };
+	static const ContentDir the_default_object = { .isa = &the_class };
+	
+	// Initialize non-const fields on first call 
+	if (the_class.o.size == 0) {
+		
+		_ObjectClass_Lock();
+		
+		// 1. Copy superclass methods
+		const ServiceClass* super = OBJECT_CLASS_PTR(Service);
+		the_class.m._ = *super;
+		
+		// 2. Initialize specific fields
+		the_class.o = (ObjectClass) {
+			.magic		= super->o.magic,
+			.name 		= "ContentDir",
+			.super		= &super->o,
+			.size		= sizeof (ContentDir),
+			.initializer 	= &the_default_object,
+			.finalize 	= finalize,
+		};
+		the_class.m._.m.get_status_string = get_status_string;
+		
+		// Class-specific initialization :
+		// Increase maximum permissible content-length for SOAP 
+		// messages, because "Browse" answers can be very large 
+		// if contain lot of objects.
+		UpnpSetMaxContentLength (MAX_CONTENT_LENGTH);
+		
+		_ObjectClass_Unlock();
+	}
+	
+	return &the_class;
 }
 
 
@@ -607,33 +582,36 @@ ContentDir_Create (void* talloc_context,
 		   IXML_Element* serviceDesc, 
 		   const char* base_url)
 {
-  ContentDir* cds = _OBJECT_TALLOC (talloc_context, ContentDir);
-  if (cds == NULL)
-    goto error; // ---------->
-
-  int rc = _Service_Initialize (SUPER_CAST(cds), ctrlpt_handle, 
-				serviceDesc, base_url);
-  if (rc)
-    goto error; // ---------->
-  
-  if (CACHE_SIZE > 0 && CACHE_TIMEOUT > 0) {
-    cds->m.cache = talloc_array (cds, CacheEntry, CACHE_SIZE);
-    if (cds->m.cache == NULL)
-      goto error; // ---------->
-    int i;
-    for (i = 0; i < CACHE_SIZE; i++)
-      cds->m.cache[i] = (CacheEntry) { .objectId = NULL, .limit = 0 };
-    cds->m.cache_access = cds->m.cache_hit = cds->m.cache_collide = 
-	    cds->m.cache_expired = 0;
-    ithread_mutex_init (&cds->m.cache_mutex, NULL);
-  }
-
-  return cds; // ---------->
-  
- error:
-  Log_Print (LOG_ERROR, "ContentDir_Create error");
-  // TBD there might be a leak here,
-  // TBD but don't try to call talloc_free on partialy initialized object
-  return NULL;
+	ContentDir* cds = _OBJECT_TALLOC (talloc_context, ContentDir);
+	if (cds == NULL)
+		goto error; // ---------->
+	
+	int rc = _Service_Initialize (SUPER_CAST(cds), ctrlpt_handle, 
+				      serviceDesc, base_url);
+	if (rc)
+		goto error; // ---------->
+	
+	if (CACHE_SIZE > 0 && CACHE_TIMEOUT > 0) {
+		cds->m.cache = talloc_array (cds, CacheEntry, CACHE_SIZE);
+		if (cds->m.cache == NULL)
+			goto error; // ---------->
+		int i;
+		for (i = 0; i < CACHE_SIZE; i++)
+			cds->m.cache[i] = (CacheEntry) { 
+				.objectId = NULL, 
+				.limit = 0 
+			};
+		cds->m.cache_access = cds->m.cache_hit = 
+			cds->m.cache_collide = cds->m.cache_expired = 0;
+		ithread_mutex_init (&cds->m.cache_mutex, NULL);
+	}
+	
+	return cds; // ---------->
+	
+error:
+	Log_Print (LOG_ERROR, "ContentDir_Create error");
+	// TBD there might be a leak here,
+	// TBD but don't try to call talloc_free on partialy initialized object
+	return NULL;
 }
 
