@@ -87,13 +87,13 @@ MediaFile_GetResSize (const MediaFile* const file);
 
 
 /*****************************************************************************
- * @brief       Returns the complete content of the file.
+ * @brief       Returns the complete content of the playlist file.
  *
  * @param file                  the MediaFile object
  * @param result_context        parent context to allocate result, may be NULL
  *****************************************************************************/
 char*
-MediaFile_GetContent (const MediaFile* file, void* result_context);
+MediaFile_GetPlaylistContent (const MediaFile* file, void* result_context);
 
 
 #ifdef __cplusplus

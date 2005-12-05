@@ -164,7 +164,7 @@ MediaFile_GetName (void* result_context,
 	char* name = NULL;
 	if (o && o->title) {
 		// Append extension only if not already present
-		if (extension) {
+		if (extension && *extension) {
 			const char* ptr = strrchr (o->title, '.');
 			if (ptr == NULL || strcmp (ptr+1, extension) != 0)
 				name = talloc_asprintf (result_context, 
@@ -179,12 +179,12 @@ MediaFile_GetName (void* result_context,
 
 
 /******************************************************************************
- * MediaFile_GetContent
+ * MediaFile_GetPlaylistContent
  *****************************************************************************/
 
 char*
-MediaFile_GetContent (const MediaFile* const file,
-		      void* result_context)
+MediaFile_GetPlaylistContent (const MediaFile* const file,
+			      void* result_context)
 {
 	if (file == NULL)
 		return NULL; // ---------->
