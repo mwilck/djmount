@@ -134,6 +134,22 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 			    "UPNP Get Http url '%s' "
 			    "size %" PRIuMAX " offset %" PRIuMAX,
 			    file->url, (uintmax_t) size, (uintmax_t) offset);
+		
+		/*
+		 * Warning : the libupnp API (UpnpOpenHttpGetEx, 
+		 * UpnpReadHttpGet ...) has strange prototypes for length 
+		 * and ranges : "int" is not sufficient for large files !
+		 */
+		if (offset > FILE_BUFFER_MAX_CONTENT_LENGTH ||
+		    offset > FILE_BUFFER_MAX_CONTENT_LENGTH - size) {
+			Log_Printf (LOG_ERROR, 
+				    "UPNP Get Http url '%s' too big "
+				    "size %" PRIuMAX " or offset %" PRIuMAX,
+				    file->url, (uintmax_t) size, 
+				    (uintmax_t) offset);
+			return -EINVAL; // ---------->
+		}
+
 		// TBD
 		// TBD this is not optimised !! open / close on each read
 		// TBD
@@ -142,8 +158,6 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		int contentLength = 0;
 		int httpStatus    = 0;
 		char* contentType = NULL;
-		// TBD "UpnpOpenHttpGetEx" has strange prototypes for
-		// length : "int" is not sufficient for large files !!???
 		int rc = UpnpOpenHttpGetEx (file->url, &handle,
 					    &contentType, &contentLength,
 					    &httpStatus,
@@ -154,8 +168,6 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 			goto HTTP_FAIL; // ---------->
 		// TBD TBD free contentType ??? I don't know ...
 
-		// TBD "UpnpReadHttpGet" has strange prototypes for
-		// length : "u_int" is not sufficient for large files !!???
 		unsigned int read_size = size;
 		rc = UpnpReadHttpGet (handle, buffer, &read_size,
 				      HTTP_DEFAULT_TIMEOUT);

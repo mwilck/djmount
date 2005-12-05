@@ -26,6 +26,8 @@
 
 #include <sys/types.h>		// Import "off_t" and "ssize_t"
 #include <stdbool.h>
+#include <limits.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus
@@ -45,6 +47,20 @@ extern "C" {
  *****************************************************************************/
 
 typedef struct _FileBuffer FileBuffer;
+
+
+/******************************************************************************
+ * @var FILE_BUFFER_MAX_CONTENT_LENGTH
+ *
+ *	BIG FAT WARNING : the libupnp does not correctly handle
+ *	HTTP download/get when CONTENT-LENGTH is bigger than "int",
+ *	because the API (and implementation) is using "int" or "unsigned int" 
+ *	all over the place. Therefore on a typical 32-bits hardware it is 
+ *	not possible to access files with size > 2 Gb.
+ *
+ *****************************************************************************/
+
+#define FILE_BUFFER_MAX_CONTENT_LENGTH		((uintmax_t) INT_MAX)
 
 
 /*****************************************************************************

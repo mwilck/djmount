@@ -297,10 +297,8 @@ DJFS_Browse (const char* const path, bool playlists,
 	for (i = 0; i < names->nb; i++) {
           str = talloc_asprintf_append (str, "%s\n", names->str[i]);
 	}
-	if (str) {
- 	  FILE_SET_STRING (str);
-          FILE_SET_SIZE (strlen (str));
-	}
+	FILE_SET_STRING (str);
+	FILE_SET_SIZE (str ? strlen (str) : 0);
       }
       // else content defaults to NULL if no devices
     } FILE_END;
@@ -337,12 +335,15 @@ DJFS_Browse (const char* const path, bool playlists,
 		  } else {
 		    MediaFile file = { .o = NULL };
 		    if (MediaFile_GetPreferred (o, &file)) {
-		      if (playlists && file.playlist) {
+			off_t const res_size = MediaFile_GetResSize (&file);
+			if ( file.playlist &&
+			     (playlists ||
+			      res_size > FILE_BUFFER_MAX_CONTENT_LENGTH) ) {
 		        char* name = MediaFile_GetName (tmp_ctx, o, 
 							file.playlist);
 			FILE_BEGIN (name) {
-			  const char* str = MediaFile_GetContent (&file, 
-								  tmp_ctx);
+			  const char* const str = MediaFile_GetPlaylistContent 
+			    (&file, tmp_ctx);
 			  FILE_SET_STRING (str);
 			  FILE_SET_SIZE (str ? strlen (str) : 0);
 			} FILE_END;
@@ -351,7 +352,7 @@ DJFS_Browse (const char* const path, bool playlists,
 							file.extension);
 			FILE_BEGIN (name) {
 			  FILE_SET_URL (file.uri);
-		          FILE_SET_SIZE (MediaFile_GetResSize (&file));
+		          FILE_SET_SIZE (res_size);
 			} FILE_END;
 		      }
 		    }
