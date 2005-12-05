@@ -54,7 +54,7 @@
 
 #define DEFAULT_MAXAGE 1800
 
-extern int g_maxContentLength;
+extern size_t g_maxContentLength;
 
 // 30-second timeout
 #define UPNP_TIMEOUT (30 + MINIMUM_DELAY)

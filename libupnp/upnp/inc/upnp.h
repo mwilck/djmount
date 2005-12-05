@@ -1281,6 +1281,14 @@ int UpnpUnRegisterRootDevice(
    );
 
 
+/** OBSOLETE METHOD : use {\bf UpnpSetMaxContentLength} instead.
+ */
+int UpnpSetContentLength(
+    IN UpnpClient_Handle Hnd,  
+    IN int contentLength       
+    );
+
+
 /** Sets the maximum content-length that the SDK will process on an incoming 
  *  SOAP requests or responses. This API allows devices that have memory 
  *  constraints to exhibit consistent behaviour if the size of the 
@@ -1294,7 +1302,7 @@ int UpnpUnRegisterRootDevice(
  *    \end{itemize}
  */
 int UpnpSetMaxContentLength(
-    IN int contentLength       /** The maximum permissible content length 
+    IN size_t contentLength    /** The maximum permissible content length 
 			           for incoming SOAP actions, in bytes. */
     );
 

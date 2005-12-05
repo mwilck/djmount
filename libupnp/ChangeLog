@@ -1,3 +1,10 @@
+2005-12-05  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/inc/upnp.h: re-declare obsolete method UpnpSetContentLength,
+	  for binary compatibility with previous libupnp version.
+
+	* upnp/src/api/upnpapi.c: correct type of g_maxContentLength to size_t
+
 2005-11-01  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* autoconfiscate library : replace all makefiles by Makefile.am

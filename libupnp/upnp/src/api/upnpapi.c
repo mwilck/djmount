@@ -104,7 +104,7 @@ CLIENTONLY( ithread_mutex_t GlobalClientSubscribeMutex;
 // Maximum content-length that the SDK will process on an incoming packet. 
 // Content-Length exceeding this size will be not processed and error 413 
 // (HTTP Error Code) will be returned to the remote end point.
-int g_maxContentLength = DEFAULT_SOAP_CONTENT_LENGTH; // in bytes
+size_t g_maxContentLength = DEFAULT_SOAP_CONTENT_LENGTH; // in bytes
 
 // Global variable to denote the state of Upnp SDK 
 //    = 0 if uninitialized, = 1 if initialized.
@@ -4127,6 +4127,24 @@ UpnpFree( IN void *item )
         free( item );
 }
 
+
+/**************************************************************************
+ * Function: UpnpSetContentLength
+ * OBSOLETE METHOD : use {\bf UpnpSetMaxContentLength} instead.
+ ***************************************************************************/
+int
+UpnpSetContentLength( IN UpnpClient_Handle Hnd,
+                               /** The handle of the device instance
+                                  for which the coincoming content length needs
+                                  to be set. */
+
+                      IN int contentLength
+                               /** Permissible content length  */
+     )
+{
+    return UpnpSetMaxContentLength (contentLength);
+}
+	
 /**************************************************************************
  * Function: UpnpSetMaxContentLength
  *
@@ -4147,7 +4165,7 @@ UpnpFree( IN void *item )
  ***************************************************************************/
 int
 UpnpSetMaxContentLength (
-                      IN int contentLength
+                      IN size_t contentLength
                                /** Permissible content length, in bytes  */
      )
 {
