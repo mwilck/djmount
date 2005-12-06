@@ -53,11 +53,12 @@ typedef struct _DIDLObject {
 
 	/*
 	 * The following members are required properties of every 
-	 * DIDL-Lite object. 
+	 * DIDL-Lite object. The "DIDLObject_Create" method make sure
+	 * that those fields are never NULL (but can be empty "").
 	 */
 	char* id;
 	// TBD char* parentId;
-	char* title;
+	char* title;	
 	char* cds_class;
 	// TBD bool  restricted; // TBD Not Yet Implemented
 

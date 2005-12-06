@@ -78,15 +78,24 @@ DIDLObject_Create (void* talloc_context,
 
 		o->id = talloc_strdup (o, ixmlElement_getAttribute
 				       (o->element, "id"));
+		if (o->id == NULL)
+			o->id = "";
+
 		o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
 						 (node, "dc:title"));
+		if (o->title == NULL)
+			o->title = "";
+
 		o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
 						   (node, "upnp:class"));
+		if (o->cds_class == NULL)
+			o->cds_class = "";
+
 		Log_Printf (LOG_DEBUG,
 			    "new DIDLObject : %s : id='%s' "
 			    "title='%s' class='%s'",
 			    (is_container ? "container" : "item"), 
-			    NN(o->id), NN(o->title), NN(o->cds_class));
+			    o->id, o->title, o->cds_class);
 		
 		// Register destructor
 		talloc_set_destructor (o, DestroyObject);
