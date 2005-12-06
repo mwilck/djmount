@@ -55,7 +55,7 @@
 /*
  * Global settings
  */
-static bool g_playlists = true;
+static bool g_playlists = false;
 
 
 
@@ -563,7 +563,7 @@ usage (FILE* stream, const char* progname)
 #if HAVE_CHARSET
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
 #endif
-     "    noplaylists            use plain files instead of playlists for AV files\n"
+     "    playlists              use playlists for AV files, instead of plain files\n"
      "\n"
      "Debug levels are one or more comma separated words :\n"
 #ifdef DEBUG
@@ -672,8 +672,8 @@ main (int argc, char *argv[])
 					charset = talloc_strdup 
 						(talloc_autofree_context(), 
 						 s+10);
-				} else if (strncmp (s,"noplaylists", 4) == 0) {
-					g_playlists = false;
+				} else if (strncmp (s,"playlists", 5) == 0) {
+					g_playlists = true;
 				} else {
 					bad_usage (argv[0], 
 						   "unknown mount option '%s'",

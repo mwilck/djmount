@@ -1,3 +1,16 @@
+2005-12-06  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/fuse_main.c (main): invert playlist option "-o playlists",
+	  so that sharing directly the content of files is now the default.
+
+	* djmount/didl_object.c, djmount/didl_object.h : make sure that 
+	  required DIDL-Lite properties are never NULL
+
+	* djmount/device.c, djmount/device.h (Device_GetDescDocURL): new method
+
+	* djmount/device.c, djmount/device.h (Device_GetDescDocItem): add 
+	  missing const
+
 2005-12-05  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/file_buffer.h : define FILE_BUFFER_MAX_CONTENT_LENGTH
@@ -6,7 +19,7 @@
 
 2005-12-04  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* djmount : new option "noplaylists" to expose directly the content 
+	* djmount : new option "-o noplaylists" to expose directly the content 
 	  of files (instead of simply playlists).
 
 	* configure.ac: upgrade to check for FUSE >= 2.4 (required for
