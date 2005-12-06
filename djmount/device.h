@@ -66,11 +66,20 @@ Device_Create (void* context,
 
 
 /** 
- * @brief Returns the value of a node from the Device Description Document.
- * 	The return string should be copied if necessary e.g. if the Device
- *	is to be destroyed.	
+ * @brief Returns the URL for the Device Description Document.
+ * 	The returned string is internal to the Device, and should be copied 
+ *	if necessary e.g. if the Device is to be destroyed.	
  */
-char*
+const char*
+Device_GetDescDocURL (const Device* dev);
+
+
+/** 
+ * @brief Returns the value of a node from the Device Description Document.
+ * 	The returned string is internal to the Device, and should be copied 
+ *	if necessary e.g. if the Device is to be destroyed.	
+ */
+const char*
 Device_GetDescDocItem (const Device* dev, const char* item);
 
 

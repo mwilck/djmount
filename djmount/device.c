@@ -218,8 +218,8 @@ Device* Device_Create (void* context,
   dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
 				     (dev, "friendlyName"));
 
-  char* baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
-  char* relURL  = Device_GetDescDocItem (dev, "presentationURL");
+  const char* const baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
+  const char* const relURL  = Device_GetDescDocItem (dev, "presentationURL");
   
   const char* const base = ( baseURL && baseURL[0] ) ? baseURL : descDocURL;
   UpnpUtil_ResolveURL (dev, base, relURL, &dev->presURL);
@@ -254,15 +254,26 @@ Device* Device_Create (void* context,
 
 
 /*****************************************************************************
+ * Device_GetDescDocURL
+ *****************************************************************************/
+const char*
+Device_GetDescDocURL (const Device* dev)
+{
+	return (dev ? dev->descDocURL : NULL);
+}
+
+
+/*****************************************************************************
  * Device_GetDescDocItem
  *****************************************************************************/
-char*
+const char*
 Device_GetDescDocItem (const Device* dev, const char* item)
 {
-  if (dev && item)
-    return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, item);
-  else 
-    return NULL;
+	if (dev && item)
+		return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, 
+						  item);
+	else 
+		return NULL;
 }
 
 
