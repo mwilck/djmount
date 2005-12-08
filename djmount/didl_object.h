@@ -54,7 +54,8 @@ typedef struct _DIDLObject {
 	/*
 	 * The following members are required properties of every 
 	 * DIDL-Lite object. The "DIDLObject_Create" method make sure
-	 * that those fields are never NULL (but can be empty "").
+	 * that those fields are never NULL, and make sure that "id" and
+	 * "title" are never empty "".
 	 */
 	char* id;
 	// TBD char* parentId;
@@ -95,6 +96,16 @@ DIDLObject_Create (void* talloc_context,
 		   IN IXML_Element* element,
 		   IN bool is_container);
 	
+
+/*****************************************************************************
+ * Return a string with the XML Element of the given DIDL-Lite Object.
+ *
+ * @param result_context	parent context to allocate result, may be NULL
+ *****************************************************************************/
+char*
+DIDLObject_GetElementString (const DIDLObject* o, void* result_context);
+
+
 
 #ifdef __cplusplus
 }; // extern "C"

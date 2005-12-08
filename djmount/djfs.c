@@ -361,8 +361,7 @@ DJFS_Browse (const char* const path, bool playlists,
 		      const char* const str = talloc_asprintf 
 			(tmp_ctx, 
 			 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
-			 XMLUtil_GetNodeString (tmp_ctx, 
-						(IXML_Node*) o->element));
+			 DIDLObject_GetElementString (o, tmp_ctx));
 		      FILE_SET_STRING (str);
 		      FILE_SET_SIZE (str ? strlen (str) : 0);
 		    } FILE_END;

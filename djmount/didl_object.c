@@ -61,6 +61,12 @@ DIDLObject_Create (void* talloc_context,
 		   IN IXML_Element* elem, 
 		   IN bool is_container) 
 {
+	if (elem == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "DIDLObject can't create from NULL XML Element");
+		return NULL; // ---------->
+	}
+
 	DIDLObject* o = talloc (talloc_context, DIDLObject);
 	if (o) {
 		*o = (DIDLObject) { 
@@ -78,14 +84,27 @@ DIDLObject_Create (void* talloc_context,
 
 		o->id = talloc_strdup (o, ixmlElement_getAttribute
 				       (o->element, "id"));
-		if (o->id == NULL)
-			o->id = "";
+		if (o->id == NULL || o->id[0] == NUL) {
+			char* s = DIDLObject_GetElementString (o, NULL);
+			Log_Printf (LOG_ERROR, 
+				    "DIDLObject can't create with NULL "
+				    "or empty id, XML = %s", s);
+			talloc_free (s);
+			talloc_free (o);
+			return NULL; // ---------->
+		}
 
 		o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
 						 (node, "dc:title"));
-		if (o->title == NULL)
-			o->title = "";
-
+		if (o->title == NULL) {
+			char* s = DIDLObject_GetElementString (o, NULL);
+			Log_Printf (LOG_WARNING, 
+				    "DIDLObject NULL or empty <dc:title>, "
+				    "XML = %s", s);
+			talloc_free (s);
+			o->title = talloc_asprintf (o, "_id%s", o->id);
+		}
+		
 		o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
 						   (node, "upnp:class"));
 		if (o->cds_class == NULL)
@@ -101,6 +120,21 @@ DIDLObject_Create (void* talloc_context,
 		talloc_set_destructor (o, DestroyObject);
 	}
 	return o;
+}
+
+
+/******************************************************************************
+ * DIDLObject_Create
+ *****************************************************************************/
+char*
+DIDLObject_GetElementString (const DIDLObject* o, void* result_context)
+{
+	char* s = NULL;
+	if (o) {
+		s = XMLUtil_GetNodeString (result_context, 
+					   (IXML_Node*) o->element);
+	}
+	return s;
 }
 
 

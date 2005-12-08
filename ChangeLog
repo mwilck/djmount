@@ -1,10 +1,16 @@
+2005-12-08  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/didl_object.c (DIDLObject_Create): make sure that 'id' and
+	  'title' properties are never NULL or empty
+
 2005-12-06  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/fuse_main.c (main): invert playlist option "-o playlists",
 	  so that sharing directly the content of files is now the default.
 
 	* djmount/didl_object.c, djmount/didl_object.h : make sure that 
-	  required DIDL-Lite properties are never NULL
+	  required DIDL-Lite properties are never NULL (caused crash when
+	  browsing GeeXboX uShare 0.9.3)
 
 	* djmount/device.c, djmount/device.h (Device_GetDescDocURL): new method
 
