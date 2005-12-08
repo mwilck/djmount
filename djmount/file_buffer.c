@@ -186,8 +186,8 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 				    "UPNP Get Http url '%s' error %d (%s)", 
 				    file->url, rc, UpnpGetErrorMessage (rc));
 			switch (rc) {
-			case UPNP_E_OUTOF_MEMORY : 	n = -ENOMEM;
-			default:			n = -EIO;
+			case UPNP_E_OUTOF_MEMORY : 	n = -ENOMEM; break;
+			default:			n = -EIO;    break;
 			}
 		}
 	}
