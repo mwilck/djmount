@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.41, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.50, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)

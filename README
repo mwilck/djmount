@@ -11,11 +11,9 @@ the media content of compatible UPnP AV devices (see "Known Compatible Devices"
 paragraph below).
 
 djmount discovers automatically all UPnP AV Media Servers on the network,
-and make the content available in a directory tree.
-An Audio or Video file is rendered as a playlist (.m3u or .ram) which
-contains an URL for the file. Therefore only the address of the file
-is exported through djmount ; the actual content is streamed through
-HTTP when the playlist is accessed by your favorite media player.
+and make the content available in a directory tree. All shared files 
+(e.g. Audio or Video files) are directly visible and can be played using 
+your favorite media player.
 
 
 djmount is free software, licensed under the terms of the GNU General Public
@@ -49,17 +47,12 @@ dr-xr-xr-x   5 root root 512 jan  1  2000 Pictures/
 dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
 
 $ ls -l browse/Music/Artists/Tinariwen/
--r--r--r--  1 root root  66 jan  1  2000 Chatma.m3u
--r--r--r--  1 root root 722 jan  1  2000 Chatma.xml
--r--r--r--  1 root root  73 jan  1  2000 Chet Boghassa.m3u
--r--r--r--  1 root root 729 jan  1  2000 Chet Boghassa.xml
+-r--r--r--  1 root root 5407087 jan  1  2000 Chatma.mp3
+-r--r--r--  1 root root     722 jan  1  2000 Chatma.xml
+-r--r--r--  1 root root      73 jan  1  2000 Chet Boghassa.mp3
+-r--r--r--  1 root root 3751143 jan  1  2000 Chet Boghassa.xml
 
-$ cat browse/Music/Artists/Tinariwen/Chatma.m3u
-#EXTM3U
-#EXTINF:336,Chatma
-http://192.168.1.100:9000/disk/208.mp3
-
-$ xmms browse/Music/Artists/Tinariwen/Chatma.m3u
+$ xmms browse/Music/Artists/Tinariwen/
 
 $ fusermount -u /mnt/av
 
@@ -152,18 +145,24 @@ Usage
 
 	djmount /mnt/upnp
 
-   djmount supports the usual --help option. Another useful option is "-o"
-   which can set mount options, in particular "-o iocharset=<charset>" 
-   for proper encoding of filenames, in case djmount has not autodetected 
-   your settings (which should be the default).
-   Example :
-
-	djmount -o iocharset=iso-8859-15 /mnt/upnp
-
 3) when finished, unmount the mountpoint (see details in FUSE documentation):
 
 	fusermount -u /mnt/upnp
 
+4) Options :
+   see "djmount --help" for the complete list of options.
+   A useful option is "-o" which can set mount options, in particular:
+ 
+   "-o iocharset=<charset>" for proper encoding of filenames, in case djmount 
+   has not autodetected your settings (which should be the default).
+   Example :
+	djmount -o iocharset=iso-8859-15 /mnt/upnp
+
+   "-o playlists" to render all Audio or Video files as playlists (.m3u or 
+   .ram), which contains an URL for the file. In this mode, only the address 
+   of the file is exported through djmount ; the actual content is streamed 
+   through HTTP when the playlist is accessed by your favorite media player.
+   This mode was the only mode possible for djmount before version 0.50.
 
 
 Known Compatible Devices
@@ -176,7 +175,7 @@ Devices / Media Servers :
   versions 2.7.2 and 2.9.1 for Linux are ok
 
 * GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
-  versions 0.4.0, 0.5.0 or 0.7.0 ok (version 0.6.0 not working).
+  versions 0.7.0 and 0.8.2 ok (version 0.8.0 not ok)
 
 * Ahead Nero MediaHome Server ( http://www.nero.com/en/Nero_MediaHome.html )
   included in Nero ultra 6.6
@@ -186,7 +185,7 @@ Devices / Media Servers :
   requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
 
 * GeeXboX uShare on Linux ( http://ushare.geexbox.org/ )
-  version 0.9.1
+  version 0.9.1 and 0.9.3
 
 
 This page describes how to share A/V content with some of the above servers :

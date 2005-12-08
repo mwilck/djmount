@@ -1,4 +1,32 @@
 
+What is new in 0.50
+
+* major change : the content of all files is now directly shared by djmount,
+  instead of playlists e.g. MP3 files are directly visible, instead of M3U 
+  files. This allow : 
+    - seeking A/V files in media players not supporting seeks in HTTP streams,
+    - accessing files without playlist formats e.g. images.
+  Known limitation : files larger than 2 Gb are not always treated correctly.
+
+  The old djmount behaviour (sharing of playlists) can still be obtained using
+  the "-o playlists" mount option (only for A/V files though).
+
+  Note: this change requires using FUSE >= 2.4
+
+* configure: add new --disable-charset option to suppress all character 
+  conversion code (i.e. assume everything is in UTF-8)
+
+* fix crash when browsing GeeXboX uShare 0.9.3 (empty directory name)
+
+* fix potential corruption of filenames with international characters
+
+* fix: relative paths to mount points are now working in daemon mode 
+  (reported by Andre Landwehr)
+
+* code refactoring and miscellaneous improvements.
+
+============================================================================
+
 What is new in 0.40
 
 * new build system : standard autoconf + automake support for all packages,
