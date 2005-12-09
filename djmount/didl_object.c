@@ -96,13 +96,17 @@ DIDLObject_Create (void* talloc_context,
 
 		o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
 						 (node, "dc:title"));
-		if (o->title == NULL) {
+		if (o->title == NULL || o->title[0] == NUL) {
 			char* s = DIDLObject_GetElementString (o, NULL);
 			Log_Printf (LOG_WARNING, 
 				    "DIDLObject NULL or empty <dc:title>, "
 				    "XML = %s", s);
 			talloc_free (s);
 			o->title = talloc_asprintf (o, "_id%s", o->id);
+		} else if (strcmp (o->title, ".") == 0) {
+			o->title = "._";
+		} else if (strcmp (o->title, "..") == 0) {
+			o->title = ".._";
 		}
 		
 		o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
