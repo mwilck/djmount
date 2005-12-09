@@ -23,7 +23,7 @@ What is new in 0.50
 * fix: relative paths to mount points are now working in daemon mode 
   (reported by Andre Landwehr)
 
-* code refactoring and miscellaneous improvements.
+* code refactoring and miscellaneous code improvements.
 
 ============================================================================
 

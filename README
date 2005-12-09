@@ -175,7 +175,7 @@ Devices / Media Servers :
   versions 2.7.2 and 2.9.1 for Linux are ok
 
 * GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
-  versions 0.7.0 and 0.8.2 ok (version 0.8.0 not ok)
+  versions 0.7.0 (version 0.8.0 not ok, version 0.8.2 should be ok)
 
 * Ahead Nero MediaHome Server ( http://www.nero.com/en/Nero_MediaHome.html )
   included in Nero ultra 6.6
@@ -185,7 +185,7 @@ Devices / Media Servers :
   requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
 
 * GeeXboX uShare on Linux ( http://ushare.geexbox.org/ )
-  version 0.9.1 and 0.9.3
+  versions 0.9.1, 0.9.3 and 0.9.4
 
 
 This page describes how to share A/V content with some of the above servers :
