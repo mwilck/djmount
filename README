@@ -49,8 +49,8 @@ dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
 $ ls -l browse/Music/Artists/Tinariwen/
 -r--r--r--  1 root root 5407087 jan  1  2000 Chatma.mp3
 -r--r--r--  1 root root     722 jan  1  2000 Chatma.xml
--r--r--r--  1 root root      73 jan  1  2000 Chet Boghassa.mp3
--r--r--r--  1 root root 3751143 jan  1  2000 Chet Boghassa.xml
+-r--r--r--  1 root root 3751143 jan  1  2000 Chet Boghassa.mp3
+-r--r--r--  1 root root     729 jan  1  2000 Chet Boghassa.xml
 
 $ xmms browse/Music/Artists/Tinariwen/
 
