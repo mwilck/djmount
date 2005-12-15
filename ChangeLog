@@ -1,5 +1,7 @@
 2005-12-15  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/media_file.c: add matroska and ogg MIME types
+
 	* djmount/fuse_main.c (main): disallow "-o iocharset" option when
 	  --disable-charset is configured
 
