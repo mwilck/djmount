@@ -668,12 +668,14 @@ main (int argc, char *argv[])
 			for (s = strtok_r (options_copy, ",", &tokptr); 
 			     s != NULL; 
 			     s = strtok_r (NULL, ",", &tokptr)) {
-				if (strncmp (s, "iocharset=", 10) == 0) {
+				if (strncmp (s,"playlists", 5) == 0) {
+					g_playlists = true;
+#if HAVE_CHARSET
+				} else if (strncmp(s, "iocharset=", 10) == 0) {
 					charset = talloc_strdup 
 						(talloc_autofree_context(), 
 						 s+10);
-				} else if (strncmp (s,"playlists", 5) == 0) {
-					g_playlists = true;
+#endif
 				} else {
 					bad_usage (argv[0], 
 						   "unknown mount option '%s'",
