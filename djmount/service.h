@@ -128,13 +128,12 @@ Service_SendAction (Service* serv,
  * @brief Send an Action request to the specified service of a device
  *	  (synchronous call).
  *
- * @param deviceName    the device name
- * @param serviceId	the service identifier
+ * @param serv          the service object
+ * @param response      the DOM document for the response. Allocated
+ *		        by the SDK ; the caller needs to free it.
  * @param actionName    the name of the action
  * @param ...		List of Name / Value pairs.
  *			This list shall be terminated by NULL / NULL.
- * @return              the DOM document for the response. Allocated
- *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
 int
 Service_SendActionVa (Service* serv,
@@ -175,7 +174,7 @@ Service_GetStatusString (const Service* serv,
 const char*	Service_GetSid (const Service* serv);
 const char*	Service_GetEventURL (const Service* serv);
 const char*	Service_GetControlURL (const Service* serv);
-const char*	Service_GetServiceId (const Service* serv);
+const char*	Service_GetServiceType (const Service* serv);
 
 int		Service_SetSid (Service* serv, Upnp_SID sid);
 

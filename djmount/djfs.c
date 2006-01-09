@@ -110,7 +110,8 @@ _DJFS_BrowseCDS (void* result_context,
 		ptr++;
 	
 	const ContentDir_BrowseResult* current = NULL;
-	DEVICE_LIST_CALL_SERVICE (current, deviceName, CONTENT_DIR_SERVICE_ID,
+	DEVICE_LIST_CALL_SERVICE (current, deviceName, 
+				  CONTENT_DIR_SERVICE_TYPE,
 				  ContentDir, BrowseChildren,
 				  tmp_ctx, "0");
 	
@@ -140,7 +141,7 @@ _DJFS_BrowseCDS (void* result_context,
 			// "id" valid as long as tmp_ctx is not deallocated
 			char* id = found->id; 
 			DEVICE_LIST_CALL_SERVICE (current, deviceName,
-						  CONTENT_DIR_SERVICE_ID,
+						  CONTENT_DIR_SERVICE_TYPE,
 						  ContentDir, BrowseChildren,
 						  tmp_ctx, id);
 		}

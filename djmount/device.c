@@ -77,18 +77,12 @@ ServiceFactory (Device* dev,
 	Service* serv = NULL;
 	/*
 	 * Simple implementation, hardcoding the 2 possible classes of Service.
-	 *
-	 * We test on both ServiceId and ServiceType because I have seen some
-	 * devices with incorrect values in one or the other.
 	 */
-	const char* const serviceId = XMLUtil_GetFirstNodeValue 
-		((IXML_Node*) serviceDesc, "serviceId");
 	const char* const serviceType = XMLUtil_GetFirstNodeValue
 		((IXML_Node*) serviceDesc, "serviceType");
 
-	if ( (serviceId && strcmp (serviceId, CONTENT_DIR_SERVICE_ID) == 0) ||
-	     (serviceType && strcmp (serviceType, 
-				     CONTENT_DIR_SERVICE_TYPE) == 0) ) {
+	if ( serviceType && strcmp (serviceType, 
+				    CONTENT_DIR_SERVICE_TYPE) == 0 ) {
 		serv = (Service*) ContentDir_Create (dev, ctrlpt_handle, 
 						     serviceDesc, base_url);
 	} else {
@@ -300,8 +294,8 @@ Device_GetServiceFrom (const Device* dev,
 				s = Service_GetControlURL (node->item); break;
 			case FROM_EVENT_URL:	
 				s = Service_GetControlURL (node->item); break;
-			case FROM_SERVICE_ID:	
-				s = Service_GetServiceId (node->item); break;
+			case FROM_SERVICE_TYPE:	
+				s = Service_GetServiceType (node->item); break;
 			}
 			if (s && strcmp (servname, s) == 0)
 				return node->item; // ---------->

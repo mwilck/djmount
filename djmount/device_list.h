@@ -89,7 +89,7 @@ DeviceList_RefreshAll (const char* target);
  *
  * Example:
  *	int rc;
- *	DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId, 
+ *	DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceType, 
  *				  Service, SendAction,
  *	       		          actionName, nb_params, params);
  * will call:
@@ -97,11 +97,11 @@ DeviceList_RefreshAll (const char* target);
  *
  *****************************************************************************/
 
-#define DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVID,SERVTYPE,METHOD,...) \
+#define DEVICE_LIST_CALL_SERVICE(RET,DEVNAME,SERVTYPE,SERVCLASS,METHOD,...) \
   do {									\
-    Service* __serv = _DeviceList_LockService(DEVNAME,SERVID);		\
-    RET = SERVTYPE ## _ ## METHOD					\
-      (OBJECT_DYNAMIC_CAST(__serv, SERVTYPE), __VA_ARGS__);		\
+    Service* __serv = _DeviceList_LockService(DEVNAME,SERVTYPE);	\
+    RET = SERVCLASS ## _ ## METHOD					\
+      (OBJECT_DYNAMIC_CAST(__serv, SERVCLASS), __VA_ARGS__);		\
     _DeviceList_UnlockService(__serv);					\
   } while (0)								
 
@@ -111,13 +111,13 @@ DeviceList_RefreshAll (const char* target);
  *	  (asynchronous call).
  *
  * @param deviceName    the device name
- * @param serviceId	the service identifier
+ * @param serviceType	the service type
  * @param actionName    the name of the action
  * @param nb_params	Number of pairs (names + values)
  * @param params	List of pairs : names + values 
  *****************************************************************************/
 int 
-DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
+DeviceList_SendActionAsync (const char* deviceName, const char* serviceType,
 			    const char* actionName, 
 			    int nb_params, const StringPair* params);
 
@@ -127,7 +127,7 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
  *	  (synchronous call).
  *
  * @param deviceName    the device name
- * @param serviceId	the service identifier
+ * @param serviceType	the service type
  * @param actionName    the name of the action
  * @param nb_params	Number of pairs (names + values)
  * @param params	List of pairs : names + values 
@@ -135,7 +135,7 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
  *		        by the SDK ; the caller needs to free it.
  *****************************************************************************/
 IXML_Document* 
-DeviceList_SendAction (const char* deviceName, const char* serviceId,
+DeviceList_SendAction (const char* deviceName, const char* serviceType,
 		       const char* actionName, 
 		       int nb_params, const StringPair* params);
   
@@ -145,14 +145,15 @@ DeviceList_SendAction (const char* deviceName, const char* serviceId,
 }; // extern "C"
 
 template<class T>
-int	DeviceList_SendAction1 (const char* deviceName, const char* serviceId,
+int	DeviceList_SendAction1 (const char* deviceName, 
+				const char* serviceType,
 				const std::string& actionName,
 				const std::string& paramName,
 				T paramValue)
 {
   std::stringstream o;
   o << paramValue;
-  return DeviceList_SendActionAsyncVa (deviceName, serviceId, 
+  return DeviceList_SendActionAsyncVa (deviceName, serviceType, 
 				       actionName.c_str(),
 				       paramName.c_str(), o.str().c_str(), 
 				       (char*) NULL, (char*) NULL);
@@ -235,7 +236,7 @@ DeviceList_Stop (void);
  * Internal methods, do not use directly
  *****************************************************************************/
 Service*
-_DeviceList_LockService (const char* deviceName, const char* serviceId);
+_DeviceList_LockService (const char* deviceName, const char* serviceType);
 
 void
 _DeviceList_UnlockService (Service* serv);

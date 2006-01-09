@@ -468,8 +468,8 @@ get_status_string (const Service* serv,
 	p=P(p, "%s+- Class           = %s\n", spacer, 
 	    NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
 	p=P(p, "%s+- Object Name     = %s\n", spacer, talloc_get_name(serv));
-	p=P(p, "%s+- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
 	p=P(p, "%s+- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
+	p=P(p, "%s+- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
 	p=P(p, "%s+- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
 	p=P(p, "%s+- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
 	
@@ -534,9 +534,9 @@ Service_GetControlURL (const Service* serv)
 }
 
 const char*
-Service_GetServiceId (const Service* serv)
+Service_GetServiceType (const Service* serv)
 {
-  return (serv ? serv->m.serviceId : NULL);
+  return (serv ? serv->m.serviceType : NULL);
 }
 
 

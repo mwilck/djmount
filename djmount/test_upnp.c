@@ -107,7 +107,7 @@ static const struct CommandStruct CMDLIST[] = {
   { "browse", 	CMD_BROWSE, 3, "<devname> <objectId>"},
   { "metadata", CMD_METADATA, 3, "<devname> <objectId>"},
   { "ls", 	CMD_LS, 3, "<devname> <path>"},
-  { "action", 	CMD_ACTION, 4, "<devname> <serviceId> <actionName>"},
+  { "action", 	CMD_ACTION, 4, "<devname> <serviceType> <actionName>"},
   { "exit", 	CMD_EXIT, 1, ""}
 };
 
@@ -244,7 +244,8 @@ process_command (const char* cmdline)
 	case CMD_BROWSE:
 	{
 		const ContentDir_BrowseResult* res = NULL;
-		DEVICE_LIST_CALL_SERVICE (res, strarg1, CONTENT_DIR_SERVICE_ID,
+		DEVICE_LIST_CALL_SERVICE (res, strarg1, 
+					  CONTENT_DIR_SERVICE_TYPE,
 					  ContentDir, BrowseChildren, 
 					  tmp_ctx, strarg2);
 		if (res) {
@@ -259,7 +260,8 @@ process_command (const char* cmdline)
 	case CMD_METADATA:
 	{
 		const DIDLObject* o = NULL;
-		DEVICE_LIST_CALL_SERVICE (o, strarg1, CONTENT_DIR_SERVICE_ID,
+		DEVICE_LIST_CALL_SERVICE (o, strarg1, 
+					  CONTENT_DIR_SERVICE_TYPE,
 					  ContentDir, BrowseMetadata,
 					  tmp_ctx, strarg2);
 		if (o) {

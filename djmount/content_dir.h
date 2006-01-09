@@ -47,8 +47,6 @@ typedef uint_fast32_t ContentDir_Index;
 #define CONTENT_DIR_SERVICE_TYPE \
   "urn:schemas-upnp-org:service:ContentDirectory:1"
 
-// ContentDirectory ServiceId
-#define CONTENT_DIR_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
 
 
 

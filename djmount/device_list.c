@@ -597,12 +597,12 @@ EventHandlerCallback (Upnp_EventType EventType,
  * _DeviceList_LockService
  *****************************************************************************/
 Service*
-_DeviceList_LockService (const char* deviceName, const char* serviceId)
+_DeviceList_LockService (const char* deviceName, const char* serviceType)
 {
 	Service* serv = NULL;
 
 	Log_Printf (LOG_DEBUG, "LockService : device '%s' service '%s'",
-		    NN(deviceName), NN(serviceId));
+		    NN(deviceName), NN(serviceType));
 
 	// coarse implementation : lock the whole device list, 
 	// not only the service
@@ -611,8 +611,8 @@ _DeviceList_LockService (const char* deviceName, const char* serviceId)
 	const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, 
 								 true);
 	if (devnode) 
-		serv = Device_GetServiceFrom (devnode->d, serviceId, 
-					      FROM_SERVICE_ID, true);
+		serv = Device_GetServiceFrom (devnode->d, serviceType, 
+					      FROM_SERVICE_TYPE, true);
 	
 	if (serv == NULL)
 		ithread_mutex_unlock (&DeviceListMutex);
@@ -636,12 +636,12 @@ _DeviceList_UnlockService (Service* serv)
  * DeviceList_SendActionAsync
  *****************************************************************************/
 int
-DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
+DeviceList_SendActionAsync (const char* deviceName, const char* serviceType,
 			    const char* actionName, 
 			    int nb_params, const StringPair* params)
 {
   int rc = UPNP_E_INTERNAL_ERROR;
-  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId,
+  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceType,
 			    Service, SendActionAsync,
 			    EventHandlerCallback, actionName, 
 			    nb_params, params);
@@ -653,13 +653,13 @@ DeviceList_SendActionAsync (const char* deviceName, const char* serviceId,
  * DeviceList_SendAction
  *****************************************************************************/
 IXML_Document*
-DeviceList_SendAction (const char* deviceName, const char* serviceId,
+DeviceList_SendAction (const char* deviceName, const char* serviceType,
 		       const char* actionName, 
 		       int nb_params, const StringPair* params)
 {
   IXML_Document* res = NULL;
   int rc = UPNP_E_INTERNAL_ERROR;
-  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceId, Service, SendAction,
+  DEVICE_LIST_CALL_SERVICE (rc, deviceName, serviceType, Service, SendAction,
 			    &res, actionName, nb_params, params);
   return (rc == UPNP_E_SUCCESS ? res : NULL);
 }

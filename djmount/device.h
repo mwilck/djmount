@@ -99,7 +99,7 @@ Device_GetDescDocItem (const Device* dev, const char* item);
  *
  *****************************************************************************/
 
-enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL, FROM_SERVICE_ID };
+enum GetFrom { FROM_SID, FROM_CONTROL_URL, FROM_EVENT_URL, FROM_SERVICE_TYPE };
 Service* 
 Device_GetServiceFrom (const Device* dev, 
 		       const char* servname, enum GetFrom from,

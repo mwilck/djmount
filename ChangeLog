@@ -1,3 +1,10 @@
+2006-01-09  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount : fix empty browse when using servers based on "Intel Tools 
+	  for UPnP Technologies" (.NET), caused by accessing services through
+	  ServiceId (device-dependant) instead of ServiceType (constant 
+	  described in UPnP specification)
+
 2005-12-15  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/media_file.c: add matroska and ogg MIME types
