@@ -339,6 +339,7 @@ DJFS_Browse (const char* const path, bool playlists,
 			off_t const res_size = MediaFile_GetResSize (&file);
 			if ( file.playlist &&
 			     (playlists ||
+			      res_size < 0 ||
 			      res_size > FILE_BUFFER_MAX_CONTENT_LENGTH) ) {
 		        char* name = MediaFile_GetName (tmp_ctx, o, 
 							file.playlist);

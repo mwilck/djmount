@@ -77,7 +77,8 @@ MediaFile_GetName (void* result_context,
 
 /*****************************************************************************
  * @brief 	Returns the size of the <res> URL associated to
- *		a DIDL-Lite object.
+ *		a DIDL-Lite object, or -1 if no size known (not provided
+ *		by server, or stream).
  *
  * @param format	the selected format
  * @param o		the DIDL-Lite object

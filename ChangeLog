@@ -1,3 +1,8 @@
+2006-01-10  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/djfs.c (DJFS_Browse): force playlist mode for AV files of 
+	  unknown sizes (streams, or size not provided by server).
+
 2006-01-09  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount : fix empty browse when using servers based on "Intel Tools 
