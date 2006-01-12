@@ -1,3 +1,9 @@
+2006-01-11  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/inc/config.h, upnp/src/inc/upnpapi.h, 
+	  upnp/src/inc/httpreadwrite.h: remove internal configuration variable 
+	  MINIMUM_DELAY (no clear purpose)
+
 2005-12-05  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* upnp/inc/upnp.h: re-declare obsolete method UpnpSetContentLength,

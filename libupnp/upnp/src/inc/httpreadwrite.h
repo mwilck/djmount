@@ -38,7 +38,7 @@
 #include "httpparser.h"
 
 // timeout in secs
-#define HTTP_DEFAULT_TIMEOUT (30 + MINIMUM_DELAY)
+#define HTTP_DEFAULT_TIMEOUT	30
 
 
 
