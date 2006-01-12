@@ -172,10 +172,10 @@ djmount has been tested successfully with the following UPnP AV
 Devices / Media Servers :
 
 * TwonkyVision UPnP Music Server ( http://www.twonkyvision.de )
-  versions 2.7.2 and 2.9.1 for Linux are ok
+  versions 2.7.2, 2.9.1 and 3.0 for Linux are ok
 
 * GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
-  versions 0.7.0 (version 0.8.0 not ok, version 0.8.2 should be ok)
+  versions 0.7.0 and 0.9.0 (version 0.8.0 not ok)
 
 * Ahead Nero MediaHome Server ( http://www.nero.com/en/Nero_MediaHome.html )
   included in Nero ultra 6.6
@@ -185,7 +185,11 @@ Devices / Media Servers :
   requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
 
 * GeeXboX uShare on Linux ( http://ushare.geexbox.org/ )
-  versions 0.9.1, 0.9.3 and 0.9.4
+  versions 0.9.1, 0.9.3 to 0.9.5
+
+* AV Media Server in Intel Tools for UPnP Technologies, 
+  ( http://www.intel.com/cd/ids/developer/asmo-na/eng/downloads/upnp/tools/index.htm )
+  version 1.0.1768.24080 (Build 1768)
 
 
 This page describes how to share A/V content with some of the above servers :

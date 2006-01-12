@@ -38,8 +38,6 @@ extern "C" {
 #endif
 
 
-/** Default timeout to request during subscriptions */
-#define SERVICE_DEFAULT_TIMEOUT 	1801
 
 
 
@@ -73,6 +71,14 @@ Service_Create (void* context,
 		UpnpClient_Handle ctrlpt_handle, 
 		IXML_Element* serviceDesc, 
 		const char* base_url);
+
+
+/******************************************************************************
+ * @brief 	Subscribe the Service to its eventURL.
+ *		Should normally be done just after Service creation.
+ *****************************************************************************/
+int
+Service_SubscribeEventURL (Service* serv);
 
 
 /*****************************************************************************

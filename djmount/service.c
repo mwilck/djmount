@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Service
@@ -39,67 +40,79 @@
 #include "service_p.h"
 
 
+/** Default timeout to request during subscriptions */
+#define SUBSCRIBE_DEFAULT_TIMEOUT 	1801
+
+
 // Some reasonable number for number of vararg parameters to SendAction
 #define MAX_VA_PARAMS	64
 
 
 /******************************************************************************
  * Service_SubscribeEventURL
- * Service_UnsubscribeEventURL
  *****************************************************************************/
-
 int
 Service_SubscribeEventURL (Service* serv)
 {
-  int rc;
-  if (serv == NULL) {
-    Log_Printf (LOG_ERROR, "Service_SubscribeEventURL NULL Service");
-    rc = UPNP_E_INVALID_SERVICE;
-  } else {
-    Log_Printf (LOG_DEBUG, "Subscribing to EventURL %s", NN(serv->m.eventURL));
-    int timeout = SERVICE_DEFAULT_TIMEOUT;    
-    Upnp_SID sid;
-    rc = UpnpSubscribe (serv->m.ctrlpt_handle, serv->m.eventURL, 
-			&timeout, sid);
-    talloc_free (serv->m.sid);
-    if ( rc == UPNP_E_SUCCESS ) {
-      serv->m.sid = talloc_strdup (serv, sid);
-      Log_Printf (LOG_DEBUG, "Subscribed to %s EventURL with SID=%s", 
-		  talloc_get_name (serv), serv->m.sid);
-    } else {
-      serv->m.sid = NULL;
-      Log_Printf (LOG_ERROR, "Error Subscribing to %s EventURL -- %d", 
-		  talloc_get_name (serv), rc);
-    }
-  }
-  return rc;
+	int rc;
+	if (serv == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "Service_SubscribeEventURL NULL Service");
+		rc = UPNP_E_INVALID_SERVICE;
+	} else {
+		Log_Printf (LOG_DEBUG, "Subscribing to EventURL %s", 
+			    NN(serv->m.eventURL));
+		int timeout = SUBSCRIBE_DEFAULT_TIMEOUT;    
+		Upnp_SID sid;
+		rc = UpnpSubscribe (serv->m.ctrlpt_handle, serv->m.eventURL, 
+				    &timeout, sid);
+		talloc_free (serv->m.sid);
+		if ( rc == UPNP_E_SUCCESS ) {
+			serv->m.sid = talloc_strdup (serv, sid);
+			Log_Printf (LOG_DEBUG, 
+				    "Subscribed to %s EventURL with SID=%s", 
+				    talloc_get_name (serv), serv->m.sid);
+		} else {
+			serv->m.sid = NULL;
+			Log_Printf (LOG_ERROR, 
+				    "Error Subscribing to %s EventURL -- %d", 
+				    talloc_get_name (serv), rc);
+		}
+	}
+	return rc;
 }
 
+
+/******************************************************************************
+ * Service_UnsubscribeEventURL
+ *****************************************************************************/
 int
 Service_UnsubscribeEventURL (Service* serv)
 {
-  int rc;
-  if (serv == NULL) {
-    Log_Printf (LOG_ERROR, "Service_UnsubscribeEventURL NULL Service");
-    rc = UPNP_E_INVALID_SERVICE;
-  } else {
-    /*
-     * If we have a valid control SID, then unsubscribe 
-     */
-    if (serv->m.sid == NULL) {
-      rc = UPNP_E_SUCCESS;
-    } else {
-      rc = UpnpUnSubscribe (serv->m.ctrlpt_handle, serv->m.sid);
-      if ( UPNP_E_SUCCESS == rc ) {
-	Log_Printf (LOG_DEBUG, "Unsubscribed from %s EventURL with SID=%s",
-		    talloc_get_name (serv), serv->m.sid);
-      } else {
-	Log_Printf (LOG_ERROR, "Error unsubscribing to %s EventURL -- %d",
-		    talloc_get_name (serv), rc);
-      }
-    }
-  }
-  return rc;
+	int rc;
+	if (serv == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "Service_UnsubscribeEventURL NULL Service");
+		rc = UPNP_E_INVALID_SERVICE;
+	} else if (serv->m.sid == NULL) {
+		rc = UPNP_E_SUCCESS;
+	} else {
+		/*
+		 * If we have a valid control SID, then unsubscribe 
+		 */
+		rc = UpnpUnSubscribe (serv->m.ctrlpt_handle, 
+				      serv->m.sid);
+		if ( UPNP_E_SUCCESS == rc ) {
+			Log_Printf(LOG_DEBUG, 
+				   "Unsubscribed from %s EventURL with SID=%s",
+				   talloc_get_name (serv), serv->m.sid);
+		} else {
+			Log_Printf (LOG_ERROR, 
+				    "Error unsubscribing to %s EventURL -- %d",
+				    talloc_get_name (serv), rc);
+		}
+	}
+	return rc;
 }
 
 
@@ -136,16 +149,16 @@ finalize (Object* obj)
 int
 Service_SetSid (Service* serv, Upnp_SID sid)
 {
-  int rc = UPNP_E_SUCCESS;
-  
-  if (serv == NULL) {
-    Log_Printf (LOG_ERROR, "Service_SetSid NULL Service");
-    rc = UPNP_E_INVALID_SERVICE;
-  } else {
-    talloc_free (serv->m.sid);
-    serv->m.sid = (sid ? talloc_strdup (serv, sid) : NULL);
-  }
-  return rc;
+	int rc = UPNP_E_SUCCESS;
+	
+	if (serv == NULL) {
+		Log_Printf (LOG_ERROR, "Service_SetSid NULL Service");
+		rc = UPNP_E_INVALID_SERVICE;
+	} else {
+		talloc_free (serv->m.sid);
+		serv->m.sid = (sid ? talloc_strdup (serv, sid) : NULL);
+	}
+	return rc;
 }
 
 
@@ -609,9 +622,6 @@ _Service_Initialize (Service* serv,
 
   serv->m.sid = NULL;
   
-  // Subscribe to events 
-  Service_SubscribeEventURL (serv);
-
   // Initialise list of variables
   ListInit (&serv->m.variables, 0, 0);
 

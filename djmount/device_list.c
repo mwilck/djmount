@@ -155,7 +155,7 @@ GetService (const char* s, enum GetFrom from)
 {
 	ListNode* node;
 	for (node = ListHead (&GlobalDeviceList);
-	     node != 0;
+	     node != NULL;
 	     node = ListNext (&GlobalDeviceList, node)) {
 		DeviceNode* const devnode = node->item;
 		if (devnode) {
@@ -165,7 +165,9 @@ GetService (const char* s, enum GetFrom from)
 				return serv; // ---------->
 		}
 	}
-	return 0;
+	Log_Printf (LOG_ERROR, "Can't find service matching %s in device list",
+		    NN(s));
+	return NULL;
 }
 
 
@@ -318,36 +320,6 @@ HandleEvent (Upnp_SID sid,
   ithread_mutex_unlock( &DeviceListMutex );
 }
 
-/*****************************************************************************
- * HandleSubscribeUpdate
- *
- * Description: 
- *       Handle a UPnP subscription update that was received.  Find the 
- *       service the update belongs to, and update its subscription
- *       timeout.
- *
- * Parameters:
- *   eventURL -- The event URL for the subscription
- *   sid -- The subscription id for the subscription
- *   timeout  -- The new timeout for the subscription
- *
- *****************************************************************************/
-static void
-HandleSubscribeUpdate (const char* eventURL,
-		       Upnp_SID sid,
-		       int timeout)
-{
-  ithread_mutex_lock( &DeviceListMutex );
-  
-  Log_Printf (LOG_DEBUG, "Received Event Renewal for eventURL %s", 
-	      NN(eventURL));
-  Service* serv = GetService (eventURL, FROM_EVENT_URL);
-  if (serv) 
-    Service_SetSid (serv, sid);
-  
-  ithread_mutex_unlock( &DeviceListMutex );
-}
-
 
 /*****************************************************************************
  * AddDevice
@@ -368,51 +340,82 @@ AddDevice (const char* deviceId,
 	   const char* descLocation,
 	   int expires)
 {
-  ithread_mutex_lock (&DeviceListMutex);
+	ithread_mutex_lock (&DeviceListMutex);
 
-  DeviceNode* devnode = 0;
-  ListNode* node = GetDeviceListNodeFromId (deviceId);
-  if (node) 
-    devnode = node->item;
+	DeviceNode* devnode = NULL;
+	ListNode* node = GetDeviceListNodeFromId (deviceId);
+	if (node) 
+		devnode = node->item;
+	
+	if (devnode) {
+		// The device is already there, so just update 
+		// the advertisement timeout field
+		Log_Printf (LOG_DEBUG, 
+			    "AddDevice Id=%s already exists, update only",
+			    NN(deviceId));
+		devnode->expires = expires;
+	} else {
+		// Else create a new device
+		Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", 
+			    NN(deviceId));
+		void* context = NULL; // TBD should be parent talloc TBD XXX
+		
+		devnode = talloc (context, DeviceNode);
+		// Initialize fields to empty values
+		*devnode = (struct _DeviceNode) { }; 
+		
+		// Unlock before creating device : the Device_Create method 
+		// tries to download the device description document, 
+		// which can take a long time in some error cases
+		// (e.g. timeout if network problems)
+		ithread_mutex_unlock (&DeviceListMutex);
 
-  if (devnode) {
-    // The device is already there, so just update 
-    // the advertisement timeout field
-    Log_Printf (LOG_DEBUG, "AddDevice Id=%s already exists, update only",
-		NN(deviceId));
-    devnode->expires = expires;
-  } else {
-    // Else create a new device
-    Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", 
-		NN(deviceId));
-    void* context = NULL; // TBD should be parent talloc TBD XXX
-      
-    devnode = talloc (context, DeviceNode);
-    *devnode = (struct _DeviceNode) { }; // Initialize fields to empty values
-      
-    devnode->d = Device_Create (devnode, g_ctrlpt_handle, descLocation);
-    if (devnode->d == 0) {
-      Log_Printf (LOG_ERROR, "Can't create Device Id=%s", NN(deviceId));
-      talloc_free (devnode);
-    } else {
-      devnode->deviceId = talloc_strdup (devnode, deviceId);
-      devnode->expires  = expires;
-      
-      // Generate a unique, friendly, name for this device
-      const char* base = Device_GetDescDocItem (devnode->d, "friendlyName");
-      char* name = make_device_name (NULL, base);
-      talloc_set_name (devnode->d, "%s", name);
-      talloc_free (name);
-      
-      // Insert the new device node in the list
-      ListAddTail (&GlobalDeviceList, devnode);
-      
-      // Notify New Device Added, while the global list is locked
-      NotifyUpdate (E_DEVICE_ADDED, devnode);
-    }
-  }
-  
-  ithread_mutex_unlock (&DeviceListMutex);
+		devnode->d = Device_Create (devnode, g_ctrlpt_handle, 
+					    descLocation);
+		if (devnode->d == NULL) {
+			Log_Printf (LOG_ERROR, "Can't create Device Id=%s", 
+				    NN(deviceId));
+			talloc_free (devnode);
+			return; // ---------->
+		} else {
+			// Relock the device list (and check that the same
+			// device has not already been added by another thread
+			// while the list was unlocked)
+			ithread_mutex_lock (&DeviceListMutex);
+			node = GetDeviceListNodeFromId (deviceId);
+			if (node) {
+				Log_Printf (LOG_WARNING, 
+					    "Device Id=%s already added",
+					    NN(deviceId));
+				// Delete extraneous device descriptor. Note:
+				// service subscription is not yet done, so 
+				// the Service destructors will not unsubscribe
+				talloc_free (devnode);
+			} else {
+				Device_SusbcribeAllEvents (devnode->d);
+
+				devnode->deviceId = talloc_strdup (devnode, 
+								   deviceId);
+				devnode->expires = expires;
+			
+				// Generate a unique, friendly, name 
+				// for this device
+				const char* base = Device_GetDescDocItem 
+					(devnode->d, "friendlyName");
+				char* name = make_device_name (NULL, base);
+				talloc_set_name (devnode->d, "%s", name);
+				talloc_free (name);
+				
+				// Insert the new device node in the list
+				ListAddTail (&GlobalDeviceList, devnode);
+				
+				// Notify New Device Added, while the global 
+				// list is still locked
+				NotifyUpdate (E_DEVICE_ADDED, devnode);
+			}
+		}
+	}
+	ithread_mutex_unlock (&DeviceListMutex);
 }
   
 
@@ -432,13 +435,13 @@ AddDevice (const char* deviceId,
  *
  *****************************************************************************/
 static int
-EventHandlerCallback (Upnp_EventType EventType,
+EventHandlerCallback (Upnp_EventType event_type,
 		      void* Event,
 		      void* Cookie)
 {
-  UpnpUtil_PrintEvent (LOG_DEBUG, EventType, Event);
+  UpnpUtil_PrintEvent (LOG_DEBUG, event_type, Event);
   
-  switch ( EventType ) {
+  switch ( event_type ) {
     /*
      * SSDP Stuff 
      */
@@ -545,13 +548,24 @@ EventHandlerCallback (Upnp_EventType EventType,
 	(struct Upnp_Event_Subscribe *) Event;
       
       if ( es_event->ErrCode != UPNP_E_SUCCESS ) {
-	Log_Printf (LOG_ERROR,
-		    "Error in Event Subscribe Callback -- %d",
-		    es_event->ErrCode );
+	      Log_Printf (LOG_ERROR,
+			  "Error in Event Subscribe Callback -- %d",
+			  es_event->ErrCode );
       } else {
-	HandleSubscribeUpdate (es_event->PublisherUrl,
-			       es_event->Sid,
-			       es_event->TimeOut );
+	      Log_Printf (LOG_DEBUG, "Received Event Renewal for eventURL %s", 
+			  NN(es_event->PublisherUrl));
+
+	      ithread_mutex_lock( &DeviceListMutex );
+
+	      Service* serv = GetService (es_event->PublisherUrl,
+					  FROM_EVENT_URL);
+	      if (serv) {
+		      if (event_type == UPNP_EVENT_UNSUBSCRIBE_COMPLETE)
+			      Service_SetSid (serv, NULL);
+		      else			      
+			      Service_SetSid (serv, es_event->Sid);
+	      }
+	      ithread_mutex_unlock( &DeviceListMutex );
       }
       break;
     }
@@ -561,22 +575,18 @@ EventHandlerCallback (Upnp_EventType EventType,
     {
       struct Upnp_Event_Subscribe* es_event =
 	(struct Upnp_Event_Subscribe *) Event;
+
+      Log_Printf (LOG_DEBUG, "Renewing subscription for eventURL %s", 
+		  NN(es_event->PublisherUrl));
+     
+      ithread_mutex_lock( &DeviceListMutex );
       
-      // TBD to do inside Service
-      int TimeOut = SERVICE_DEFAULT_TIMEOUT;
-      Upnp_SID newSID;
-      int ret = UpnpSubscribe (g_ctrlpt_handle, es_event->PublisherUrl,
-			       &TimeOut, newSID );
-      
-      if( ret == UPNP_E_SUCCESS ) {
-	Log_Printf (LOG_DEBUG, "Subscribed to EventURL with SID=%s", newSID);
-	HandleSubscribeUpdate( es_event->PublisherUrl, 
-			       newSID,
-			       TimeOut );
-      } else {
-	Log_Printf (LOG_ERROR,
-		    "Error Subscribing to EventURL -- %d", ret );
-      }
+      Service* serv = GetService (es_event->PublisherUrl, FROM_EVENT_URL);
+      if (serv) 
+	      Service_SubscribeEventURL (serv);
+
+      ithread_mutex_unlock( &DeviceListMutex );
+
       break;
     }
     

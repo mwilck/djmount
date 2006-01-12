@@ -65,6 +65,14 @@ Device_Create (void* context,
 	       const char* descDocURL);
 
 
+/******************************************************************************
+ * @brief Subscribe all services to their event URL
+ *****************************************************************************/
+int
+Device_SusbcribeAllEvents (const Device* dev);
+
+
+
 /** 
  * @brief Returns the URL for the Device Description Document.
  * 	The returned string is internal to the Device, and should be copied 

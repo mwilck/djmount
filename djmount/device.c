@@ -173,77 +173,87 @@ Device* Device_Create (void* context,
 		       UpnpClient_Handle ctrlpt_handle, 
 		       const char* descDocURL)
 {
-  if (descDocURL == NULL)
-    return NULL; // ---------->
-  Log_Print (LOG_DEBUG, "Device_Create : loading description document");
-  IXML_Document* descDoc = NULL;
-  int rc = UpnpDownloadXmlDoc (descDocURL, &descDoc);
-  if (rc != UPNP_E_SUCCESS) {
-    Log_Printf (LOG_ERROR,
-		"Error obtaining device description from %s -- error = %d",
-		descDocURL, rc);
-    return NULL; // ---------->
-  }
+	if (descDocURL == NULL)
+		return NULL; // ---------->
+	Log_Print (LOG_DEBUG, "Device_Create : loading description document");
+	IXML_Document* descDoc = NULL;
+	// Note: this download can take a long time in some error cases
+	// (e.g. timeout if network problems)
+	int rc = UpnpDownloadXmlDoc (descDocURL, &descDoc);
+	if (rc != UPNP_E_SUCCESS) {
+		Log_Printf (LOG_ERROR,
+			    "Error obtaining device description from url '%s' "
+			    ": %d (%s)", descDocURL, rc, 
+			    UpnpGetErrorMessage (rc));
+		if (rc/100 == UPNP_E_NETWORK_ERROR/100) {
+			Log_Printf (LOG_ERROR,
+				    "Check device network configuration "
+				    "(firewall ?)");
+		}
+		return NULL; // ---------->
+	}
+	
+	Device* dev = talloc (context, Device);
+	if (dev == NULL) {
+		Log_Print (LOG_ERROR, "Device_Create Out of Memory");
+		return NULL; // ---------->
+	}
+	
+	*dev = (struct _Device) { 
+		.creation_time = time (NULL),
+		.descDocURL    = talloc_strdup (dev, descDocURL),
+		.descDoc       = descDoc,
+		// Other fields to empty values
+	};
+	
+	/*
+	 * Read key elements from description document 
+	 */
+	
+	dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN"));;
+	Log_Printf (LOG_DEBUG, "Device_Create : UDN = %s", dev->udn);
 
-  Device* dev = talloc (context, Device);
-  if (dev == NULL) {
-    Log_Print (LOG_ERROR, "Device_Create Out of Memory");
-    return NULL; // ---------->
-  }
+	dev->deviceType = talloc_strdup (dev, Device_GetDescDocItem 
+					 (dev, "deviceType"));
+	Log_Printf (LOG_DEBUG, "Device_Create : type = %s", dev->deviceType);
+	
+	dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
+					   (dev, "friendlyName"));
+
+	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
+	const char* const relURL  = Device_GetDescDocItem (dev, 
+							   "presentationURL");
   
-  *dev = (struct _Device) { 
-	  .creation_time = time (NULL),
-	  .descDocURL    = talloc_strdup (dev, descDocURL),
-	  .descDoc       = descDoc,
-	  // Other fields to empty values
-  };
+	const char* const base = 
+		( baseURL && baseURL[0] ) ? baseURL : descDocURL;
+	UpnpUtil_ResolveURL (dev, base, relURL, &dev->presURL);
+	
+	/*
+	 * Find and parse services
+	 */
+	ListInit (&dev->services, 0, 0);
+	
+	IXML_NodeList* serviceList = getFirstServiceList (dev->descDoc);
+	const int length = ixmlNodeList_length (serviceList);
 
-  /*
-   * Read key elements from description document 
-   */
+	int i;
+	for (i = 0; i < length; i++ ) {
+		IXML_Element* const serviceDesc = 
+			(IXML_Element *) ixmlNodeList_item (serviceList, i);
+		Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
+						      serviceDesc, base);
+		ListAddTail (&dev->services, serv);
+	}
+	
+	if (serviceList) {
+		ixmlNodeList_free (serviceList);
+		serviceList = NULL;
+	}  
 
-  dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN"));;
-  Log_Printf (LOG_DEBUG, "Device_Create : UDN = %s", dev->udn);
-
-  dev->deviceType = talloc_strdup (dev, Device_GetDescDocItem 
-				   (dev, "deviceType"));
-  Log_Printf (LOG_DEBUG, "Device_Create : type = %s", dev->deviceType);
-
-  dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
-				     (dev, "friendlyName"));
-
-  const char* const baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
-  const char* const relURL  = Device_GetDescDocItem (dev, "presentationURL");
-  
-  const char* const base = ( baseURL && baseURL[0] ) ? baseURL : descDocURL;
-  UpnpUtil_ResolveURL (dev, base, relURL, &dev->presURL);
-  
-  /*
-   * Find and parse services
-   */
-  ListInit (&dev->services, 0, 0);
-
-  IXML_NodeList* serviceList = getFirstServiceList (dev->descDoc);
-  const int length = ixmlNodeList_length (serviceList);
-
-  int i;
-  for (i = 0; i < length; i++ ) {
-    IXML_Element* const serviceDesc = 
-      (IXML_Element *) ixmlNodeList_item (serviceList, i);
-    Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
-					  serviceDesc, base);
-    ListAddTail (&dev->services, serv);
-  }
-  
-  if (serviceList) {
-    ixmlNodeList_free (serviceList);
-    serviceList = NULL;
-  }  
-
-  // Register destructor
-  talloc_set_destructor (dev, destroy);
-
-  return dev;
+	// Register destructor
+	talloc_set_destructor (dev, destroy);
+	
+	return dev;
 }
 
 
@@ -270,6 +280,31 @@ Device_GetDescDocItem (const Device* dev, const char* item)
 		return NULL;
 }
 
+
+/*****************************************************************************
+ * Device_SusbcribeAllEvents
+ *****************************************************************************/
+
+int
+Device_SusbcribeAllEvents (const Device* dev)
+{  
+	if (dev == NULL)
+		return UPNP_E_INVALID_DEVICE; // ---------->
+
+	Log_Printf (LOG_DEBUG, "Device_SusbcribeAllEvents %s",
+		    NN(dev->friendlyName));
+
+	int rc = UPNP_E_SUCCESS;
+	ListNode* node;
+	for (node = ListHead ((LinkedList*) &dev->services); 
+	     node != NULL;
+	     node = ListNext ((LinkedList*) &dev->services, node)) {
+		int rc2 = Service_SubscribeEventURL (node->item); 
+		if (rc2 != UPNP_E_SUCCESS)
+			rc = rc2;
+	}
+	return rc;
+}
 
 
 /*****************************************************************************
