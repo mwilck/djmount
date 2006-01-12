@@ -45,8 +45,7 @@ libupnp_la_CPPFLAGS	= $(AM_CPPFLAGS) -I$(srcdir)/src/inc
 
 libupnp_la_SOURCES	= \
 			src/inc/client_table.h src/inc/global.h \
-			src/inc/md5.h \
-			src/inc/readwrite.h src/inc/ssdplib.h \
+			src/inc/md5.h src/inc/ssdplib.h \
 			src/inc/unixutil.h src/inc/urlconfig.h \
 			src/inc/gmtdate.h src/inc/membuffer.h \
 			src/inc/server.h src/inc/statcodes.h \

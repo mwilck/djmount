@@ -1,3 +1,7 @@
+2006-01-12  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* upnp/src/inc/readwrite.h : suppress unused C++ header file
+
 2006-01-11  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* upnp/inc/config.h, upnp/src/inc/upnpapi.h, 
