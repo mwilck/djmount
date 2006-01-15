@@ -32,7 +32,7 @@
 
 #include <string.h>
 #include <errno.h>
-#include <inttypes.h>	// Import uintmax_t and PRIuMAX
+#include <inttypes.h>	// Import intmax_t and PRIdMAX
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
@@ -40,7 +40,7 @@
 
 // Same definition as in "libupnp/upnp/src/inc/httpreadwrite.h"
 #ifndef HTTP_DEFAULT_TIMEOUT
-#	define HTTP_DEFAULT_TIMEOUT	(30 + MINIMUM_DELAY)
+#	define HTTP_DEFAULT_TIMEOUT	30
 #endif
 
 
@@ -132,8 +132,8 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		 */
 		Log_Printf (LOG_DEBUG, 
 			    "UPNP Get Http url '%s' "
-			    "size %" PRIuMAX " offset %" PRIuMAX,
-			    file->url, (uintmax_t) size, (uintmax_t) offset);
+			    "size %" PRIdMAX " offset %" PRIdMAX,
+			    file->url, (intmax_t) size, (intmax_t) offset);
 		
 		/*
 		 * Warning : the libupnp API (UpnpOpenHttpGetEx, 
@@ -144,9 +144,9 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		    offset > FILE_BUFFER_MAX_CONTENT_LENGTH - size) {
 			Log_Printf (LOG_ERROR, 
 				    "UPNP Get Http url '%s' too big "
-				    "size %" PRIuMAX " or offset %" PRIuMAX,
-				    file->url, (uintmax_t) size, 
-				    (uintmax_t) offset);
+				    "size %" PRIdMAX " or offset %" PRIdMAX,
+				    file->url, (intmax_t) size, 
+				    (intmax_t) offset);
 			return -EINVAL; // ---------->
 		}
 

@@ -31,7 +31,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <time.h>
-#include <inttypes.h>	// Import uintmax_t and PRIuMAX
+#include <inttypes.h>	// Import intmax_t and PRIdMAX
 
 #include "didl_object.h"
 #include "file_buffer.h"
@@ -41,6 +41,10 @@
 #include "content_dir.h"
 #include "device_list.h"
 #include "xml_util.h"
+
+
+
+static const off_t DEFAULT_SIZE = 0; // for unknown file sizes e.g. streams
 
 
 
@@ -190,7 +194,7 @@ stbuf_set_file (struct stat* const stbuf)
 	if (stbuf) {	
 		stbuf->st_mode  = S_IFREG | 0444;     
 		stbuf->st_nlink = 1;
-		stbuf->st_size  = 0; // to be computed latter
+		stbuf->st_size  = DEFAULT_SIZE; // to be computed latter
 	}								
 }
 
@@ -264,8 +268,8 @@ DJFS_Browse (const char* const path, bool playlists,
 #define FILE_SET_SIZE(SIZE)					\
       if (stbuf) {						\
         stbuf->st_size = (SIZE);				\
-        Log_Printf (LOG_DEBUG, "FILE_SET_SIZE = %" PRIuMAX,	\
-                    (uintmax_t) stbuf->st_size);		\
+        Log_Printf (LOG_DEBUG, "FILE_SET_SIZE = %" PRIdMAX,	\
+                    (intmax_t) stbuf->st_size);		\
       } 
 
 #define FILE_SET_STRING(CONTENT)					\
@@ -354,7 +358,8 @@ DJFS_Browse (const char* const path, bool playlists,
 							file.extension);
 			FILE_BEGIN (name) {
 			  FILE_SET_URL (file.uri);
-		          FILE_SET_SIZE (res_size);
+			  if (res_size >= 0)
+		            FILE_SET_SIZE (res_size);
 			} FILE_END;
 		      }
 		    }
