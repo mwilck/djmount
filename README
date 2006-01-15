@@ -169,7 +169,9 @@ Known Compatible Devices
 ------------------------
 
 djmount has been tested successfully with the following UPnP AV 
-Devices / Media Servers :
+Devices / Media Servers. Although djmount should work with other 
+UPnP AV compliant devices, help is needed to test on additional devices.
+
 
 * TwonkyVision UPnP Music Server ( http://www.twonkyvision.de )
   versions 2.7.2, 2.9.1 and 3.0 for Linux are ok
@@ -195,10 +197,12 @@ Devices / Media Servers :
 This page describes how to share A/V content with some of the above servers :
  http://www.geexbox.org/wiki/index.php/Accessing_to_UPnP_Contents
 
-
-Although djmount should work with other UPnP AV compliant devices, 
-help is needed to test on additional devices.
-
+Warning : if your UPnP Media Server is behind a closed firewall, it won't be 
+visible in djmount. Therefore, if there is a firewall on the machine
+where you are running your media server, you have to open the necessary
+ports in this firewall. Some media servers can do it automatically 
+(e.g. Windows Media Connect on Windows XP), most of them don't do it 
+(e.g. AV Media Server in Intel Tools).
 
 
 Implementation
