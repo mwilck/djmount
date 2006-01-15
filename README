@@ -75,6 +75,9 @@ djmount has been built and tested on the following configurations:
 
 * Debian sid (Linux kernel 2.6.14, gcc 4.0.3 20051023 prerelease)
 
+* Ubuntu 5.10 "Breezy Badger" (Linux kernel 2.6.12-9-386, gcc 4.0.2 20050808 
+  prerelease, libc6 2.3.5-1ubuntu12), FUSE 2.4.2
+
 
 
 A) Basic build instruction:
