@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(libupnp,1.2.1a-rt1, r3mi@users.sourceforge.net)
+AC_INIT(libupnp,1.2.1a-rt2, r3mi@users.sourceforge.net)
 
 AC_CONFIG_AUX_DIR(config.aux)
 AC_CONFIG_MACRO_DIR(m4)
@@ -17,8 +17,9 @@ AC_CONFIG_SRCDIR(upnp/inc/upnp.h)
 
 AM_INIT_AUTOMAKE([1.9 -Wall foreign subdir-objects])
 
-# for the time being, libupnp has its own "config.h" file (see ./upnp/inc)
-AC_CONFIG_HEADERS(unused_config.h)
+# The new "config.h" file is auto-generated (the previous one in ./upnp/inc
+# has been renamed to "upnpconfig.h")
+AC_CONFIG_HEADERS(config.h)
 
 AC_REVISION([$Revision$])
 
@@ -74,6 +75,10 @@ else
 fi
 AX_CFLAGS_WARN_ALL
 
+# Arrange for large-file support (can be disabled with --disable-largefile).
+# Define _FILE_OFFSET_BITS and _LARGE_FILES if necessary
+AC_SYS_LARGEFILE
+
 
 #
 # Checks for header files
@@ -89,12 +94,14 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h malloc.h netdb.h netinet/in.h std
 #	
 AC_C_CONST
 AC_TYPE_SIZE_T
+TYPE_SOCKLEN_T
 
 
 #
 # Checks for library functions
 #
 AC_FUNC_VPRINTF
+AC_FUNC_FSEEKO
 
 
 #

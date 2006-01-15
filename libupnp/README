@@ -177,6 +177,13 @@ By default, both client and device code is included in the library.  The
 integrated web server is automatically removed when configuring with 
 --disable-device.
 
+To build the library without large-file support (enabled by default) :
+
+% cd $(LIBUPNP)
+% ./configure --disable-largefile
+% make 
+
+
 To remove all the targets, object files, and built documentation:
 
 % cd $(LIBUPNP)

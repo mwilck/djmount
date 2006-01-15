@@ -809,7 +809,7 @@ readFromSSDPSocket( SOCKET socket )
     struct sockaddr_in clientAddr;
     ThreadPoolJob job;
     ssdp_thread_data *data = NULL;
-    int socklen = 0;
+    socklen_t socklen = 0;
     int byteReceived = 0;
 
     requestBuf = staticBuf;

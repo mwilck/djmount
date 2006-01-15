@@ -37,7 +37,7 @@ endif
 
 
 upnpincludedir          = $(includedir)/upnp
-upnpinclude_HEADERS     = inc/upnp.h inc/config.h inc/upnptools.h 
+upnpinclude_HEADERS     = inc/upnp.h inc/upnpconfig.h inc/upnptools.h 
 
 lib_LTLIBRARIES		= libupnp.la
 

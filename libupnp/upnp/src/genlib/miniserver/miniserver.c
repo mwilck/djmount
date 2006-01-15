@@ -399,7 +399,7 @@ static void
 RunMiniServer( MiniServerSockArray * miniSock )
 {
     struct sockaddr_in clientAddr;
-    int clientLen;
+    socklen_t clientLen;
     SOCKET miniServSock,
       connectHnd;
     SOCKET miniServStopSock;
@@ -542,7 +542,7 @@ static int
 get_port( int sockfd )
 {
     struct sockaddr_in sockinfo;
-    int len;
+    socklen_t len;
     int code;
     int port;
 

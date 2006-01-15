@@ -29,8 +29,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef CONFIG_H
-#define CONFIG_H 
+#ifndef UPNP_CONFIG_H
+#define UPNP_CONFIG_H 
 
 #include <stdio.h>
 #define _strdup strdup
@@ -129,7 +129,7 @@
  * webserver.  The default value is 1MB.
  */
 //@{
-#define WEB_SERVER_BUF_SIZE  1024*1024
+#define WEB_SERVER_BUF_SIZE  (1024*1024)
 //@}
 
 /** @name AUTO_RENEW_TIME
@@ -155,7 +155,7 @@
  */
 
 //@{
-#define CP_MINIMUM_SUBSCRIPTION_TIME AUTO_RENEW_TIME + 5
+#define CP_MINIMUM_SUBSCRIPTION_TIME (AUTO_RENEW_TIME + 5)
 //@}
 
 /** @name MAX_SEARCH_TIME 
