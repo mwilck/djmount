@@ -2226,7 +2226,7 @@ http_OpenHttpGetEx( IN const char *url_str,
 *	Note :
 ************************************************************************/
 // 'info' should have a size of at least 100 bytes
-XINLINE void
+void
 get_sdk_info( OUT char *info )
 {
     int ret_code;
