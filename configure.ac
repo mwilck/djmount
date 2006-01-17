@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.50, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.51, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
@@ -78,6 +78,10 @@ else
 fi
 AX_CFLAGS_WARN_ALL
 
+# Arrange for large-file support.
+# Define _FILE_OFFSET_BITS and _LARGE_FILES if necessary
+AC_SYS_LARGEFILE
+
 
 #
 # Checks for header files
@@ -105,6 +109,7 @@ AC_CHECK_FUNCS([setxattr mktime])
 if test x"$enable_charset" = xyes; then
 	AC_CHECK_FUNCS([setlocale])
 fi
+AC_FUNC_FSEEKO
 
 
 #
@@ -214,7 +219,8 @@ CC="$PTHREAD_CC"
 # the --with-fuse-prefix arg, and pkg-config (if any).
 RT_PACKAGE_FIND([fuse], [-D_FILE_OFFSET_BITS=64], [-lfuse], [fuse >= 2.4], 
 	[ 
-#define FUSE_USE_VERSION 24
+/* must request latest API (25) else don't work when using FUSE 2.5 */
+#define FUSE_USE_VERSION 25 
 #include <fuse.h> 
 #if !defined(FUSE_VERSION) || FUSE_VERSION < 24
 #	error FUSE version is too old

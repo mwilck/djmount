@@ -1,9 +1,21 @@
+2006-01-17  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* version 0.51
+
+	* configure.ac: fix configure problem when building with FUSE 2.5.0
+
+2006-01-15  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* configure.ac: add checks for large-file support
+
+	* libupnp/ : fix miscellaneous compilation warnings 
+	  (see libupnp/ChangeLog)
+
 2006-01-12  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/device_list.c : avoid locking global device list while
 	  creating a Device, which freezes djmount if the device is not
-	  accessible (e.g. firewall problem). Problem reported by
-	  Christian Fredrik Kalager Schaller.
+	  accessible (e.g. firewall problem).
 	
 	* djmount : clean up event subscription code
 
@@ -14,11 +26,11 @@
 
 2006-01-09  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* djmount : fix empty browse on some servers, caused by accessing 
-	  services through ServiceId (device-dependant) instead of ServiceType
-	  (constant described in UPnP specification). Problem reported 
-	  on AV Media Server in Intel Tools for UPnP Technologies by
-	  Christian Fredrik Kalager Schaller.
+	* djmount : fix empty browse on some type of servers, caused by 
+	  accessing services through ServiceId (device-dependant) instead 
+	  of ServiceType (constant described in UPnP specification). 
+	  Problem reported on AV Media Server in Intel Tools for UPnP 
+	  Technologies by Christian Fredrik Kalager Schaller.
 
 2005-12-15  Rémi Turboult  <r3mi@users.sourceforge.net>
 

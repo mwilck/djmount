@@ -1,4 +1,39 @@
 
+What is new in 0.51
+
+* fix major bug causing empty "browse" on some type of UPnP AV servers,
+  for example AV Media Server in Intel Tools for UPnP Technologies
+  (reported by Christian Fredrik Kalager Schaller)
+
+* improve djmount freezing when trying to access unreachable Media Servers 
+  e.g. behind a closed firewall.
+
+  Note : if your UPnP Media Server is behind a closed firewall, it won't be 
+  visible in djmount. Therefore, if there is a firewall on the machine
+  where you are running your media server, you have to open the necessary
+  ports in this firewall. Some media servers can do it automatically 
+  (e.g. Windows Media Connect on Windows XP), most of them don't do it 
+  (e.g. AV Media Server in Intel Tools).
+
+* djmount now works ok with AV Media Server in Intel Tools for UPnP 
+  Technologies (.NET) (Build 1768)
+
+* tested ok with latest releases of the following Media Servers :
+  TwonkyVision UPnP Music Server 3.0, GMediaServer 0.9.0, GeeXboX uShare 0.9.5
+
+* fix configure problem when building with FUSE 2.5.0
+
+* fix warnings when building with gcc4 (tested ok on Ubuntu 5.10, gcc 4.0.2)
+
+* force playlist mode for AV files of unknown sizes (streams, or size 
+  not provided by server).
+
+* add matroska and ogg MIME types
+
+* miscellaneous bug fixes
+
+============================================================================
+
 What is new in 0.50
 
 * major change : the content of all files is now directly shared by djmount,
