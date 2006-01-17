@@ -20,7 +20,7 @@ lib_LTLIBRARIES		= libthreadutil.la
 libthreadutil_la_SOURCES = \
 			src/FreeList.c src/LinkedList.c \
 			src/ThreadPool.c src/TimerThread.c \
-			src/iasnprintf.c src/Makefile.orig
+			src/iasnprintf.c
 
 upnpincludedir		= $(includedir)/upnp
 upnpinclude_HEADERS	= \
