@@ -78,8 +78,9 @@ else
 fi
 AX_CFLAGS_WARN_ALL
 
-# Arrange for large-file support.
+# Arrange for large-file support / large off_t
 # Define _FILE_OFFSET_BITS and _LARGE_FILES if necessary
+# See also http://unix.freshmeat.net/articles/view/709/
 AC_SYS_LARGEFILE
 
 
