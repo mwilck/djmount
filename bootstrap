@@ -2,6 +2,9 @@
 
 rm -fr autom4te.cache
 
+# reconstruct gnulib files, if gnulib-tool is available
+(type -f gnulib-tool) > /dev/null 2>&1 && gnulib-tool --import
+
 # Equivalent to 
 #	aclocal 
 #	autoheader 

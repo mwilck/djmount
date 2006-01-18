@@ -116,12 +116,9 @@ AC_FUNC_FSEEKO
 #
 # gnulib 
 # ------
-# Configuration for imported modules
-#
-
-gl_SOURCE_BASE([gl])
-gl_M4_BASE([gl/m4])
-gl_MODULES([minmax])
+# Configuration for imported modules.
+# Use "gnulib-tool --import" to update the modules : 
+# see http://lists.gnu.org/archive/html/bug-gnulib/2005-08/msg00241.html
 gl_INIT
 
 
