@@ -29,6 +29,16 @@
 #include "file_buffer.h"
 
 
+/*****************************************************************************
+ * Flags for DJFS_Browse
+ *****************************************************************************/
+typedef enum _DJFS_Flags {
+	
+	DJFS_PLAYLISTS 	= 01, // use playlists for AV files (default: files)
+	DJFS_METADATA	= 02, // show XML files containing DIDL metadata
+	
+} DJFS_Flags;
+
 
 /*****************************************************************************
  * @fn 		DJFS_Browse
@@ -42,7 +52,7 @@
  *
  *****************************************************************************/
 int
-DJFS_Browse (const char* path, bool playlists,
+DJFS_Browse (const char* path, DJFS_Flags flags,
 	     /* for STAT => */	    struct stat* stbuf, 
 	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
 	     /* for READ => */	    void* talloc_context, FileBuffer** file);

@@ -55,7 +55,7 @@
 /*
  * Global settings
  */
-static bool g_playlists = false;
+static DJFS_Flags g_djfs_flags = DJFS_METADATA;
 
 
 
@@ -92,7 +92,7 @@ Browse (const char* path,
 {
 	int rc = -EIO;
 	if (! Charset_IsConverting()) {
-		rc = DJFS_Browse (path, g_playlists, stbuf, h, filler, 
+		rc = DJFS_Browse (path, g_djfs_flags, stbuf, h, filler, 
 				  talloc_context, file);
 	} else {
 		// Convert filename from display charset 
@@ -101,7 +101,7 @@ Browse (const char* path,
 			(CHARSET_TO_UTF8, path, buffer, sizeof (buffer), NULL);
 		my_dir_handle my_h = { .h = h, .filler = filler };
 		
-		rc = DJFS_Browse (utf_path, g_playlists, stbuf, 
+		rc = DJFS_Browse (utf_path, g_djfs_flags, stbuf, 
 				  (filler ? (void*)&my_h : h), 
 				  (filler ? filler_from_utf8 : NULL),
 				  talloc_context, file);
@@ -669,7 +669,7 @@ main (int argc, char *argv[])
 			     s != NULL; 
 			     s = strtok_r (NULL, ",", &tokptr)) {
 				if (strncmp (s,"playlists", 5) == 0) {
-					g_playlists = true;
+					g_djfs_flags |= DJFS_PLAYLISTS;
 #if HAVE_CHARSET
 				} else if (strncmp(s, "iocharset=", 10) == 0) {
 					charset = talloc_strdup 

@@ -199,7 +199,7 @@ stbuf_set_file (struct stat* const stbuf)
 }
 
 int
-DJFS_Browse (const char* const path, bool playlists,
+DJFS_Browse (const char* const path, DJFS_Flags flags,
 	     /* for STAT => */	    struct stat* const stbuf, 
 	     /* for GETDIR => */    void* h, fuse_dirfil_t filler, 
 	     /* for READ => */	    void* _context, FileBuffer** _file)
@@ -342,7 +342,7 @@ DJFS_Browse (const char* const path, bool playlists,
 		    if (MediaFile_GetPreferred (o, &file)) {
 			off_t const res_size = MediaFile_GetResSize (&file);
 			if ( file.playlist &&
-			     (playlists ||
+			     ( (flags & DJFS_PLAYLISTS) ||
 			      res_size < 0 ||
 			      res_size > FILE_BUFFER_MAX_CONTENT_LENGTH) ) {
 		        char* name = MediaFile_GetName (tmp_ctx, o, 
@@ -363,15 +363,17 @@ DJFS_Browse (const char* const path, bool playlists,
 			} FILE_END;
 		      }
 		    }
-		    char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
-		    FILE_BEGIN (name) {
-		      const char* const str = talloc_asprintf 
-			(tmp_ctx, 
-			 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
-			 DIDLObject_GetElementString (o, tmp_ctx));
-		      FILE_SET_STRING (str);
-		      FILE_SET_SIZE (str ? strlen (str) : 0);
-		    } FILE_END;
+		    if (flags & DJFS_METADATA) {
+ 		      char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
+		      FILE_BEGIN (name) {
+		        const char* const str = talloc_asprintf 
+			  (tmp_ctx, 
+			   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
+			   DIDLObject_GetElementString (o, tmp_ctx));
+		        FILE_SET_STRING (str);
+		        FILE_SET_SIZE (str ? strlen (str) : 0);
+		      } FILE_END;
+		    }
 		  }
 		} PTR_LIST_FOR_EACH_PTR_END;
 	      } DIR_END;
