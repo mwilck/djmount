@@ -363,8 +363,12 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 			} FILE_END;
 		      }
 		    }
-		    if (flags & DJFS_METADATA) {
- 		      char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
+		  }
+		} PTR_LIST_FOR_EACH_PTR_END;
+		if (flags & DJFS_METADATA) {
+		  DIR_BEGIN (".metadata") {
+		    PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+		      char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
 		      FILE_BEGIN (name) {
 		        const char* const str = talloc_asprintf 
 			  (tmp_ctx, 
@@ -373,9 +377,9 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 		        FILE_SET_STRING (str);
 		        FILE_SET_SIZE (str ? strlen (str) : 0);
 		      } FILE_END;
-		    }
-		  }
-		} PTR_LIST_FOR_EACH_PTR_END;
+		    } PTR_LIST_FOR_EACH_PTR_END;
+		  } DIR_END;
+		}
 	      } DIR_END;
 	    }
 	  } DIR_END; // "browse"
