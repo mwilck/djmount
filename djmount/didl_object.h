@@ -54,8 +54,8 @@ typedef struct _DIDLObject {
 	/*
 	 * The following members are required properties of every 
 	 * DIDL-Lite object. The "DIDLObject_Create" method make sure
-	 * that those fields are never NULL, and make sure that "id" and
-	 * "title" are never empty "".
+	 * that those fields are never NULL, and make sure that "id" 
+	 * is never empty "".
 	 */
 	char* id;
 	// TBD char* parentId;
@@ -68,6 +68,16 @@ typedef struct _DIDLObject {
 	 * e.g. "res"
 	 */
 	IXML_Element* element;
+
+
+	/*
+	 * Additional (internal) fields, for internal use.
+	 * Not part of ContentDirectory fields.
+	 */
+
+	// Similar to "title", but suitable for filename generation : 
+	// never empty "", or reserved name (e.g. "." or "..")
+	char* basename;
 
 } DIDLObject;
 

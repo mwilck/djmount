@@ -251,7 +251,7 @@ process_command (const char* cmdline)
 		if (res) {
 			const DIDLObject* o = NULL;
 			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
-				Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
 			} PTR_LIST_FOR_EACH_PTR_END;
 		}
 	}
@@ -265,7 +265,7 @@ process_command (const char* cmdline)
 					  ContentDir, BrowseMetadata,
 					  tmp_ctx, strarg2);
 		if (o) {
-			Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+			Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
 		}
 	}
 	break;
@@ -280,7 +280,7 @@ process_command (const char* cmdline)
 		if (res) {
 			const DIDLObject* o = NULL;
 			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
-				Log_Printf (LOG_MAIN, "  %s", NN(o->title));
+				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
 			} PTR_LIST_FOR_EACH_PTR_END;
 			if (nb_matched > 0) {
 				Log_Printf (LOG_MAIN, 

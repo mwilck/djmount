@@ -166,17 +166,18 @@ MediaFile_GetName (void* result_context,
 		   const DIDLObject* o, const char* extension)
 {
 	char* name = NULL;
-	if (o && o->title) {
+	if (o && o->basename) {
 		// Append extension only if not already present
 		if (extension && *extension) {
-			const char* ptr = strrchr (o->title, '.');
+			const char* ptr = strrchr (o->basename, '.');
 			if (ptr == NULL || strcmp (ptr+1, extension) != 0)
 				name = talloc_asprintf (result_context, 
 							"%s.%s", 
-							o->title, extension);
+							o->basename, 
+							extension);
 		}
 		if (name == NULL)
-			name = talloc_strdup (result_context, o->title);
+			name = talloc_strdup (result_context, o->basename);
 	}
 	return name;
 }

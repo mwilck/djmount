@@ -129,7 +129,7 @@ _DJFS_BrowseCDS (void* result_context,
 			const DIDLObject* o = PtrList_IteratorGetElement (&it);
 			if (o->is_container) {
 				const char* const p = 
-					match_start_of_path (ptr, o->title);
+					match_start_of_path (ptr, o->basename);
 				if (p) {
 					ptr = p;
 					found = o;
@@ -335,7 +335,7 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
                 lock = &res->children->mutex;
 		PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
 		  if (o->is_container) {
-		    DIR_BEGIN (o->title) {
+		    DIR_BEGIN (o->basename) {
 		    } DIR_END;
 		  } else {
 		    MediaFile file = { .o = NULL };

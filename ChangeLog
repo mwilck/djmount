@@ -1,5 +1,9 @@
 2006-01-18  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/didl_object.h: new field "basename" to contain the title 
+	  suitable for filename generation. Previous field "title" now contains
+	  the unmodified title.
+
 	* djmount/djfs.c (DJFS_Browse): move all metadata XML files into
 	  new sub-directory ".metadata" to avoid clutter
 
