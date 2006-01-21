@@ -14,10 +14,10 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --dir=. --lib=libgnu --source-base=gl --m4-base=gl/m4 --aux-dir=libupnp/config.aux --libtool --macro-prefix=gl minmax
+#   gnulib-tool --import --dir=. --lib=libgnu --source-base=gl --m4-base=gl/m4 --aux-dir=libupnp/config.aux --libtool --macro-prefix=gl hash minmax
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
-gl_MODULES([minmax])
+gl_MODULES([hash minmax])
 gl_AVOID([])
 gl_SOURCE_BASE([gl])
 gl_M4_BASE([gl/m4])

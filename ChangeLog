@@ -1,5 +1,9 @@
 2006-01-18  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* gl/ : import new "hash" module
+
+	* gl/ : synchronise with CVS gnulib
+
 	* configure.ac: suppress gl_MODULES and other macros now in 
 	  gnulib-cache.m4
 

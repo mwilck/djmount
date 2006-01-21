@@ -18,20 +18,44 @@
 # any checks for libraries, header files, types and library functions.
 AC_DEFUN([gl_EARLY],
 [
+  AC_REQUIRE([AC_PROG_RANLIB])
 ])
 
 # This macro should be invoked from ./configure.ac, in the section
 # "Check for header files, types and library functions".
 AC_DEFUN([gl_INIT],
 [
-AM_CONDITIONAL([GL_COND_LIBTOOL], [true])
+  AM_CONDITIONAL([GL_COND_LIBTOOL], [true])
+  gl_ERROR
+  gl_EXITFAIL
+  gl_HASH
   gl_MINMAX
+  AM_STDBOOL_H
+  gl_XALLOC
 ])
 
 # This macro records the list of files which have been installed by
 # gnulib-tool and may be removed by future gnulib-tool invocations.
 AC_DEFUN([gl_FILE_LIST], [
+  lib/error.c
+  lib/error.h
+  lib/exit.h
+  lib/exitfail.c
+  lib/exitfail.h
+  lib/gettext.h
+  lib/hash.c
+  lib/hash.h
   lib/minmax.h
+  lib/stdbool_.h
+  lib/xalloc-die.c
+  lib/xalloc.h
+  lib/xmalloc.c
+  m4/error.m4
+  m4/exitfail.m4
+  m4/hash.m4
   m4/minmax.m4
   m4/onceonly_2_57.m4
+  m4/stdbool.m4
+  m4/strerror_r.m4
+  m4/xalloc.m4
 ])
