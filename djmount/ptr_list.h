@@ -43,6 +43,11 @@ typedef void* PtrList_Element;
 /******************************************************************************
  * @var PtrList
  *	type for the list of pointers.
+ *
+ *      NOTE THAT THE FUNCTION API IS NOT THREAD SAFE. Callers should
+ *	take care of the necessary locks if a list is shared between 
+ *	multiple threads.
+ *
  *****************************************************************************/
 typedef struct _PtrList {
 	/*
