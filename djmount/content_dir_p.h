@@ -36,14 +36,13 @@
 
 union _ContentDirClass {
 
-  ObjectClass o;
-
-  struct {
-    // Inherit parent fields
-    ServiceClass _; 
-    // No additional methods
-  } m;
-
+	ObjectClass o;
+	
+	struct {
+		// Inherit parent fields
+		ServiceClass _; 
+		// No additional methods
+	} m;
 };
 
 
@@ -58,16 +57,11 @@ union _ContentDir {
 		Service _; 
 		
 		// Additional fields
-		struct _ContentDir_CacheEntry* 	cache;
-		ithread_mutex_t 		cache_mutex;
-
-		// Debug statistics
-		int	cache_access;
-		int	cache_hit;
-		int 	cache_collide;
-		int	cache_expired;
-  } m;
+		struct _Cache*	 cache;
+		ithread_mutex_t  cache_mutex;
+	} m;
 };
+
 
 #endif /* CONTENT_DIR_P_INCLUDED */
 

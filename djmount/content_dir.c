@@ -31,6 +31,7 @@
 #include <inttypes.h>
 #include <upnp/upnp.h>
 #include "service_p.h"
+#include "cache.h"
 
 
 
@@ -66,22 +67,6 @@ enum BrowseFlag {
 	BROWSE_CHILDREN,
 	BROWSE_METADATA
 };
-
-typedef struct _ContentDir_CacheEntry {
-  
-	// "objectId" is either NULL or points to a valid talloc'ed string
-	// (independantly of cached data being valid or not)
-	char* 			objectId;
-	String_HashType 	hash;
-
-	// Cached data "children" is valid iff current time <= limit. 
-	// In particular:
-	//  - "children == NULL" might be a valid cached result,
-	//  - "limit == 0" always means cached data is invalid.
-	time_t		limit;
-	Children*	children;
-	
-} CacheEntry;
 
 
 
@@ -241,7 +226,7 @@ BrowseAction (ContentDir* cds,
 
 
 /******************************************************************************
- * BrowseId
+ * BrowseAll
  *****************************************************************************/
 static ContentDir_Children*
 BrowseAll (ContentDir* cds,
@@ -317,6 +302,23 @@ FAIL:
 
 
 /******************************************************************************
+ * cache_free_expired_data
+ *****************************************************************************/
+static void 
+cache_free_expired_data (const char* key, void* data)
+{
+	Children* const children = (Children*) data;
+
+	// Un-reference old cached data (Children). Will be really freed
+	// by talloc only when its reference count drops to zero.
+	if (talloc_free (children) == 0) {
+		Log_Printf (LOG_DEBUG, "ContentDir CACHE_FREE (key='%s')", 
+			    key);
+	}
+}
+
+
+/******************************************************************************
  * DestroyResult
  *****************************************************************************/
 static int 
@@ -350,85 +352,58 @@ ContentDir_BrowseChildren (ContentDir* cds,
 			   void* result_context, 
 			   const char* objectId)
 {
-  if (cds == NULL || objectId == NULL)
-    return NULL; // ---------->
+	if (cds == NULL || objectId == NULL)
+		return NULL; // ---------->
 
-  BrowseResult* br = talloc (result_context, BrowseResult);
-  if (br == NULL)
-    return NULL; // ---------->
-  *br = (BrowseResult) { .cds = cds };
+	BrowseResult* br = talloc (result_context, BrowseResult);
+	if (br == NULL)
+		return NULL; // ---------->
+	*br = (BrowseResult) { .cds = cds };
 
-  if (cds->m.cache == NULL) {
-    /*
-     * No cache
-     */
-    br->children = BrowseAll (cds, br, objectId, BROWSE_CHILDREN);
+	if (cds->m.cache == NULL) {
+		/*
+		 * No cache
+		 */
+		br->children = BrowseAll (cds, br, objectId, BROWSE_CHILDREN);
 
-  } else {
-    /*
-     * Lookup and/or update cache 
-     */   
-    ithread_mutex_lock (&cds->m.cache_mutex);
-
-    String_HashType const h = String_Hash (objectId);
-    unsigned int const idx  = h % CACHE_SIZE;
-    CacheEntry* const ce    = cds->m.cache + idx;
-
-    cds->m.cache_access++;
-    bool const same_object_id = (ce->objectId && ce->hash == h && 
-				 strcmp (ce->objectId, objectId) == 0);
-    if (same_object_id && time(NULL) <= ce->limit) {
-      Log_Printf (LOG_DEBUG, "ContentDir CACHE_HIT (id='%s', idx=%u)",
-		  objectId, idx);
-      cds->m.cache_hit++;
-      br->children = ce->children; 
-    } else {
-      // Use the cache as parent context for allocation of result
-      br->children = BrowseAll (cds, cds->m.cache, objectId, BROWSE_CHILDREN);
-      if (same_object_id) {
-	Log_Printf (LOG_DEBUG, 
-		    "ContentDir CACHE_EXPIRED (new='%s', idx=%u)",
-		    objectId, idx);
-	cds->m.cache_expired++;
-      } else {
-	if (ce->objectId) {
-	  Log_Printf (LOG_DEBUG, 
-		      "ContentDir CACHE_COLLIDE (old='%s', new='%s', idx=%u)",
-		      ce->objectId, objectId, idx);
-	  cds->m.cache_collide++;
 	} else {
-	  Log_Printf (LOG_DEBUG, "ContentDir CACHE_NEW (new='%s', idx=%u)",
-		      objectId, idx);
+		/*
+		 * Lookup and/or update cache 
+		 */   
+		ithread_mutex_lock (&cds->m.cache_mutex);
+
+		Children** cp = (Children**) Cache_Get(cds->m.cache, objectId);
+		if (cp) {
+			if (*cp) {
+				// cache hit
+				br->children = *cp;
+			} else {
+				// cache new (or expired)
+
+				// Note: use the cache as parent context for 
+				// allocation of result.
+				br->children = BrowseAll (cds, cds->m.cache, 
+							  objectId, 
+							  BROWSE_CHILDREN);
+				// set cache
+				*cp = br->children;
+			}
+		}
+		// Add a reference to the cached result before returning it
+		if (br->children) {
+			talloc_increase_ref_count (br->children);    
+			talloc_set_destructor (br, DestroyResult);
+		}
+		
+		ithread_mutex_unlock (&cds->m.cache_mutex);
 	}
-	talloc_free (ce->objectId);
-	ce->objectId = talloc_strdup (cds->m.cache, objectId);
-	ce->hash = h;
-      }
-      if (ce->children) {
-	// Un-reference old cached data ; will be really freed
-	// by talloc when its reference count drops to zero.
-	if (talloc_free (ce->children) == 0)
-	  Log_Printf (LOG_DEBUG, "ContentDir CACHE_FREE (new='%s', idx=%u)",
-		      objectId, idx);
-      }
-      ce->children = br->children;
-      ce->limit    = time(NULL) + CACHE_TIMEOUT;
-    }
-    // Add a reference to the cached result before returning it
-    if (br->children) {
-      talloc_increase_ref_count (br->children);    
-      talloc_set_destructor (br, DestroyResult);
-    }
 
-    ithread_mutex_unlock (&cds->m.cache_mutex);
-  }
-
-  if (br->children == NULL) {
-    talloc_free (br);
-    br = NULL;
-  }
-
-  return br;
+	if (br->children == NULL) {
+		talloc_free (br);
+		br = NULL;
+	}
+	
+	return br;
 }
 
 
@@ -478,34 +453,21 @@ get_status_string (const Service* serv,
 	if (spacer == NULL)
 		spacer = "";
 	
+	// Create a working context for temporary strings
+	void* const tmp_ctx = talloc_new (p);
+	
 #define P talloc_asprintf_append 
 
-	p=P(p, "%s+- Cache size      = %d\n", spacer, (int) CACHE_SIZE);
-	if (debug && cds->m.cache) {
-		time_t const now = time(NULL);
-		int i, nb_cached = 0;
-		for (i = 0; i < CACHE_SIZE; i++) {
-			if (cds->m.cache[i].limit >= now)
-				nb_cached++;
-		}
-		p=P(p, "%s+- Cached entries  = %d (%d%%)\n", spacer, 
-		    nb_cached, (int) (nb_cached * 100 / CACHE_SIZE));
-	}
-	p=P(p, "%s+- Cache timeout   = %d seconds\n", spacer, 
-	    (int) CACHE_TIMEOUT);
-	p=P(p, "%s+- Cache access    = %d\n", spacer, cds->m.cache_access);
-	if (cds->m.cache_access > 0) {
-		p=P(p, "%s     +- hits       = %d (%d%%)\n", spacer, 
-		    cds->m.cache_hit, 
-		    (int) (cds->m.cache_hit * 100 / cds->m.cache_access));
-		p=P(p, "%s     +- collide    = %d (%d%%)\n", spacer, 
-		    cds->m.cache_collide, 
-		    (int) (cds->m.cache_collide * 100 / cds->m.cache_access));
-		p=P(p, "%s     +- expired    = %d (%d%%)\n", spacer, 
-		    cds->m.cache_expired, 
-		    (int) (cds->m.cache_expired * 100 / cds->m.cache_access));
-	}
+	p=P(p, "%s+- Browse Cache\n", spacer);
+	p=P(p, "%s", Cache_GetStatusString 
+	    (cds->m.cache, tmp_ctx, talloc_asprintf (tmp_ctx, "%s      ",
+						     spacer)));
+	
 #undef P
+
+	// Delete all temporary strings
+	talloc_free (tmp_ctx);
+
 	return p;
 }
 
@@ -523,8 +485,9 @@ finalize (Object* obj)
 {
 	ContentDir* const cds = (ContentDir*) obj;
 
-	if (cds && cds->m.cache)
+	if (cds && cds->m.cache) {
 		ithread_mutex_destroy (&cds->m.cache_mutex);
+	}
 	
 	// Other "talloc'ed" fields will be deleted automatically : 
 	// nothing to do 
@@ -592,17 +555,10 @@ ContentDir_Create (void* talloc_context,
 		goto error; // ---------->
 	
 	if (CACHE_SIZE > 0 && CACHE_TIMEOUT > 0) {
-		cds->m.cache = talloc_array (cds, CacheEntry, CACHE_SIZE);
+		cds->m.cache = Cache_Create (cds, CACHE_SIZE, CACHE_TIMEOUT,
+					     cache_free_expired_data);
 		if (cds->m.cache == NULL)
 			goto error; // ---------->
-		int i;
-		for (i = 0; i < CACHE_SIZE; i++)
-			cds->m.cache[i] = (CacheEntry) { 
-				.objectId = NULL, 
-				.limit = 0 
-			};
-		cds->m.cache_access = cds->m.cache_hit = 
-			cds->m.cache_collide = cds->m.cache_expired = 0;
 		ithread_mutex_init (&cds->m.cache_mutex, NULL);
 	}
 	

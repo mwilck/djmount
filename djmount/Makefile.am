@@ -19,7 +19,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-AM_CPPFLAGS		= -I$(top_srcdir)/gl
+GNULIB_DIR		= $(top_srcdir)/gl
 
 if INTERNAL_LIBUPNP
 
@@ -31,11 +31,11 @@ if INTERNAL_LIBUPNP
 
 endif
 
-AM_CFLAGS		= $(TALLOC_CFLAGS) $(FUSE_CFLAGS) \
-		  	  $(LIBUPNP_CFLAGS)
+AM_CFLAGS		= -I$(GNULIB_DIR) \
+			  $(TALLOC_CFLAGS) $(FUSE_CFLAGS) $(LIBUPNP_CFLAGS)
 
-LDADD			= $(TALLOC_LIBS) $(FUSE_LIBS) \
-			  $(LIBUPNP_LIBS)
+LDADD			= -L$(GNULIB_DIR) -lgnu \
+			  $(TALLOC_LIBS) $(FUSE_LIBS) $(LIBUPNP_LIBS)
 if ENABLE_CHARSET
     LDADD		+= $(LIBICONV)
 endif
@@ -53,7 +53,8 @@ COMMON_SRCS 		= log.c object.c service.c \
 			  device.c device_list.c didl_object.c \
 			  media_file.c file_buffer.c \
 			  content_dir.c djfs.c upnp_util.c \
-			  string_util.c xml_util.c ptr_list.c
+			  string_util.c xml_util.c ptr_list.c \
+			  cache.c
 if ENABLE_CHARSET
     COMMON_SRCS 	+= charset.c
 if !WANT_ICONV
@@ -67,6 +68,7 @@ noinst_HEADERS		= \
 			media_file.h file_buffer.h \
 		  	content_dir.h content_dir_p.h djfs.h upnp_util.h \
 		  	string_util.h xml_util.h ptr_list.h talloc_util.h \
+			cache.h \
 		  	charset.h charset_internal.h
 
 djmount_SOURCES		= $(COMMON_SRCS) fuse_main.c
