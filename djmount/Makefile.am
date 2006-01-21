@@ -19,8 +19,6 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-GNULIB_DIR		= $(top_srcdir)/gl
-
 if INTERNAL_LIBUPNP
 
     # Local install of UPnP headers, to find <upnp/*.h> even when
@@ -31,10 +29,10 @@ if INTERNAL_LIBUPNP
 
 endif
 
-AM_CFLAGS		= -I$(GNULIB_DIR) \
+AM_CFLAGS		= -I$(top_srcdir)/gl \
 			  $(TALLOC_CFLAGS) $(FUSE_CFLAGS) $(LIBUPNP_CFLAGS)
 
-LDADD			= -L$(GNULIB_DIR) -lgnu \
+LDADD			= -L$(top_builddir)/gl -lgnu \
 			  $(TALLOC_LIBS) $(FUSE_LIBS) $(LIBUPNP_LIBS)
 if ENABLE_CHARSET
     LDADD		+= $(LIBICONV)
