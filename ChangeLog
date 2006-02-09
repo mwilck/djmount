@@ -1,3 +1,7 @@
+2006-02-01  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/log.h : add Log_IsActivated and LOG_IS_DEBUG_ACTIVATED
+
 2006-01-21  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/cache.c, djmount/cache.h : new "Cache" object (update 

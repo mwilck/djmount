@@ -88,6 +88,23 @@ typedef void (*Log_PrintFunction) (Log_Level level, const char* string);
 
 
 /*****************************************************************************
+ * Macros
+ *****************************************************************************/
+
+/** 
+ * @brief  Predicate to test for debug ouput.
+ * - if debug messages are compiled in the application (-DDEBUG), this
+ *   is a dynamic test against the current log level ;
+ * - else this is false (constant)
+ */
+#ifdef DEBUG
+#	define LOG_IS_DEBUG_ACTIVATED	Log_IsActivated (LOG_DEBUG)
+#else
+#	define LOG_IS_DEBUG_ACTIVATED	false
+#endif
+
+
+/*****************************************************************************
  * Functions
  *****************************************************************************/
 
@@ -141,6 +158,15 @@ int Log_Printf (Log_Level level, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
  * @param max_level maximum log level
  */
 void Log_SetMaxLevel (Log_Level max_level);
+
+
+/**
+ * @brief Predicate : tests if a log level is output or not
+ *	  (see Log_SetMaxLevel).
+ *
+ * @param level  	log level to test
+ */
+bool Log_IsActivated (Log_Level level);
 
 
 /**
