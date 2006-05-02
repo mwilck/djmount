@@ -279,9 +279,9 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
           talloc_set_name (*_file, "file[%s] at " __location__, path);	\
       }
 
-#define FILE_SET_URL(URL)						\
+#define FILE_SET_URL(URL,SIZE)						\
       if (_file) {							\
-	*_file = FileBuffer_CreateFromURL (_context, (URL));		\
+	*_file = FileBuffer_CreateFromURL(_context,(URL),(SIZE));	\
         if (*_file)							\
           talloc_set_name (*_file, "file[%s] at " __location__, path);	\
       }
@@ -357,7 +357,7 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 		        char* name = MediaFile_GetName (tmp_ctx, o, 
 							file.extension);
 			FILE_BEGIN (name) {
-			  FILE_SET_URL (file.uri);
+			  FILE_SET_URL (file.uri, res_size);
 			  if (res_size >= 0)
 		            FILE_SET_SIZE (res_size);
 			} FILE_END;

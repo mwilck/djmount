@@ -151,11 +151,12 @@ BrowseAction (ContentDir* cds,
 		NN(objectId));
     goto cleanup; // ---------->
   }
-  
-  *nb_matched = 
-    XMLUtil_GetFirstNodeValueInteger ((IXML_Node*) doc, "TotalMatches", 0);
-  *nb_returned = 
-    XMLUtil_GetFirstNodeValueInteger ((IXML_Node*) doc, "NumberReturned", 0);
+
+  const char* s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "TotalMatches");
+  STRING_TO_INT (s, *nb_matched, 0);
+
+  s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "NumberReturned");
+  STRING_TO_INT (s, *nb_returned, 0);
     
   Log_Printf (LOG_DEBUG, "+++BROWSE RESULT+++\n%s\n", 
 	      XMLUtil_GetDocumentString (tmp_ctx, doc));

@@ -1,3 +1,38 @@
+2006-05-02  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* merge branch release 0.52 and 0.53 into trunk
+
+2006-05-01  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/fuse_main.c (fs_open): whenever possible, do not set the 
+	  'direct_io' flag on opened files : this allow the 'mmap' operation 
+	   to succeed on these files.
+
+	* djmount/file_buffer.h, djmount/file_buffer.c : add file size to 
+	  FileBuffer_CreateFromURL, in order to allow read function to 
+	  always return the exact number of bytes requested
+
+2006-04-30  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/string_util.h : new macro STRING_TO_INT to check the range
+	  of the target variable after string conversion.
+
+	* djmount/test_string.c: new test suite for string_util functions
+
+2006-03-24  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/fuse_main.c: allow some FUSE-related mount options 
+	  e.g. fsname, allow_root, ...
+
+2006-03-21  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* configure.ac: if using external libupnp, requires at least 1.3.1
+
+2006-02-12  Rémi Turboult  <r3mi@users.sourceforge.net>
+	
+	* djmount/fuse_main.c: add code for backward compatibility with
+	  FUSE 2.2 (as provided in Debian Sarge)
+
 2006-02-01  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/log.h : add Log_IsActivated and LOG_IS_DEBUG_ACTIVATED

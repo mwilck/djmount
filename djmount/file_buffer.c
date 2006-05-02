@@ -45,9 +45,10 @@
 
 
 struct _FileBuffer {
+	bool		exact_read;
+	off_t		file_size; 
 	const char*	url;
 	const char*	content;
-	size_t		content_size; 
 };
 
 
@@ -60,13 +61,14 @@ FileBuffer_CreateFromString (void* talloc_context, const char* content)
 	FileBuffer* const file = talloc (talloc_context, FileBuffer);
 	if (file) {
 		*file = (FileBuffer) {
-			.content_size = 0,
+			.exact_read   = true,
+			.file_size    = 0,
 			.content      = NULL,
 			.url	      = NULL
 		};
 		if (content) {
 			file->content = talloc_strdup (file, content);
-			file->content_size = strlen (content);
+			file->file_size = strlen (content);
 		}
 	}
 	return file;
@@ -77,12 +79,14 @@ FileBuffer_CreateFromString (void* talloc_context, const char* content)
  * FileBuffer_CreateFromURL
  *****************************************************************************/
 FileBuffer*
-FileBuffer_CreateFromURL (void* talloc_context, const char* url)
+FileBuffer_CreateFromURL (void* talloc_context, const char* url, 
+			  off_t file_size)
 {
 	FileBuffer* const file = talloc (talloc_context, FileBuffer);
 	if (file) {
 		*file = (FileBuffer) {
-			.content_size = 0,
+			.exact_read   = (file_size >= 0),
+			.file_size    = file_size,
 			.content      = NULL,
 			.url	      = NULL
 		};
@@ -95,12 +99,22 @@ FileBuffer_CreateFromURL (void* talloc_context, const char* url)
 
 
 /*****************************************************************************
- * FileBuffer_IsURL
+ * FileBuffer_GetSize
+ *****************************************************************************/
+off_t
+FileBuffer_GetSize (const FileBuffer* file)
+{
+	return (file && file->file_size);
+}
+
+
+/*****************************************************************************
+ * FileBuffer_HasExactRead
  *****************************************************************************/
 bool
-FileBuffer_IsURL (const FileBuffer* file)
+FileBuffer_HasExactRead (const FileBuffer* file)
 {
-	return (file && file->url);
+	return (file && file->exact_read);
 }
 
 
@@ -110,7 +124,7 @@ FileBuffer_IsURL (const FileBuffer* file)
 
 ssize_t
 FileBuffer_Read (FileBuffer* file, char* buffer, 
-		 size_t size, off_t offset)
+		 size_t size, const off_t offset)
 {
 	ssize_t n = 0;
 	if (file == NULL) {
@@ -121,8 +135,8 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		/*
 		 * Read from memory
 		 */
-		if (file->content_size > 0 && offset < file->content_size) {
-			n = MIN (size, file->content_size - offset);
+		if (file->file_size > 0 && offset < file->file_size) {
+			n = MIN (size, file->file_size - offset);
 			if (n > 0)
 				memcpy (buffer, file->content + offset, n);
 		}
@@ -130,10 +144,12 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		/*
 		 * Read from URL
 		 */
+
 		Log_Printf (LOG_DEBUG, 
-			    "UPNP Get Http url '%s' "
-			    "size %" PRIdMAX " offset %" PRIdMAX,
-			    file->url, (intmax_t) size, (intmax_t) offset);
+			    "GetHttp url '%s' size %" PRIdMAX 
+			    " offset %" PRIdMAX " (file_size %" PRIdMAX ")",
+			    file->url, (intmax_t) size, (intmax_t) offset,
+			    (intmax_t) file->file_size);
 		
 		/*
 		 * Warning : the libupnp API (UpnpOpenHttpGetEx, 
@@ -143,11 +159,21 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		if (offset > FILE_BUFFER_MAX_CONTENT_LENGTH ||
 		    offset > FILE_BUFFER_MAX_CONTENT_LENGTH - size) {
 			Log_Printf (LOG_ERROR, 
-				    "UPNP Get Http url '%s' too big "
+				    "GetHttp url '%s' overflowed "
 				    "size %" PRIdMAX " or offset %" PRIdMAX,
 				    file->url, (intmax_t) size, 
 				    (intmax_t) offset);
-			return -EINVAL; // ---------->
+			return -EOVERFLOW; // ---------->
+		}
+
+		// Adjust request to file size, if known
+		if (file->file_size >= 0) {
+			if (offset > file->file_size - size) {
+				size = MAX (0, file->file_size - offset);
+				Log_Printf (LOG_DEBUG, 
+					    "GetHttp truncate to size %" 
+					    PRIdMAX, (intmax_t) size);
+			}
 		}
 
 		// TBD
@@ -165,26 +191,50 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 					    HTTP_DEFAULT_TIMEOUT
 					    );
 		if (rc != UPNP_E_SUCCESS) 
-			goto HTTP_FAIL; // ---------->
+			goto HTTP_CHECK; // ---------->
 		// TBD TBD free contentType ??? I don't know ...
 
-		unsigned int read_size = size;
-		rc = UpnpReadHttpGet (handle, buffer, &read_size,
-				      HTTP_DEFAULT_TIMEOUT);
-		int rc2 = UpnpCloseHttpGet (handle);
-		if (rc != UPNP_E_SUCCESS) 
-			goto HTTP_FAIL; // ---------->
-		if (rc2 != UPNP_E_SUCCESS) {
-			rc = rc2;
-			goto HTTP_FAIL; // ---------->
-		}
-		n = read_size;
+		/*
+		 * Read available bytes, or all bytes requested if exact_read :
+		 * perform a loop because I am not sure that HTTP GET guaranty
+		 * to return the exact number of bytes requested.
+		 */
+		do {
+			unsigned int read_size = size - n;
+			if (n > 0) {
+				Log_Printf (LOG_DEBUG, 
+					    "UpnpReadHttpGet loop ! url '%s' "
+					    "read %" PRIdMAX " left %" PRIdMAX,
+					    file->url, (intmax_t) n, 
+					    (intmax_t) read_size);
+			}
+			
+			rc = UpnpReadHttpGet (handle, buffer + n, &read_size,
+					      HTTP_DEFAULT_TIMEOUT);
+			if (rc != UPNP_E_SUCCESS) {
+				(void) UpnpCloseHttpGet (handle);
+				goto HTTP_CHECK; // ---------->
+			}
 
-	HTTP_FAIL:
+			// Prevent infinite loop (shouldn't happen though)
+			if (read_size == 0)
+				break; // ---------->
+			n += read_size;
+
+		} while (file->exact_read && n < size);
+
+		rc = UpnpCloseHttpGet (handle);
+
+	HTTP_CHECK:
 		if (rc != UPNP_E_SUCCESS) {
 			Log_Printf (LOG_ERROR, 
-				    "UPNP Get Http url '%s' error %d (%s)", 
-				    file->url, rc, UpnpGetErrorMessage (rc));
+				    "GetHttp url '%s' (size %" PRIdMAX 
+				    ", offset %" PRIdMAX ", file_size %" 
+				    PRIdMAX ") : error %d (%s)", 
+				    file->url, (intmax_t) size, 
+				    (intmax_t) offset, 
+				    (intmax_t) file->file_size, 
+				    rc, UpnpGetErrorMessage (rc));
 			switch (rc) {
 			case UPNP_E_OUTOF_MEMORY : 	n = -ENOMEM; break;
 			default:			n = -EIO;    break;

@@ -73,34 +73,22 @@ String_CleanFileName (void* talloc_context, const char* s)
 
 
 /*****************************************************************************
- * String_ToInteger
+ * _String_ToInteger
  *****************************************************************************/
 intmax_t
-String_ToInteger (const char* s, intmax_t error_value)
+_String_ToInteger (const char* s, intmax_t error_value)
 {
 	intmax_t ret = error_value;
 	if (s && *s) {
 		char* endptr = 0;
 		intmax_t val = strtoimax (s, &endptr, 10);
-		if (endptr && *endptr == '\0')
-			ret = val;
-	}
-	return ret;
-}
-
-
-/*****************************************************************************
- * String_ToUnsigned
- *****************************************************************************/
-uintmax_t
-String_ToUnsigned (const char* s, uintmax_t error_value)
-{
-	uintmax_t ret = error_value;
-	if (s && *s) {
-		char* endptr = 0;
-		uintmax_t val = strtoumax (s, &endptr, 10);
-		if (endptr && *endptr == '\0')
-			ret = val;
+		if (endptr) {
+			// skip tailing spaces
+			while (isspace (*endptr))
+				endptr++;
+			if (*endptr == '\0')
+				ret = val;
+		}
 	}
 	return ret;
 }

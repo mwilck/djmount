@@ -70,23 +70,6 @@ XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char *item);
 
 
 /*****************************************************************************
- * @brief  	Get value of first matching element, converted to integer.
- *
- *      Given a XML node, this routine searches for the first element
- *      named by the input string item, and returns its value as a
- *	(signed) integer.
- *
- * @param node 		The XML node from which to extract the value
- * @param item 		The item to search for
- * @param error_value	Value to return in case of error e.g. conversion error.
- *****************************************************************************/
-intmax_t
-XMLUtil_GetFirstNodeValueInteger (IN const IXML_Node* node, 
-				  IN const char *item,
-				  IN intmax_t error_value);
-
-
-/*****************************************************************************
  * @brief Returns a string printing the content of an XML Document.
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/

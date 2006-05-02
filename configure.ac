@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.51, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.53, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
@@ -215,12 +215,16 @@ CC="$PTHREAD_CC"
 
 # Find the library. This macro handles the FUSE_CFLAGS and FUSE_LIBS,
 # the --with-fuse-prefix arg, and pkg-config (if any).
-RT_PACKAGE_FIND([fuse], [-D_FILE_OFFSET_BITS=64], [-lfuse], [fuse >= 2.4], 
+RT_PACKAGE_FIND([fuse], [-D_FILE_OFFSET_BITS=64], [-lfuse], [fuse >= 2.2], 
 	[ 
 /* must request latest API (25) else don't work when using FUSE 2.5 */
 #define FUSE_USE_VERSION 25 
 #include <fuse.h> 
-#if !defined(FUSE_VERSION) || FUSE_VERSION < 24
+/* Missing in earlier FUSE versions e.g. 2.2 */
+#ifndef FUSE_VERSION
+#	define FUSE_VERSION	(FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
+#endif
+#if FUSE_VERSION < 22
 #	error FUSE version is too old
 #endif
 	],
@@ -240,19 +244,24 @@ FUSE_CFLAGS="$FUSE_CFLAGS -DFUSE_USE_VERSION=22"
 AC_MSG_CHECKING([whether to use external libupnp])
 AC_ARG_WITH([external-libupnp], 
 	AS_HELP_STRING([--with-external-libupnp],
-	[use external libupnp library (not recommended) @<:@default = use internal bundled library@:>@]))
+	[use external libupnp library (at least 1.3.1) @<:@default = use internal bundled library@:>@]))
 
 if test x"$with_external_libupnp" = xyes; then
 	AC_MSG_RESULT([yes])
 	# Find the library. This macro handles the LIBUPNP_CFLAGS and _LIBS,
 	# the --with-libupnp-prefix arg, and pkg-config (if any).
 	RT_PACKAGE_FIND([libupnp], [], [-lupnp -lthreadutil -lixml], 
-			[libupnp >= 1.3], 
+			[libupnp >= 1.3.1], 
 	[
 #	include <upnp/ixml.h>
 #	include <upnp/upnp.h>
+#	include <upnp/upnptools.h>
+#if (!defined UPNP_VERSION) || (UPNP_VERSION < 10301)
+#	error libupnp version is too old
+#endif
 	],
 	[
+		UpnpResolveURL (NULL, NULL, NULL);
 		/* test for functions added after libupnp-1.2.1a */
 		ixmlRelaxParser (0);
 		UpnpSetMaxContentLength (0);
@@ -282,6 +291,12 @@ else
 	bd='$(top_builddir)/libupnp' # ! shall not expand $top_builddir !
 	AC_SUBST(LIBUPNP_LIBS, 
 	 ["-L$bd/upnp -lupnp -L$bd/threadutil -lthreadutil -L$bd/ixml -lixml"])
+	# Set specific libupnp debug flag (not provided by bundled library,
+	# but provided by external libupnp version >= 1.3)
+	if test x"$enable_debug" = xyes; then
+		AC_DEFINE([UPNP_HAVE_DEBUG],1,
+			  [Define to 1 if libupnp debug code enabled])
+	fi
 fi
 AM_CONDITIONAL(INTERNAL_LIBUPNP, test x"$with_external_libupnp" != xyes)
 

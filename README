@@ -68,7 +68,7 @@ Building and Installation
 djmount has been built and tested on the following configurations:
 
 * MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1, glibc-2.3.3), 
-  FUSE 2.4.0 or 2.5.0
+  FUSE 2.2.1, 2.4.0, 2.5.0, 2.5.2 or 2.5.3, libupnp internal or 1.3.1
 
 * GeeXboX 0.98.7 (Linux kernel 2.6.14, gcc 3.4.4, uClibc 0.9.28),
   FUSE 2.4.1
@@ -109,7 +109,7 @@ In particular,
   --with-external-talloc      use external talloc library (not recommended)
                               [default = use internal bundled library]
   --with-talloc-prefix=DIR    search for talloc in DIR/include and DIR/lib
-  --with-external-libupnp     use external libupnp library (not recommended)
+  --with-external-libupnp     use external libupnp library (at least 1.3.1)
                               [default = use internal bundled library]
   --with-libupnp-prefix=DIR   search for libupnp in DIR/include and DIR/lib
 
@@ -123,16 +123,9 @@ Examples:
 	./configure --with-external-talloc --with-talloc-prefix=/opt/local
 	TALLOC_CFLAGS='-I/opt/include' ./configure --with-external-talloc
 
-Note: djmount requires the patches included in the bundled libupnp library.
-However, this library can be built and configured separately:
-
-	cd libupnp
-	./configure --enable-debug
-	make
-	make install
-	cd ..
-	./configure --with-external-libupnp 
-	make
+Note: djmount requires the patches included in the bundled libupnp library :
+version 1.2.1a alone is not sufficient. If using an external libupnp 
+installation, it must be at least version 1.3.1.
 
 
 Usage 
@@ -177,9 +170,9 @@ UPnP AV compliant devices, help is needed to test on additional devices.
 
 
 * TwonkyVision UPnP Music Server ( http://www.twonkyvision.de )
-  versions 2.7.2, 2.9.1 and 3.0 for Linux are ok
+  versions 2.7.2, 2.9.1, 3.0 and 3.1 for Linux are ok
 
-* GMediaServer on Linux ( http://www.nongnu.org/gmediaserver/ )
+* GMediaServer on Linux ( http://www.gnu.org/software/gmediaserver/ )
   versions 0.7.0 and 0.9.0 (version 0.8.0 not ok)
 
 * Ahead Nero MediaHome Server ( http://www.nero.com/en/Nero_MediaHome.html )
@@ -190,7 +183,7 @@ UPnP AV compliant devices, help is needed to test on additional devices.
   requires Windows XP Service Pack 2 (SP2) and .NET FrameWork 1.1. 
 
 * GeeXboX uShare on Linux ( http://ushare.geexbox.org/ )
-  versions 0.9.1, 0.9.3 to 0.9.5
+  versions 0.9.3 to 0.9.7
 
 * AV Media Server in Intel Tools for UPnP Technologies (.NET), 
   ( http://www.intel.com/cd/ids/developer/asmo-na/eng/downloads/upnp/tools/index.htm )

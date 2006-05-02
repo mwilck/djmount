@@ -52,9 +52,37 @@
 #include "minmax.h"
 
 
-/*
- * Global settings
- */
+
+/*****************************************************************************
+ * Configuration related to specific FUSE versions
+ *****************************************************************************/
+
+// Missing in earlier FUSE versions e.g. 2.2
+#ifndef FUSE_VERSION
+#	define FUSE_VERSION	(FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
+#endif
+
+// "-o readdir_ino" option available ?
+#if FUSE_VERSION >= 23
+#	define HAVE_FUSE_O_READDIR_INO	1
+#endif
+
+// "-o nonempty" option available ?
+#if FUSE_VERSION >= 24
+#	define HAVE_FUSE_O_NONEMPTY	1
+#endif
+
+// per-file direct_io flag ?
+#if FUSE_VERSION >= 24
+#	define HAVE_FUSE_FILE_INFO_DIRECT_IO	1
+#endif
+
+
+
+/*****************************************************************************
+ * Global djmount settings
+ *****************************************************************************/
+
 static DJFS_Flags g_djfs_flags = DJFS_METADATA;
 
 
@@ -357,14 +385,19 @@ fs_open (const char* path, struct fuse_file_info* fi)
 	}
 	fi->fh = (intptr_t) file;
 
-	/* 
-	 * Set 'direct_io' option for buffers constructed from URL, because :
-	 * 1) the size of the file if not always known in advance 
-	 *    (if the DIDL-Lite attribute <res@size> is not set)
-	 * 2) I am not sure that the HTTP Read method always return exactly 
-	 *    the number of bytes requested.
+#if HAVE_FUSE_FILE_INFO_DIRECT_IO	
+	/*
+	 * Whenever possible, do not set the 'direct_io' flag on files : 
+	 * this allow the 'mmap' operation to succeed on these files.
+	 * However, in some case, we have to set the 'direct_io' :
+	 * a) if the size of the file if not known in advance 
+	 *    (e.g. if the DIDL-Lite attribute <res@size> is not set)
+	 * b) or if the buffer does not guaranty to return exactly the
+	 *    number of bytes requested in a read (except on EOF or error)
 	 */
-	fi->direct_io = FileBuffer_IsURL (file);
+	fi->direct_io = ( FileBuffer_GetSize (file) < 0 ||
+			  ! FileBuffer_HasExactRead (file) );
+#endif
 
 	return rc;
 }
@@ -539,11 +572,21 @@ stdout_print (Log_Level level, const char* msg)
  * Usage
  *****************************************************************************/
 
-#ifdef DEBUG
+#if UPNP_HAVE_DEBUG
 #    define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
 #else
 #    define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
 #endif
+
+static const char* const FUSE_ALLOWED_OPTIONS = \
+	"    default_permissions    enable permission checking by kernel\n"
+	"    allow_other            allow access to other users\n"
+	"    allow_root             allow access to root\n"
+	"    kernel_cache           cache files in kernel\n"
+#if HAVE_FUSE_O_NONEMPTY
+	"    nonempty               allow mounts over non-empty file/dir\n"
+#endif
+	"    fsname=NAME            set filesystem name in mtab\n";
 
 static void
 usage (FILE* stream, const char* progname)
@@ -565,8 +608,10 @@ usage (FILE* stream, const char* progname)
 #endif
      "    playlists              use playlists for AV files, instead of plain files\n"
      "\n"
+     "See FUSE documentation for the following mount options:\n"
+     "%s\n"
      "Debug levels are one or more comma separated words :\n"
-#ifdef DEBUG
+#if UPNP_HAVE_DEBUG
      "    upnperr, upnpall : increasing level of UPnP traces\n"
 #endif
      "    error, warn, info, debug : increasing level of djmount traces\n"
@@ -575,7 +620,7 @@ usage (FILE* stream, const char* progname)
      "'-d' alone defaults to '" DEBUG_DEFAULT_LEVELS "' i.e. all traces.\n"
      "\n"
      "Report bugs to <" PACKAGE_BUGREPORT ">.\n",
-     progname);
+     progname, FUSE_ALLOWED_OPTIONS);
   exit (EXIT_SUCCESS); // ---------->
 }
 
@@ -600,9 +645,15 @@ version (FILE* stream, const char* progname)
 {
 	fprintf (stream, 
 		 "%s (" PACKAGE ") " VERSION "\n", progname);
-	fputs ("Copyright (C) 2005 Rémi Turboult\n", stream);
+	fprintf (stream, "Copyright (C) 2005 Rémi Turboult\n");
+	fprintf (stream, "Compiled against: ");
+	fprintf (stream, "FUSE %d.%d", FUSE_MAJOR_VERSION, 
+		 FUSE_MINOR_VERSION);
+#ifdef UPNP_VERSION_STRING
+	fprintf (stream, ", libupnp %s", UPNP_VERSION_STRING);
+#endif
 	fputs ("\n\
-This is free software.  You may redistribute copies of it under the terms of\n\
+This is free software. You may redistribute copies of it under the terms of\n\
 the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n\
 There is NO WARRANTY, to the extent permitted by law.\n\
 \n", stream);
@@ -620,13 +671,16 @@ main (int argc, char *argv[])
 	int rc;
 	bool background = true;
 
+	// Create a working context for temporary strings
+	void* const tmp_ctx = talloc_autofree_context();
+
 	rc = Log_Initialize (stdout_print);
 	if (rc != 0) {
 		fprintf (stderr, "%s : Error initialising Logger", argv[0]);
 		exit (rc); // ---------->
 	}  
 	Log_Colorize (true);
-#ifdef DEBUG
+#if UPNP_HAVE_DEBUG
 	SetLogFileNames ("/dev/null", "/dev/null");
 #endif
 	
@@ -640,8 +694,9 @@ main (int argc, char *argv[])
 	
 #define FUSE_ARG(OPT)							\
 	if (fuse_argc >= 31) bad_usage (argv[0], "too many args");	\
-	Log_Printf (LOG_DEBUG, "  Fuse option = %s", OPT);		\
-	fuse_argv[fuse_argc++] = OPT
+	fuse_argv[fuse_argc] = OPT;					\
+	Log_Printf (LOG_DEBUG, "  Fuse option = %s", fuse_argv[fuse_argc]); \
+	fuse_argc++
 
 	int opt = 1;
 	char* o;
@@ -672,10 +727,12 @@ main (int argc, char *argv[])
 					g_djfs_flags |= DJFS_PLAYLISTS;
 #if HAVE_CHARSET
 				} else if (strncmp(s, "iocharset=", 10) == 0) {
-					charset = talloc_strdup 
-						(talloc_autofree_context(), 
-						 s+10);
+					charset = talloc_strdup(tmp_ctx, s+10);
 #endif
+				} else if (strncmp(s, "fsname=", 7) == 0 ||
+					   strstr (FUSE_ALLOWED_OPTIONS, s)) {
+					FUSE_ARG ("-o");
+					FUSE_ARG (talloc_strdup (tmp_ctx, s));
 				} else {
 					bad_usage (argv[0], 
 						   "unknown mount option '%s'",
@@ -711,7 +768,7 @@ main (int argc, char *argv[])
 					Log_SetMaxLevel (LOG_WARNING);
 				} else if (strncmp (s, "error", 3) == 0) {
 					Log_SetMaxLevel (LOG_ERROR);
-#ifdef DEBUG
+#if UPNP_HAVE_DEBUG
 				} else if (strcmp (s, "upnperr") == 0) {
 					SetLogFileNames ("/dev/stdout", 
 							 "/dev/null");
@@ -737,9 +794,18 @@ main (int argc, char *argv[])
 	// Force Read-only (write operations not implemented yet)
 	FUSE_ARG ("-r"); 
 
+#if HAVE_FUSE_O_READDIR_INO
 	// try to fill in d_ino in readdir
 	FUSE_ARG ("-o");
 	FUSE_ARG ("readdir_ino");
+#endif
+#if !HAVE_FUSE_FILE_INFO_DIRECT_IO	
+	// Set global "direct_io" option, if not available per open file,
+	// because we are not sure that every open file can be opened 
+	// without this mode : see comment in fs_open() function.
+	FUSE_ARG ("-o");
+	FUSE_ARG ("direct_io");
+#endif
 
 	/*
 	 * Set charset encoding

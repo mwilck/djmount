@@ -99,19 +99,6 @@ XMLUtil_GetFirstNodeValue (IN const IXML_Node* node,
 }
 
 
-/*****************************************************************************
- * XMLUtil_GetFirstNodeValueInteger
- *****************************************************************************/
-intmax_t
-XMLUtil_GetFirstNodeValueInteger (IN const IXML_Node* node,
-				  IN const char* item,
-				  IN intmax_t error_value)
-{
-	const char* const s = XMLUtil_GetFirstNodeValue (node, item);
-	return String_ToInteger (s, error_value);
-}
-
-
 /******************************************************************************
  * XMLUtil_GetDocumentString
  *****************************************************************************/

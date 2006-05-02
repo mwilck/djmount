@@ -30,10 +30,10 @@ if INTERNAL_LIBUPNP
 endif
 
 AM_CFLAGS		= -I$(top_srcdir)/gl \
-			  $(TALLOC_CFLAGS) $(FUSE_CFLAGS) $(LIBUPNP_CFLAGS)
+			  $(TALLOC_CFLAGS) $(LIBUPNP_CFLAGS) $(FUSE_CFLAGS) 
 
 LDADD			= -L$(top_builddir)/gl -lgnu \
-			  $(TALLOC_LIBS) $(FUSE_LIBS) $(LIBUPNP_LIBS)
+			  $(TALLOC_LIBS) $(LIBUPNP_LIBS) $(FUSE_LIBS) 
 if ENABLE_CHARSET
     LDADD		+= $(LIBICONV)
 endif
@@ -42,9 +42,9 @@ endif
 bin_PROGRAMS 		= djmount
 noinst_PROGRAMS		= test_upnp
 
-check_PROGRAMS 		= test_charset test_ptr_list
+check_PROGRAMS 		= test_charset test_ptr_list test_string
 # auto run some tests
-TESTS			= test_ptr_list
+TESTS			= test_ptr_list test_string
 
 
 COMMON_SRCS 		= log.c object.c service.c \
@@ -77,6 +77,8 @@ test_upnp_LDADD		= $(LDADD) $(READLINE_LIBS)
 test_charset_SOURCES	= $(COMMON_SRCS) test_charset.c
 
 test_ptr_list_SOURCES	= $(COMMON_SRCS) test_ptr_list.c
+
+test_string_SOURCES	= $(COMMON_SRCS) test_string.c
 
 
 CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt

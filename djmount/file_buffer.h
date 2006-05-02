@@ -78,19 +78,31 @@ FileBuffer_CreateFromString (void* talloc_context, const char* content);
  * @brief 	Creates a new FileBuffer object, with a given url as source.
  *
  * @param talloc_context	the talloc parent context
- * @param content		the source url (copied internally)
+ * @param url			the source url (copied internally)
+ * @param file_size		file size if known, or -1 if not known.
  *****************************************************************************/
 FileBuffer*
-FileBuffer_CreateFromURL (void* talloc_context, const char* url);
+FileBuffer_CreateFromURL (void* talloc_context, const char* url,
+			  off_t file_size);
 
 
 /*****************************************************************************
- * @brief 	Predicate : true if the FileBuffer was constructed from URL.
+ * @brief 	Returns file size if known, or -1 if not known.
+ *
+ * @param file		the FileBuffer object
+ *****************************************************************************/
+off_t
+FileBuffer_GetSize (const FileBuffer* file);
+
+
+/*****************************************************************************
+ * @brief 	Predicate : true if FileBuffer_Read always return the exact
+ *		number of bytes requested (except on EOF or error)
  *
  * @param file		the FileBuffer object
  *****************************************************************************/
 bool
-FileBuffer_IsURL (const FileBuffer* file);
+FileBuffer_HasExactRead (const FileBuffer* file);
 
 
 /*****************************************************************************

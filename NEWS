@@ -1,4 +1,27 @@
 
+What is new in djmount 0.53
+
+* allow the 'mmap' operation to succeed on exported files. This helps some
+  media players to work with djmount e.g. mpg321 (problem reported by 
+  Frank Scholz).
+  Note: this works only if using FUSE >= 2.4. Also, this doesn't work with
+  some (very rare) media servers who do not tell the size of exported files 
+  (i.e. AV Media Server in Intel Tools).
+
+============================================================================
+
+What is new in djmount 0.52
+
+* allow some extra FUSE-related mount options. Mainly : fsname, allow_other, 
+  allow_root, nonempty
+
+* adds backward compatibility with FUSE 2.2 (djmount 0.50 initially required 
+  FUSE >= 2.4). This is to allow install on Debian Sarge with FUSE stable.
+
+* if using external libupnp, requires at least version 1.3.1
+
+============================================================================
+
 What is new in 0.51
 
 * fix major bug causing empty "browse" on some type of UPnP AV servers,

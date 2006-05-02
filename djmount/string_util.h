@@ -87,23 +87,29 @@ String_CleanFileName (void* talloc_context, const char* s);
 
 
 /*****************************************************************************
+ * @fn		STRING_TO_INT
  * @brief  	Convert string to a (signed) integer.
+ *		White spaces at begin or end of string are ignored.
+ *		The range of the target variable is checked as well, to
+ *		prevent overflows / underflows (work for unsigned integers 
+ *		as well, excluding maximum uintmax_t).
  *
- * @param s		the string
- * @param error_value	Value to return in case of error e.g. conversion error.
+ * @param S		the string
+ * @param VAR		variable to hold the result
+ * @param ERRVAL	value to set in case of error e.g. conversion error
  *****************************************************************************/
+
 intmax_t
-String_ToInteger (const char* s, intmax_t error_value);
+_String_ToInteger (const char* s, intmax_t error_value);
 
-
-/*****************************************************************************
- * @brief  	Convert string to an unsigned integer.
- *
- * @param s		the string
- * @param error_value	Value to return in case of error e.g. conversion error.
- *****************************************************************************/
-uintmax_t
-String_ToUnsigned (const char* s, uintmax_t error_value);
+#define STRING_TO_INT(S,VAR,ERRVAL)			\
+	do {						\
+		intmax_t const __temp_s2i_var =		\
+			_String_ToInteger (S, ERRVAL);	\
+		VAR = __temp_s2i_var;			\
+		if (VAR != __temp_s2i_var)		\
+			VAR = ERRVAL;			\
+	} while (0)					
 
 
 /*****************************************************************************
