@@ -7,19 +7,23 @@
 
    Copyright (C) Andrew Tridgell 2004
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+     ** NOTE! The following LGPL license applies to the talloc
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
    
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /*
@@ -289,7 +293,11 @@ static int talloc_unreference(const void *context, const void *ptr)
 
 	for (h=tc->refs;h;h=h->next) {
 		struct talloc_chunk *p = talloc_parent_chunk(h);
-		if ((p==NULL && context==NULL) || TC_PTR_FROM_CHUNK(p) == context) break;
+		if (p == NULL) {
+			if (context == NULL) break;
+		} else if (TC_PTR_FROM_CHUNK(p) == context) {
+			break;
+		}
 	}
 	if (h == NULL) {
 		return -1;
@@ -956,10 +964,12 @@ char *talloc_append_string(const void *t, char *orig, const char *append)
 {
 	char *ret;
 	size_t olen = strlen(orig);
-	size_t alenz = strlen(append) + 1;
+	size_t alenz;
 
 	if (!append)
 		return orig;
+
+	alenz = strlen(append) + 1;
 
 	ret = talloc_realloc(t, orig, char, olen + alenz);
 	if (!ret)
@@ -989,13 +999,11 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 	return ret;
 }
 
-#ifndef VA_COPY
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#elif defined(HAVE___VA_COPY)
-#define VA_COPY(dest, src) __va_copy(dest, src)
+#ifndef HAVE_VA_COPY
+#ifdef HAVE___VA_COPY
+#define va_copy(dest, src) __va_copy(dest, src)
 #else
-#define VA_COPY(dest, src) (dest) = (src)
+#define va_copy(dest, src) (dest) = (src)
 #endif
 #endif
 
@@ -1004,14 +1012,18 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	int len;
 	char *ret;
 	va_list ap2;
+	char c;
 	
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
-	len = vsnprintf(NULL, 0, fmt, ap2);
+	/* this call looks strange, but it makes it work on older solaris boxes */
+	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
+		return NULL;
+	}
 
 	ret = _talloc(t, len+1);
 	if (ret) {
-		VA_COPY(ap2, ap);
+		va_copy(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);
 		talloc_set_name_const(ret, ret);
 	}
@@ -1041,10 +1053,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
  * and return @p s, which may have moved.  Good for gradually
  * accumulating output into a string buffer.
  **/
-
-static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-
-static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
+char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {	
 	struct talloc_chunk *tc;
 	int len, s_len;
@@ -1056,15 +1065,23 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 
 	tc = talloc_chunk_from_ptr(s);
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	s_len = tc->size - 1;
-	len = vsnprintf(NULL, 0, fmt, ap2);
+	if ((len = vsnprintf(NULL, 0, fmt, ap2)) <= 0) {
+		/* Either the vsnprintf failed or the format resulted in
+		 * no characters being formatted. In the former case, we
+		 * ought to return NULL, in the latter we ought to return
+		 * the original string. Most current callers of this 
+		 * function expect it to never return NULL.
+		 */
+		return s;
+	}
 
 	s = talloc_realloc(NULL, s, char, s_len + len+1);
 	if (!s) return NULL;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	vsnprintf(s+s_len, len+1, fmt, ap2);
 	talloc_set_name_const(s, s);

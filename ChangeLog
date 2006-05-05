@@ -1,5 +1,7 @@
 2006-05-05  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* talloc : upgraded from current Samba4 sources
+
 	* djmount/test_cache.c: new test suite for Cache object
 
 	* djmount/fuse_main.c (main): add textual error message if UPnP 

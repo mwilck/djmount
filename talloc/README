@@ -5,7 +5,7 @@ talloc library
 http://talloc.samba.org/
 
 
-copied 17-October-2005 from Samba4 sources :
+copied 05-May-2006 from Samba4 sources :
 
 	rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
 
