@@ -842,7 +842,9 @@ main (int argc, char *argv[])
 	
 	rc = DeviceList_Start (CONTENT_DIR_SERVICE_TYPE, NULL);
 	if (rc != UPNP_E_SUCCESS) {
-		Log_Printf (LOG_ERROR, "Error starting UPnP Control Point");
+		Log_Printf (LOG_ERROR, 
+			    "Error starting UPnP Control Point : %d (%s)",
+			    rc, UpnpGetErrorMessage (rc));
 		exit (rc); // ---------->
 	}
 	
