@@ -24,6 +24,7 @@
 #define DJMOUNT_CACHE_H_INCLUDED
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 
 /******************************************************************************
@@ -78,6 +79,7 @@ void**
 Cache_Get (Cache* cache, const char* key);
 
 
+#if 0 // Not Yet Implemented
 /******************************************************************************
  * @brief	Remove an entry from the cache.
  *		
@@ -89,6 +91,24 @@ Cache_Get (Cache* cache, const char* key);
  *****************************************************************************/
 void*
 Cache_Remove (Cache* cache, const char* key);
+#endif
+
+
+/*****************************************************************************
+ * @brief Returns the number of cached entries (or -1 if error).
+ *****************************************************************************/
+long 
+Cache_GetNrEntries (const Cache* const cache);
+
+
+#if TEST_CACHE
+/*****************************************************************************
+ * @brief Check the whole cache and delete any expired data in it.
+ *	  (function for testing purposes only).
+ *****************************************************************************/
+void
+_Cache_PurgeExpiredEntries (Cache* cache);
+#endif
 
 
 /*****************************************************************************
@@ -98,6 +118,7 @@ Cache_Remove (Cache* cache, const char* key);
 char*
 Cache_GetStatusString (const Cache* const cache, 
 		       void* result_context, const char* spacer);
+
 
 
 

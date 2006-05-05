@@ -191,8 +191,8 @@ cache_get (Cache* cache, const char* key, bool* hit)
 
 static void
 cache_expire_entries (Cache* cache, time_t const now)
-{
-	if (now > cache->next_clean) {
+{	
+	if (cache->max_age > 0 && now > cache->next_clean) {
 		int i;
 #if CACHE_FIXED_SIZE
 		for (i = 0; i < cache->size; i++) {
@@ -279,10 +279,40 @@ Cache_Get (Cache* cache, const char* key)
 		Log_Printf (LOG_DEBUG, "CACHE_NEW (key='%s')", key);
 		ce->rip  = now + cache->max_age;
 		ce->data = NULL;
-		if (cache->max_age > 0) 
-			cache_expire_entries (cache, now);
+		cache_expire_entries (cache, now);
 	}
 	return &(ce->data); // ---------->
+}
+
+
+/*****************************************************************************
+ * Cache_GetNrEntries
+ *****************************************************************************/
+inline long 
+Cache_GetNrEntries (const Cache* const cache)
+{
+	if (cache == NULL)
+		return -1; // ---------->
+
+#if CACHE_FIXED_SIZE
+	return cache->nr_entries;
+#else
+	return hash_get_n_entries (cache->table);
+#endif
+}
+
+
+/*****************************************************************************
+ * _Cache_PurgeExpiredEntries 
+ *****************************************************************************/
+void
+_Cache_PurgeExpiredEntries (Cache* cache)
+{
+	if (cache) {
+		const time_t now = time (NULL);
+		cache->next_clean = now-1;
+		cache_expire_entries (cache, now);
+	}
 }
 
 
@@ -300,17 +330,16 @@ Cache_GetStatusString (const Cache* const cache,
 
 	if (spacer == NULL)
 		spacer = "";
-	
+
 #define P talloc_asprintf_append 
 
 	p=P(p, "%s+- Cache size      = %ld\n", spacer, (long) cache->size);
-	p=P(p, "%s+- Cache max age   = %ld seconds\n", spacer, 
-	    (long) cache->max_age);
-#if CACHE_FIXED_SIZE
-	const long nb_cached = cache->nr_entries;
-#else
-	const long nb_cached = hash_get_n_entries (cache->table);
-#endif
+	p=P(p, "%s+- Cache max age   = ", spacer);
+	if (cache->max_age > 0) 
+		p=P(p, "%ld seconds\n", (long) cache->max_age);
+	else 
+		p=P(p, "disabled\n");
+	const long nb_cached = Cache_GetNrEntries (cache);
 	p=P(p, "%s+- Cached entries  = %ld (%d%%)\n", spacer, nb_cached,
 	    (int) (nb_cached * 100 / cache->size));
 	p=P(p, "%s+- Cache access    = %d\n", spacer, cache->nr_access);

@@ -42,9 +42,9 @@ endif
 bin_PROGRAMS 		= djmount
 noinst_PROGRAMS		= test_upnp
 
-check_PROGRAMS 		= test_charset test_ptr_list test_string
+check_PROGRAMS 		= test_charset test_ptr_list test_string test_cache
 # auto run some tests
-TESTS			= test_ptr_list test_string
+TESTS			= test_ptr_list test_string test_cache
 
 
 COMMON_SRCS 		= log.c object.c service.c \
@@ -79,6 +79,8 @@ test_charset_SOURCES	= $(COMMON_SRCS) test_charset.c
 test_ptr_list_SOURCES	= $(COMMON_SRCS) test_ptr_list.c
 
 test_string_SOURCES	= $(COMMON_SRCS) test_string.c
+
+test_cache_SOURCES	= $(COMMON_SRCS) test_cache.c
 
 
 CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt
