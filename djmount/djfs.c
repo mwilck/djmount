@@ -65,7 +65,7 @@ static const off_t DEFAULT_SIZE = 0; // for unknown file sizes e.g. streams
                 |
                 |- <xxxx>
                 |
-                `- debug/
+                `- .debug/
 
 *****************************************************************************/
 
@@ -388,43 +388,78 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
     }
 
 #if DEBUG
-    DIR_BEGIN("debug") {
-    } DIR_END;
+    DIR_BEGIN(".debug") {
 
-    DIR_BEGIN("test") {
-      DIR_BEGIN("a1") {
-      } DIR_END;
+      FILE_BEGIN("talloc_total") {
+	const char* const str = talloc_asprintf 
+		(tmp_ctx, "%" PRIdMAX " bytes\n",
+		 (intmax_t) talloc_total_size (NULL));
+	// Don't dump talloc_total_blocks because crash on NULL context
+	FILE_SET_SIZE (str ? strlen (str) : 0);
+	FILE_SET_STRING (str);
+      } FILE_END;
+
+#if HAVE_OPEN_MEMSTREAM
+      FILE_BEGIN("talloc_report") {
+	char* ptr = NULL;
+	size_t size = 0;
+	FILE* file = open_memstream (&ptr, &size);
+	talloc_report (NULL, file);
+	fclose (file);
+	FILE_SET_SIZE (size);
+	FILE_SET_STRING (ptr);
+	free (ptr);
+      } FILE_END;
+#endif
+
+#if HAVE_OPEN_MEMSTREAM
+      FILE_BEGIN("talloc_report_full") {
+	char* ptr = NULL;
+	size_t size = 0;
+	FILE* file = open_memstream (&ptr, &size);
+	talloc_report_full (NULL, file);
+	fclose (file);
+	FILE_SET_SIZE (size);
+	FILE_SET_STRING (ptr);
+	free (ptr);
+      } FILE_END;
+#endif
+
+      DIR_BEGIN("test") {
+        DIR_BEGIN("a1") {
+        } DIR_END;
       
-      DIR_BEGIN("a2") {
-	DIR_BEGIN("b1") {
-	  FILE_BEGIN("f1") {
-	    const char* const str = "essais";
-	    FILE_SET_SIZE (strlen (str));
-	    FILE_SET_STRING (str);
-	  } FILE_END;
-	} DIR_END;
-	
-	DIR_BEGIN("b2") {
-	  DIR_BEGIN ("c1") {
+        DIR_BEGIN("a2") {
+	  DIR_BEGIN("b1") {
+	    FILE_BEGIN("f1") {
+	      const char* const str = "essais";
+	      FILE_SET_SIZE (strlen (str));
+	      FILE_SET_STRING (str);
+	    } FILE_END;
 	  } DIR_END;
-	} DIR_END;
-      } DIR_END;
-      
-      DIR_BEGIN("a3") {
-	DIR_BEGIN("b3") {
-	} DIR_END;
 	
-	int i;
-	for (i = 4; i < 10; i++) {
-	  char buffer [10];
-	  sprintf (buffer, "b%d", i);
-	  DIR_BEGIN(buffer) {
-	    DIR_BEGIN ("toto") {
+	  DIR_BEGIN("b2") {
+	    DIR_BEGIN ("c1") {
 	    } DIR_END;
-	    
 	  } DIR_END;
-	}
-      }DIR_END;
+        } DIR_END;
+      
+        DIR_BEGIN("a3") {
+	  DIR_BEGIN("b3") {
+	  } DIR_END;
+	
+	  int i;
+	  for (i = 4; i < 10; i++) {
+	    char buffer [10];
+	    sprintf (buffer, "b%d", i);
+	    DIR_BEGIN(buffer) {
+	      DIR_BEGIN ("toto") {
+	      } DIR_END;
+	    
+	    } DIR_END;
+	  }
+        }DIR_END;
+      } DIR_END;
     } DIR_END;
 #endif // DEBUG
 
