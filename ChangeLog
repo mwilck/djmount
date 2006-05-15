@@ -71,7 +71,8 @@
 	  the unmodified title.
 
 	* djmount/djfs.c (DJFS_Browse): move all metadata XML files into
-	  new sub-directory ".metadata" to avoid clutter
+	  new sub-directory ".metadata" to avoid clutter. This also allows
+	  to see metadata for directories themselves.
 
 	* djmount/djfs.h: new bit-field DJFS_Flags to group all options 
 
