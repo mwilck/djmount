@@ -27,6 +27,7 @@
 
 #include "string_util.h"
 #include <ctype.h>
+#include "talloc_util.h"
 
 
 /*****************************************************************************
@@ -133,6 +134,115 @@ String_Hash (const char* str)
 #endif
   return hash;
 }
+
+
+
+/*****************************************************************************
+ * StringStream
+ *****************************************************************************/
+
+struct _StringStream {
+	FILE*  file;
+#if HAVE_OPEN_MEMSTREAM
+	char*  ptr;
+	size_t size;
+#else
+#	warning no open_memstream - using default implementation with tmpfile,
+#	warning check if a better replacement exists in your environment.
+#endif
+};
+
+
+static int
+StringStream_destructor (void* ptr) 
+{
+	if (ptr) {
+		StringStream* const ss = (StringStream*) ptr;
+		if (ss->file) {
+			(void) fclose (ss->file);
+			ss->file = NULL;
+		}
+#if HAVE_OPEN_MEMSTREAM
+		if (ss->ptr) {
+			free (ss->ptr);
+			ss->ptr = NULL;
+		}
+#endif
+	}
+	return 0; // success
+}
+
+/*****************************************************************************
+ * StringStream_Create
+ *****************************************************************************/
+
+StringStream* 
+StringStream_Create (void* parent_context)
+{
+	StringStream* ss = talloc (parent_context, StringStream);
+	if (ss) {
+#if HAVE_OPEN_MEMSTREAM
+		*ss = (StringStream) { .ptr = NULL, .size = 0 };
+		ss->file = open_memstream (&(ss->ptr), &(ss->size));
+#else 
+		ss->file = tmpfile();
+#endif
+		if (ss->file == NULL) {
+			talloc_free (ss);
+			ss = NULL;
+		} else {
+			talloc_set_destructor (ss, StringStream_destructor);
+		}
+	}
+	return ss;
+}
+
+
+/*****************************************************************************
+ * StringStream_GetFile
+ *****************************************************************************/
+
+FILE*
+StringStream_GetFile (const StringStream* ss)
+{
+	return (ss ? ss->file : NULL);
+}
+
+
+/*****************************************************************************
+ * StringStream_GetSnapshot
+ *****************************************************************************/
+
+char*
+StringStream_GetSnapshot (StringStream* ss, void* result_context,
+			  size_t* slen)
+{
+	char* res = NULL;
+	if (ss && ss->file) {
+#if HAVE_OPEN_MEMSTREAM
+		fflush (ss->file);
+		res = talloc_strdup (result_context, ss->ptr);
+		if (res && slen)
+			*slen = ss->size;
+#else
+		off_t const size = ftello (ss->file);
+		res = talloc_size (result_context, size+1);
+		if (res) {
+			rewind (ss->file);
+			if (fread (res, size, 1, ss->file) < 1) {
+				talloc_free (res);
+				res = NULL;
+			} else {
+				res[size] = '\0';
+				if (slen)
+					*slen = size;
+			}
+		}
+#endif
+	}
+	return res;
+}
+
 
 
 

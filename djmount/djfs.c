@@ -272,9 +272,9 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
                     (intmax_t) stbuf->st_size);		\
       } 
 
-#define FILE_SET_STRING(CONTENT)					\
+#define FILE_SET_STRING(CONTENT,STEAL)					\
       if (_file) {							\
-	*_file = FileBuffer_CreateFromString (_context, (CONTENT));	\
+	*_file = FileBuffer_CreateFromString(_context,(CONTENT),(STEAL)); \
         if (*_file)							\
           talloc_set_name (*_file, "file[%s] at " __location__, path);	\
       }
@@ -302,8 +302,8 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 	for (i = 0; i < names->nb; i++) {
           str = talloc_asprintf_append (str, "%s\n", names->str[i]);
 	}
-	FILE_SET_STRING (str);
 	FILE_SET_SIZE (str ? strlen (str) : 0);
+	FILE_SET_STRING (str, true);
       }
       // else content defaults to NULL if no devices
     } FILE_END;
@@ -316,8 +316,8 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 	  FILE_BEGIN("status") {
 	    const char* const str = DeviceList_GetDeviceStatusString 
 	      (tmp_ctx, devName, true);
-	    FILE_SET_STRING (str);
 	    FILE_SET_SIZE (str ? strlen (str) : 0);
+	    FILE_SET_STRING (str, true);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    size_t nb_matched = 0;
@@ -350,8 +350,8 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 			FILE_BEGIN (name) {
 			  const char* const str = MediaFile_GetPlaylistContent 
 			    (&file, tmp_ctx);
-			  FILE_SET_STRING (str);
 			  FILE_SET_SIZE (str ? strlen (str) : 0);
+			  FILE_SET_STRING (str, true);
 			} FILE_END;
 		      } else {
 		        char* name = MediaFile_GetName (tmp_ctx, o, 
@@ -374,8 +374,8 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 			  (tmp_ctx, 
 			   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
 			   DIDLObject_GetElementString (o, tmp_ctx));
-		        FILE_SET_STRING (str);
 		        FILE_SET_SIZE (str ? strlen (str) : 0);
+		        FILE_SET_STRING (str, true);
 		      } FILE_END;
 		    } PTR_LIST_FOR_EACH_PTR_END;
 		  } DIR_END;
@@ -396,34 +396,32 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 		 (intmax_t) talloc_total_size (NULL));
 	// Don't dump talloc_total_blocks because crash on NULL context
 	FILE_SET_SIZE (str ? strlen (str) : 0);
-	FILE_SET_STRING (str);
+	FILE_SET_STRING (str, true);
       } FILE_END;
 
-#if HAVE_OPEN_MEMSTREAM
       FILE_BEGIN("talloc_report") {
-	char* ptr = NULL;
-	size_t size = 0;
-	FILE* file = open_memstream (&ptr, &size);
+	StringStream* const ss = StringStream_Create (tmp_ctx);
+	FILE* const file = StringStream_GetFile (ss);
 	talloc_report (NULL, file);
-	fclose (file);
-	FILE_SET_SIZE (size);
-	FILE_SET_STRING (ptr);
-	free (ptr);
-      } FILE_END;
-#endif
-
-#if HAVE_OPEN_MEMSTREAM
-      FILE_BEGIN("talloc_report_full") {
-	char* ptr = NULL;
 	size_t size = 0;
-	FILE* file = open_memstream (&ptr, &size);
-	talloc_report_full (NULL, file);
-	fclose (file);
+	const char* const str = StringStream_GetSnapshot (ss, tmp_ctx, &size);
 	FILE_SET_SIZE (size);
-	FILE_SET_STRING (ptr);
-	free (ptr);
+	FILE_SET_STRING (str, true)
+	// close stream as early as possible to avoid too many open files
+	talloc_free (ss); 
       } FILE_END;
-#endif
+
+      FILE_BEGIN("talloc_report_full") {
+	StringStream* const ss = StringStream_Create (tmp_ctx);
+	FILE* const file = StringStream_GetFile (ss);
+	talloc_report_full (NULL, file);
+	size_t size = 0;
+	const char* const str = StringStream_GetSnapshot (ss, tmp_ctx, &size);
+	FILE_SET_SIZE (size);
+	FILE_SET_STRING (str, true)
+	// close stream as early as possible to avoid too many open files
+	talloc_free (ss); 
+      } FILE_END;
 
       DIR_BEGIN("test") {
         DIR_BEGIN("a1") {
@@ -434,7 +432,7 @@ DJFS_Browse (const char* const path, DJFS_Flags flags,
 	    FILE_BEGIN("f1") {
 	      const char* const str = "essais";
 	      FILE_SET_SIZE (strlen (str));
-	      FILE_SET_STRING (str);
+	      FILE_SET_STRING (str, false);
 	    } FILE_END;
 	  } DIR_END;
 	

@@ -27,6 +27,7 @@
 
 #include <string.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include "talloc_util.h"
 
 #ifdef __cplusplus
@@ -62,7 +63,6 @@ typedef struct _StringPair {
   char* value;
 
 } StringPair;
-
 
 
 /*****************************************************************************
@@ -120,6 +120,56 @@ typedef uint32_t String_HashType;
 
 String_HashType
 String_Hash (const char* str);
+
+
+
+/*****************************************************************************
+ * StringStream
+ *	stdio stream that prints into a string.
+ *	Example:
+ *		StringStream* ss = StringStream_Create (parent_context);
+ *		FILE* f = StringStream_GetFile (ss);
+ *		fprintf (f, "hello, %s\n", "world");
+ *		char* s = StringStream_GetSnapshot (ss, ctx, NULL);
+ *		talloc_free (ss);
+ *****************************************************************************/
+
+typedef struct _StringStream StringStream;
+
+
+/*****************************************************************************
+ * Creates a StringStream.
+ * When finished, the returned object should be destroyed using "talloc_free".
+ * 
+ * @param parent_context	the talloc parent context
+ *****************************************************************************/
+
+StringStream* 
+StringStream_Create (void* parent_context);
+
+
+/*****************************************************************************
+ * Get the FILE* from a StringStream.
+ *****************************************************************************/
+
+FILE*
+StringStream_GetFile (const StringStream*);
+
+
+/*****************************************************************************
+ * @brief Take a snapshot of the current string content of the stream.
+ * 	This function can be called as many time as necessary : a new string
+ * 	is allocated each time.
+ * 	The returned string should be freed using "talloc_free".
+ *
+ * @param result_context  the talloc context to allocate the result
+ * @param slen (OUT)	  if not NULL, will contain the strlen of the result
+ *****************************************************************************/
+
+char*
+StringStream_GetSnapshot (StringStream*, void* result_context,
+			  size_t* slen);
+
 
 
 

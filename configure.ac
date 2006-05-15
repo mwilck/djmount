@@ -112,7 +112,7 @@ if test x"$enable_charset" = xyes; then
 fi
 AC_FUNC_FSEEKO
 
-# Optional functions (used in debug code)
+# Optional GNU extensions
 AH_TEMPLATE([_GNU_SOURCE],[Define to 1 to get GNU extensions])
 AC_CHECK_FUNCS([open_memstream], [AC_DEFINE([_GNU_SOURCE])])
 
