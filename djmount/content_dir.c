@@ -457,15 +457,11 @@ get_status_string (const Service* serv,
 	// Create a working context for temporary strings
 	void* const tmp_ctx = talloc_new (p);
 	
-#define P talloc_asprintf_append 
-
-	p=P(p, "%s+- Browse Cache\n", spacer);
-	p=P(p, "%s", Cache_GetStatusString 
-	    (cds->m.cache, tmp_ctx, talloc_asprintf (tmp_ctx, "%s      ",
-						     spacer)));
+	tpr (&p, "%s+- Browse Cache\n", spacer);
+	tpr (&p, "%s", Cache_GetStatusString 
+	     (cds->m.cache, tmp_ctx, talloc_asprintf (tmp_ctx, "%s      ",
+						      spacer)));
 	
-#undef P
-
 	// Delete all temporary strings
 	talloc_free (tmp_ctx);
 

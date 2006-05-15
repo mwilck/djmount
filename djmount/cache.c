@@ -331,32 +331,29 @@ Cache_GetStatusString (const Cache* const cache,
 	if (spacer == NULL)
 		spacer = "";
 
-#define P talloc_asprintf_append 
-
-	p=P(p, "%s+- Cache size      = %ld\n", spacer, (long) cache->size);
-	p=P(p, "%s+- Cache max age   = ", spacer);
+	tpr (&p, "%s+- Cache size      = %ld\n", spacer, (long) cache->size);
+	tpr (&p, "%s+- Cache max age   = ", spacer);
 	if (cache->max_age > 0) 
-		p=P(p, "%ld seconds\n", (long) cache->max_age);
+		tpr (&p, "%ld seconds\n", (long) cache->max_age);
 	else 
-		p=P(p, "disabled\n");
+		tpr (&p, "disabled\n");
 	const long nb_cached = Cache_GetNrEntries (cache);
-	p=P(p, "%s+- Cached entries  = %ld (%d%%)\n", spacer, nb_cached,
-	    (int) (nb_cached * 100 / cache->size));
-	p=P(p, "%s+- Cache access    = %d\n", spacer, cache->nr_access);
+	tpr (&p, "%s+- Cached entries  = %ld (%d%%)\n", spacer, nb_cached,
+	     (int) (nb_cached * 100 / cache->size));
+	tpr (&p, "%s+- Cache access    = %d\n", spacer, cache->nr_access);
 	if (cache->nr_access > 0) {
-		p=P(p, "%s     +- hits       = %d (%.1f%%)\n", spacer, 
-		    cache->nr_hit, 
-		    (float) (cache->nr_hit * 100.0 / cache->nr_access));
-		p=P(p, "%s     +- expired    = %d (%.1f%%)\n", spacer, 
-		    cache->nr_expired, 
-		    (float) (cache->nr_expired * 100.0 / cache->nr_access));
+		tpr (&p, "%s     +- hits       = %d (%.1f%%)\n", spacer, 
+		     cache->nr_hit, 
+		     (float) (cache->nr_hit * 100.0 / cache->nr_access));
+		tpr (&p, "%s     +- expired    = %d (%.1f%%)\n", spacer, 
+		     cache->nr_expired, 
+		     (float) (cache->nr_expired * 100.0 / cache->nr_access));
 #if CACHE_FIXED_SIZE
-		p=P(p, "%s     +- collide    = %d (%.1f%%)\n", spacer, 
-		    cache->nr_collide, 
-		    (float) (cache->nr_collide * 100.0 / cache->nr_access));
+		tpr (&p, "%s     +- collide    = %d (%.1f%%)\n", spacer, 
+		     cache->nr_collide, 
+		     (float) (cache->nr_collide * 100.0 / cache->nr_access));
 #endif
 	}
-#undef P
 	return p;
 }
 

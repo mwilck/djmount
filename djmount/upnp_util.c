@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Utilities
@@ -83,189 +84,189 @@ UpnpUtil_GetEventString (void* talloc_context,
 			 IN Upnp_EventType eventType, 
 			 IN const void* event)
 {
-  char* p = talloc_strdup (talloc_context, "");
+	char* p = talloc_strdup (talloc_context, "");
+	
+	// Create a working context for temporary strings
+	void* const tmp_ctx = talloc_new (p);
 
-  // Create a working context for temporary strings
-  void* const tmp_ctx = talloc_new (p);
-
-#define P p=talloc_asprintf_append 
-
-  P(p, "\n\n======================================================================\n");
-  P(p, "----------------------------------------------------------------------\n");
-
-  const char* s = UpnpUtil_GetEventTypeString (eventType);
-  if (s)
-    P(p, "%s\n", s);
-  else
-    P(p, "** unknown Upnp_EventType %d **\n", (int) eventType);
-  
-  if (event == 0) {
-    P(p, "(NULL EVENT BODY)\n");
-  } else {
-  
-    switch (eventType) {
-      
-      /*
-       * SSDP 
-       */
-    case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
-    case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
-    case UPNP_DISCOVERY_SEARCH_RESULT:
-      {
-	const struct Upnp_Discovery* const d_event =
-	  (struct Upnp_Discovery *) event;
+	tpr (&p, "\n\n======================================================================\n");
 	
-	P(p, "ErrCode     =  %d\n", d_event->ErrCode);
-	P(p, "Expires     =  %d\n", d_event->Expires);
-	P(p, "DeviceId    =  %s\n", NN(d_event->DeviceId));
-	P(p, "DeviceType  =  %s\n", NN(d_event->DeviceType));
-	P(p, "ServiceType =  %s\n", NN(d_event->ServiceType));
-	P(p, "ServiceVer  =  %s\n", NN(d_event->ServiceVer));
-	P(p, "Location    =  %s\n", NN(d_event->Location));
-	P(p, "OS          =  %s\n", NN(d_event->Os));
-	P(p, "Date        =  %s\n", NN(d_event->Date));
-	P(p, "Ext         =  %s\n", NN(d_event->Ext));
-    }
-      break;
-      
-    case UPNP_DISCOVERY_SEARCH_TIMEOUT:
-      // Nothing to print out here
-      break;
-      
-      /*
-       * SOAP 
-       */
-    case UPNP_CONTROL_ACTION_REQUEST:
-      {
-	const struct Upnp_Action_Request* const a_event =
-	  (struct Upnp_Action_Request *) event;
+	const char* s = UpnpUtil_GetEventTypeString (eventType);
+	if (s)
+		tpr (&p, "%s\n", s);
+	else
+		tpr (&p, "** unknown Upnp_EventType %d **\n", (int) eventType);
 	
-	P(p, "ErrCode     =  %d\n", a_event->ErrCode);
-	P(p, "ErrStr      =  %s\n", NN(a_event->ErrStr));
-	P(p, "ActionName  =  %s\n", NN(a_event->ActionName));
-	P(p, "DevUDN      =  %s\n", NN(a_event->DevUDN));
-	P(p, "ServiceID   =  %s\n", NN(a_event->ServiceID));
-	P(p, "ActRequest  =  %s\n", 
-	  XMLUtil_GetDocumentString (tmp_ctx, a_event->ActionRequest));
-	P(p, "ActResult   =  %s\n",
-	  XMLUtil_GetDocumentString (tmp_ctx, a_event->ActionResult));
-      }
-      break;
-      
-    case UPNP_CONTROL_ACTION_COMPLETE:
-      {
-	const struct Upnp_Action_Complete* const a_event =
-	  (struct Upnp_Action_Complete *) event;
+	if (event == NULL) {
+		tpr (&p, "(NULL EVENT BODY)\n");
+	} else {
+		
+		switch (eventType) {
+			
+			/*
+			 * SSDP 
+			 */
+		case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
+		case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
+		case UPNP_DISCOVERY_SEARCH_RESULT:
+		{
+			const struct Upnp_Discovery* const e =
+				(struct Upnp_Discovery*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "Expires     =  %d\n", e->Expires);
+			tpr (&p, "DeviceId    =  %s\n", NN(e->DeviceId));
+			tpr (&p, "DeviceType  =  %s\n", NN(e->DeviceType));
+			tpr (&p, "ServiceType =  %s\n", NN(e->ServiceType));
+			tpr (&p, "ServiceVer  =  %s\n", NN(e->ServiceVer));
+			tpr (&p, "Location    =  %s\n", NN(e->Location));
+			tpr (&p, "OS          =  %s\n", NN(e->Os));
+			tpr (&p, "Date        =  %s\n", NN(e->Date));
+			tpr (&p, "Ext         =  %s\n", NN(e->Ext));
+		}
+		break;
+		
+		case UPNP_DISCOVERY_SEARCH_TIMEOUT:
+			// Nothing to print out here
+			break;
+			
+			/*
+			 * SOAP 
+			 */
+		case UPNP_CONTROL_ACTION_REQUEST:
+		{
+			const struct Upnp_Action_Request* const e =
+				(struct Upnp_Action_Request*) event;
 	
-	P(p, "ErrCode     =  %d\n", a_event->ErrCode);
-	P(p, "CtrlUrl     =  %s\n", NN(a_event->CtrlUrl));
-	P(p, "ActRequest  =  %s\n",
-	  XMLUtil_GetDocumentString (tmp_ctx, a_event->ActionRequest));
-	P(p, "ActResult   =  %s\n", 
-	  XMLUtil_GetDocumentString (tmp_ctx, a_event->ActionResult));
-      }
-      break;
-      
-    case UPNP_CONTROL_GET_VAR_REQUEST:
-      {
-	const struct Upnp_State_Var_Request* const sv_event =
-	  (struct Upnp_State_Var_Request *) event;
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "ErrStr      =  %s\n", NN(e->ErrStr));
+			tpr (&p, "ActionName  =  %s\n", NN(e->ActionName));
+			tpr (&p, "DevUDN      =  %s\n", NN(e->DevUDN));
+			tpr (&p, "ServiceID   =  %s\n", NN(e->ServiceID));
+			tpr (&p, "ActRequest  =  %s\n", 
+			     XMLUtil_GetDocumentString (tmp_ctx, 
+							e->ActionRequest));
+			tpr (&p, "ActResult   =  %s\n",
+			     XMLUtil_GetDocumentString (tmp_ctx, 
+							e->ActionResult));
+		}
+		break;
+		
+		case UPNP_CONTROL_ACTION_COMPLETE:
+		{
+			const struct Upnp_Action_Complete* const e =
+				(struct Upnp_Action_Complete*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "CtrlUrl     =  %s\n", NN(e->CtrlUrl));
+			tpr (&p, "ActRequest  =  %s\n",
+			     XMLUtil_GetDocumentString (tmp_ctx, 
+							e->ActionRequest));
+			tpr (&p, "ActResult   =  %s\n", 
+			     XMLUtil_GetDocumentString (tmp_ctx, 
+							e->ActionResult));
+		}
+		break;
+		
+		case UPNP_CONTROL_GET_VAR_REQUEST:
+		{
+			const struct Upnp_State_Var_Request* const e =
+				(struct Upnp_State_Var_Request*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "ErrStr      =  %s\n", NN(e->ErrStr));
+			tpr (&p, "DevUDN      =  %s\n", NN(e->DevUDN));
+			tpr (&p, "ServiceID   =  %s\n", NN(e->ServiceID));
+			tpr (&p, "StateVarName=  %s\n", NN(e->StateVarName));
+			tpr (&p, "CurrentVal  =  %s\n", NN(e->CurrentVal));
+		}
+		break;
+		
+		case UPNP_CONTROL_GET_VAR_COMPLETE:
+		{
+			const struct Upnp_State_Var_Complete* const e =
+				(struct Upnp_State_Var_Complete*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "CtrlUrl     =  %s\n", NN(e->CtrlUrl));
+			tpr (&p, "StateVarName=  %s\n", NN(e->StateVarName));
+			tpr (&p, "CurrentVal  =  %s\n", NN(e->CurrentVal));
+		}
+		break;
+		
+		/*
+		 * GENA 
+		 */
+		case UPNP_EVENT_SUBSCRIPTION_REQUEST:
+		{
+			const struct Upnp_Subscription_Request* const e =
+				(struct Upnp_Subscription_Request*) event;
+			
+			tpr (&p, "ServiceID   =  %s\n", NN(e->ServiceId));
+			tpr (&p, "UDN         =  %s\n", NN(e->UDN));
+			tpr (&p, "SID         =  %s\n", NN(e->Sid));
+		}
+		break;
+		
+		case UPNP_EVENT_RECEIVED:
+		{
+			const struct Upnp_Event* const e = 
+				(struct Upnp_Event*) event;
+			
+			tpr (&p, "SID         =  %s\n", NN(e->Sid));
+			tpr (&p, "EventKey    =  %d\n", e->EventKey);
+			tpr (&p, "ChangedVars =  %s\n",
+			     XMLUtil_GetDocumentString (tmp_ctx, 
+							e->ChangedVariables));
+		}
+		break;
+		
+		case UPNP_EVENT_RENEWAL_COMPLETE:
+		{
+			const struct Upnp_Event_Subscribe* const e =
+				(struct Upnp_Event_Subscribe*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "SID         =  %s\n", NN(e->Sid));
+			tpr (&p, "TimeOut     =  %d\n", e->TimeOut);
+		}
+		break;
+		
+		case UPNP_EVENT_SUBSCRIBE_COMPLETE:
+		case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
+		{
+			const struct Upnp_Event_Subscribe* const e =
+				(struct Upnp_Event_Subscribe*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "SID         =  %s\n", NN(e->Sid));
+			tpr (&p, "PublisherURL=  %s\n", NN(e->PublisherUrl));
+			tpr (&p, "TimeOut     =  %d\n", e->TimeOut);
+		}
+		break;
+		
+		case UPNP_EVENT_AUTORENEWAL_FAILED:
+		case UPNP_EVENT_SUBSCRIPTION_EXPIRED:
+		{
+			const struct Upnp_Event_Subscribe* const e =
+				(struct Upnp_Event_Subscribe*) event;
+			
+			tpr (&p, "ErrCode     =  %d\n", e->ErrCode);
+			tpr (&p, "SID         =  %s\n", NN(e->Sid));
+			tpr (&p, "PublisherURL=  %s\n", NN(e->PublisherUrl));
+			tpr (&p, "TimeOut     =  %d\n", e->TimeOut);
+		}
+		break;
+		
+		}
+	}
 	
-	P(p, "ErrCode     =  %d\n", sv_event->ErrCode);
-	P(p, "ErrStr      =  %s\n", NN(sv_event->ErrStr));
-	P(p, "DevUDN      =  %s\n", NN(sv_event->DevUDN));
-	P(p, "ServiceID   =  %s\n", NN(sv_event->ServiceID));
-	P(p, "StateVarName=  %s\n", NN(sv_event->StateVarName));
-	P(p, "CurrentVal  =  %s\n", NN(sv_event->CurrentVal));
-      }
-      break;
-      
-    case UPNP_CONTROL_GET_VAR_COMPLETE:
-      {
-	const struct Upnp_State_Var_Complete* const sv_event =
-	  (struct Upnp_State_Var_Complete *) event;
+	tpr (&p, "======================================================================\n\n");
 	
-	P(p, "ErrCode     =  %d\n", sv_event->ErrCode);
-	P(p, "CtrlUrl     =  %s\n", NN(sv_event->CtrlUrl));
-	P(p, "StateVarName=  %s\n", NN(sv_event->StateVarName));
-	P(p, "CurrentVal  =  %s\n", NN(sv_event->CurrentVal));
-      }
-      break;
-      
-      /*
-       * GENA 
-       */
-    case UPNP_EVENT_SUBSCRIPTION_REQUEST:
-      {
-	const struct Upnp_Subscription_Request* const sr_event =
-	  (struct Upnp_Subscription_Request *) event;
+	// Delete all temporary strings
+	talloc_free (tmp_ctx);
 	
-	P(p, "ServiceID   =  %s\n", NN(sr_event->ServiceId));
-	P(p, "UDN         =  %s\n", NN(sr_event->UDN));
-	P(p, "SID         =  %s\n", NN(sr_event->Sid));
-      }
-      break;
-      
-    case UPNP_EVENT_RECEIVED:
-      {
-	const struct Upnp_Event* const e_event = (struct Upnp_Event *) event;
-	
-	P(p, "SID         =  %s\n", NN(e_event->Sid));
-	P(p, "EventKey    =  %d\n", e_event->EventKey);
-	P(p, "ChangedVars =  %s\n", 
-	  XMLUtil_GetDocumentString (tmp_ctx, e_event->ChangedVariables));
-      }
-      break;
-      
-    case UPNP_EVENT_RENEWAL_COMPLETE:
-      {
-	const struct Upnp_Event_Subscribe* const es_event =
-	  (struct Upnp_Event_Subscribe *) event;
-	
-	P(p, "ErrCode     =  %d\n", es_event->ErrCode);
-	P(p, "SID         =  %s\n", NN(es_event->Sid));
-	P(p, "TimeOut     =  %d\n", es_event->TimeOut);
-      }
-      break;
-      
-    case UPNP_EVENT_SUBSCRIBE_COMPLETE:
-    case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
-      {
-	const struct Upnp_Event_Subscribe* const es_event =
-	  (struct Upnp_Event_Subscribe *) event;
-	
-	P(p, "ErrCode     =  %d\n", es_event->ErrCode);
-	P(p, "SID         =  %s\n", NN(es_event->Sid));
-	P(p, "PublisherURL=  %s\n", NN(es_event->PublisherUrl));
-	P(p, "TimeOut     =  %d\n", es_event->TimeOut);
-      }
-      break;
-      
-    case UPNP_EVENT_AUTORENEWAL_FAILED:
-    case UPNP_EVENT_SUBSCRIPTION_EXPIRED:
-      {
-	const struct Upnp_Event_Subscribe* const es_event =
-	  (struct Upnp_Event_Subscribe *) event;
-	
-	P(p, "ErrCode     =  %d\n", es_event->ErrCode);
-	P(p, "SID         =  %s\n", NN(es_event->Sid));
-	P(p, "PublisherURL=  %s\n", NN(es_event->PublisherUrl));
-	P(p, "TimeOut     =  %d\n", es_event->TimeOut);
-      }
-      break;
-      
-    }
-  }
-
-  P(p, "----------------------------------------------------------------------\n");
-  P(p, "======================================================================\n\n");
-  
-#undef P
-
-  // Delete all temporary strings
-  talloc_free (tmp_ctx);
-
-  return p;
+	return p;
 }
 
 

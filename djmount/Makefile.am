@@ -51,7 +51,7 @@ COMMON_SRCS 		= log.c object.c service.c \
 			  device.c device_list.c didl_object.c \
 			  media_file.c file_buffer.c \
 			  content_dir.c djfs.c upnp_util.c \
-			  string_util.c xml_util.c ptr_list.c \
+			  string_util.c xml_util.c ptr_list.c talloc_util.c \
 			  cache.c
 if ENABLE_CHARSET
     COMMON_SRCS 	+= charset.c

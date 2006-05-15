@@ -1,3 +1,8 @@
+2006-05-15  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/talloc_util.c (tpr): new "tpr" function to replace 
+	  "talloc_asprintf_append"
+
 2006-05-09  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/file_buffer.c (FileBuffer_CreateFromString): add 'steal' 

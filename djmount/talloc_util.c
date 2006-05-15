@@ -2,9 +2,6 @@
 /* $Id$
  *
  * "talloc" utilities.
- * This file is also a wrapper around "talloc.h", so that it can be 
- * included directly without errors due to missing definitions 
- * (missing #include in "talloc.h").
  * This file is part of djmount.
  *
  * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
@@ -24,48 +21,26 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
 
-#ifndef TALLOC_UTIL_H_INCLUDED
-#define TALLOC_UTIL_H_INCLUDED
-
-
-/* those include are currently missing from "talloc.h" */
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef HAVE_STDARG_H
-#	include <stdarg.h>
-#else
-#	include <varargs.h>
-#endif
-#include <sys/types.h>		// Import "off_t"
+#include "talloc_util.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-#include "talloc.h"
-#include <stdbool.h>
-
-
-/*****************************************************************************
- * This function is equivalent to "talloc_asprintf_append" but has a different
- * prototype : the given string is in/out parameter (as in "asprintf"),
- * and the function returns true if ok (false if failure).
+/******************************************************************************
+ * tpr
  *****************************************************************************/
 bool
-tpr (char** s, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
+tpr (char** s, const char* fmt, ...)
+{
+	if (s == NULL)
+		return false; // ---------->
 
-
-
-
-#ifdef __cplusplus
-}; // extern "C"
-#endif
-
-
-#endif /* TALLOC_UTIL_H_INCLUDED */
+	va_list ap;
+	va_start (ap, fmt);
+	*s = talloc_vasprintf_append (*s, fmt, ap);
+	va_end (ap);
+	return (*s != NULL);
+}
 
 
 

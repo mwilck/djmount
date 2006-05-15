@@ -476,40 +476,41 @@ get_status_string (const Service* serv,
 	
 	char* p = talloc_strdup (result_context, "");
 	
-#define P talloc_asprintf_append 
-	p=P(p, "%s| \n", spacer);
-	p=P(p, "%s+- Class           = %s\n", spacer, 
-	    NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
-	p=P(p, "%s+- Object Name     = %s\n", spacer, talloc_get_name(serv));
-	p=P(p, "%s+- ServiceType     = %s\n", spacer, NN(serv->m.serviceType));
-	p=P(p, "%s+- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
-	p=P(p, "%s+- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
-	p=P(p, "%s+- ControlURL      = %s\n", spacer, NN(serv->m.controlURL));
+	tpr (&p, "%s| \n", spacer);
+	tpr (&p, "%s+- Class           = %s\n", spacer, 
+	     NN(serv->isa ? serv->isa->o.name : "**ERROR** NO CLASS"));
+	tpr (&p, "%s+- Object Name     = %s\n", spacer, talloc_get_name(serv));
+	tpr (&p, "%s+- ServiceType     = %s\n", spacer, 
+	     NN(serv->m.serviceType));
+	tpr (&p, "%s+- ServiceId       = %s\n", spacer, NN(serv->m.serviceId));
+	tpr (&p, "%s+- EventURL        = %s\n", spacer, NN(serv->m.eventURL));
+	tpr (&p, "%s+- ControlURL      = %s\n", spacer, 
+	     NN(serv->m.controlURL));
 	
 	// Print variables
-	p=P(p, "%s+- ServiceStateTable\n", spacer);
+	tpr (&p, "%s+- ServiceStateTable\n", spacer);
 	ListNode* node;
 	for (node = ListHead ((LinkedList*) &serv->m.variables);
 	     node != NULL;
 	     node = ListNext ((LinkedList*) &serv->m.variables, node)) {
 		StringPair* const var = node->item;
-		p=P(p, "%s|    +- %-10s = %.150s%s\n", spacer, 
-		    NN(var->name), NN(var->value), 
-		    (var->value && strlen(var->value) > 150) ? "..." : "");
+		tpr (&p, "%s|    +- %-10s = %.150s%s\n", spacer, 
+		     NN(var->name), NN(var->value), 
+		     (var->value && strlen(var->value) > 150) ? "..." : "");
 	}
 	
 	// Last Action
-	p=P(p, "%s+- Last Action     = %s\n", spacer, NN(serv->m.la_name));
+	tpr (&p, "%s+- Last Action     = %s\n", spacer, NN(serv->m.la_name));
 	if (serv->m.la_name) 
-		p=P(p, "%s|    +- Result     = %d (%s)\n", spacer, 
-		    serv->m.la_result, UpnpGetErrorMessage(serv->m.la_result));
+		tpr (&p, "%s|    +- Result     = %d (%s)\n", spacer, 
+		     serv->m.la_result, 
+		     UpnpGetErrorMessage (serv->m.la_result));
 	if (serv->m.la_error_code || serv->m.la_error_desc) 
-		p=P(p, "%s|    +- SOAP Error = %s (%s)\n", spacer, 
-		    NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
+		tpr (&p, "%s|    +- SOAP Error = %s (%s)\n", spacer, 
+		     NN(serv->m.la_error_code), NN(serv->m.la_error_desc));
 	
-	p=P(p, "%s+- SID             = %s\n", spacer, NN(serv->m.sid));
+	tpr (&p, "%s+- SID             = %s\n", spacer, NN(serv->m.sid));
 	
-#undef P
 	return p;
 }
 
