@@ -99,7 +99,7 @@ DestroyChildren (void* ptr)
  *	parent context "result_context" should be freed using "talloc_free".
  *	
  *****************************************************************************/
-static char*
+static const char*
 int_to_string (void* result_context, intmax_t val)
 {
 	// hardcode some common values for "BrowseAction"
