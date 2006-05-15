@@ -1,5 +1,8 @@
 2006-05-09  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/file_buffer.c (FileBuffer_CreateFromString): add 'steal' 
+	  parameter to optimize unecessary string copies
+
 	* djmount/string_util: add new StringStream API for portable
 	  open_memstream equivalent
 

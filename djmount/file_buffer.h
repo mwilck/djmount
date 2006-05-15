@@ -66,12 +66,20 @@ typedef struct _FileBuffer FileBuffer;
 /*****************************************************************************
  * @brief 	Creates a new FileBuffer object, with a given string as
  *		content.
+ *		If 'steal' is false (standard behaviour), the provided string 
+ *		content is copied internally. 
+ *		If 'steal' is true (optimisation), the provided string is NOT
+ *		copied, but instead its talloc parent context is changed
+ *		to the new FileBuffer object (using "talloc_steal") and
+ *		will be deallocated by this new object.
  *
  * @param talloc_context	the talloc parent context
- * @param content		the file content (copied internally)
+ * @param content		the file content (copied or not, cf. 'steal')
+ * @param steal			copy (if false) or steal (if true) the content
  *****************************************************************************/
 FileBuffer*
-FileBuffer_CreateFromString (void* talloc_context, const char* content);
+FileBuffer_CreateFromString (void* talloc_context, const char* content,
+			     bool steal);
 
 
 /*****************************************************************************
