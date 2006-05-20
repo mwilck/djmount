@@ -270,23 +270,6 @@ UpnpUtil_GetEventString (void* talloc_context,
 }
 
 
-
-/*****************************************************************************
- * UpnpUtil_PrintEvent
- *****************************************************************************/
-void
-UpnpUtil_PrintEvent (Log_Level level,
-		     IN Upnp_EventType eventType,
-		     IN const void* event )
-{
-  char* const s = UpnpUtil_GetEventString (NULL, eventType, event);
-  Log_Print (level, s);
-  talloc_free (s);
-}
-
-
-
-
 /******************************************************************************
  * UpnpUtil_ResolveURL
  *****************************************************************************/

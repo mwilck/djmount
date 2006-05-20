@@ -26,7 +26,6 @@
 #ifndef UPNP_UTIL_H_INCLUDED
 #define UPNP_UTIL_H_INCLUDED
 
-#include "log.h" // import Log_Level
 
 #include <upnp/upnptools.h>
 
@@ -35,22 +34,6 @@
 extern "C" {
 #endif
 
-
-/*****************************************************************************
- * UpnpUtil_PrintEvent
- *
- * Description: 
- *       Prints callback event structure details.
- *
- * Parameters:
- *   EventType -- The type of callback event
- *   Event -- The callback event structure
- *
- *****************************************************************************/
-void
-UpnpUtil_PrintEvent (IN Log_Level level,
-		     IN Upnp_EventType EventType, 
-		     IN const void *Event);
 
 
 /*****************************************************************************

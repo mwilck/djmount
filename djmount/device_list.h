@@ -27,7 +27,6 @@
 
 #include <upnp/ixml.h>
 
-#include "log.h"		// import Log_Level
 #include "string_util.h"	// import StringArray
 #include "service.h"
 
@@ -180,15 +179,6 @@ DeviceList_GetDevicesNames (void* talloc_context);
  *****************************************************************************/
 char*
 DeviceList_GetStatusString (void* talloc_context);
-
-
-/**
- * Print the current global status of the device list 
- * (see DeviceList_GetStatusString).
- */
-int
-DeviceList_PrintStatus (Log_Level);
-
 
 
 /*****************************************************************************

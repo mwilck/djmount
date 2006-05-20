@@ -429,177 +429,186 @@ AddDevice (const char* deviceId,
  *       request on to the appropriate function.
  *
  * Parameters:
- *   EventType -- The type of callback event
- *   Event -- Data structure containing event data
- *   Cookie -- Optional data specified during callback registration
+ *   event_type -- The type of callback event
+ *   event -- Data structure containing event data
+ *   cookie -- Optional data specified during callback registration
  *
  *****************************************************************************/
 static int
 EventHandlerCallback (Upnp_EventType event_type,
-		      void* Event,
-		      void* Cookie)
+		      void* event, void* cookie)
 {
-  UpnpUtil_PrintEvent (LOG_DEBUG, event_type, Event);
-  
-  switch ( event_type ) {
-    /*
-     * SSDP Stuff 
-     */
-  case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
-  case UPNP_DISCOVERY_SEARCH_RESULT:
-    {
-      const struct Upnp_Discovery* const d_event =
-	(struct Upnp_Discovery *) Event;
+	// Create a working context for temporary strings
+	void* const tmp_ctx = talloc_new (NULL);
 
-      if (d_event->ErrCode != UPNP_E_SUCCESS) {
-	Log_Printf (LOG_ERROR, "Error in Discovery Callback -- %d", 
-		    d_event->ErrCode);	
-      }
-      // TBD else ??
-      
-      if (d_event->DeviceId && d_event->DeviceId[0]) { 
-	Log_Printf (LOG_INFO, "Discovery : found device type '%s' at url %s", 
-		    NN(d_event->DeviceType), NN(d_event->Location));
+	Log_Print (LOG_DEBUG, UpnpUtil_GetEventString (tmp_ctx, event_type, 
+						       event));
 	
-	Log_Printf (LOG_DEBUG, "Discovery : before AddDevice\n");
-	AddDevice (d_event->DeviceId, d_event->Location, d_event->Expires);
-	Log_Print (LOG_DEBUG, "Discovery: DeviceList after AddDevice =");
-	DeviceList_PrintStatus (LOG_DEBUG);
-      }
+	switch ( event_type ) {
+		/*
+		 * SSDP Stuff 
+		 */
+	case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
+	case UPNP_DISCOVERY_SEARCH_RESULT:
+	{
+		const struct Upnp_Discovery* const e =
+			(struct Upnp_Discovery*) event;
+		
+		if (e->ErrCode != UPNP_E_SUCCESS) {
+			Log_Printf (LOG_ERROR, 
+				    "Error in Discovery Callback -- %d", 
+				    e->ErrCode);	
+		}
+		// TBD else ??
       
-      break;
-    }
+		if (e->DeviceId && e->DeviceId[0]) { 
+			Log_Printf (LOG_INFO, 
+				    "Discovery : device type '%s' at url %s", 
+				    NN(e->DeviceType), NN(e->Location));
+			
+			Log_Printf (LOG_DEBUG, 
+				    "Discovery : before AddDevice\n");
+			AddDevice (e->DeviceId, e->Location, e->Expires);
+			Log_Printf (LOG_DEBUG, "Discovery: "
+				    "DeviceList after AddDevice = \n%s",
+				    DeviceList_GetStatusString (tmp_ctx));
+		}
+		
+		break;
+	}
     
-  case UPNP_DISCOVERY_SEARCH_TIMEOUT:
-    /*
-     * Nothing to do here... 
-     */
-    break;
+	case UPNP_DISCOVERY_SEARCH_TIMEOUT:
+		/*
+		 * Nothing to do here... 
+		 */
+		break;
+		
+	case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
+    	{
+		struct Upnp_Discovery* e = (struct Upnp_Discovery*) event;
+      
+		if (e->ErrCode != UPNP_E_SUCCESS ) {
+			Log_Printf (LOG_ERROR,
+				    "Error in Discovery ByeBye Callback -- %d",
+				    e->ErrCode );
+		}
+		
+		Log_Printf (LOG_DEBUG, "Received ByeBye for Device: %s",
+			    e->DeviceId );
+		DeviceList_RemoveDevice (e->DeviceId);
+		
+		Log_Printf (LOG_DEBUG, "DeviceList after byebye: \n%s",
+			    DeviceList_GetStatusString (tmp_ctx));
+		break;
+	}
     
-  case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
-    {
-      struct Upnp_Discovery *d_event =
-	( struct Upnp_Discovery * )Event;
+	/*
+	 * SOAP Stuff 
+	 */
+	case UPNP_CONTROL_ACTION_COMPLETE:
+    	{
+		struct Upnp_Action_Complete* e = 
+			(struct Upnp_Action_Complete*) event;
       
-      if( d_event->ErrCode != UPNP_E_SUCCESS ) {
-	Log_Printf (LOG_ERROR,
-		    "Error in Discovery ByeBye Callback -- %d",
-		    d_event->ErrCode );
-      }
-      
-      Log_Printf (LOG_DEBUG, "Received ByeBye for Device: %s",
-		  d_event->DeviceId );
-      DeviceList_RemoveDevice (d_event->DeviceId);
-      
-      Log_Printf (LOG_DEBUG, "DeviceList after byebye:");
-      DeviceList_PrintStatus (LOG_DEBUG);
-      
-      break;
-    }
+		if (e->ErrCode != UPNP_E_SUCCESS ) {
+			Log_Printf (LOG_ERROR,
+				    "Error in  Action Complete Callback -- %d",
+				    e->ErrCode );
+		}
+		
+		/*
+		 * No need for any processing here, just print out results.  
+		 * Service state table updates are handled by events. 
+		 */
+		
+		break;
+	}
+	
+	case UPNP_CONTROL_GET_VAR_COMPLETE:
+		/*
+		 * Not used : deprecated
+		 */
+		Log_Printf (LOG_WARNING, 
+			    "Deprecated Get Var Complete Callback");
+		break;
     
-    /*
-     * SOAP Stuff 
-     */
-  case UPNP_CONTROL_ACTION_COMPLETE:
-    {
-      struct Upnp_Action_Complete *a_event =
-	(struct Upnp_Action_Complete *) Event;
+		/*
+		 * GENA Stuff 
+		 */
+	case UPNP_EVENT_RECEIVED:
+	{
+		struct Upnp_Event* e = (struct Upnp_Event*) event;
+		
+		HandleEvent (e->Sid, e->EventKey, e->ChangedVariables);
+		break;
+	}
+	
+	case UPNP_EVENT_SUBSCRIBE_COMPLETE:
+	case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
+	case UPNP_EVENT_RENEWAL_COMPLETE:
+	{
+		struct Upnp_Event_Subscribe* e =
+			(struct Upnp_Event_Subscribe*) event;
       
-      if( a_event->ErrCode != UPNP_E_SUCCESS ) {
-	Log_Printf (LOG_ERROR,
-		    "Error in  Action Complete Callback -- %d",
-		    a_event->ErrCode );
-      }
-      
-      /*
-       * No need for any processing here, just print out results.  
-       * Service state table updates are handled by events. 
-       */
-      
-      break;
-    }
-    
-  case UPNP_CONTROL_GET_VAR_COMPLETE:
-    {
-      /*
-       * Not used : deprecated
-       */
-      Log_Printf (LOG_WARNING, "Deprecated Get Var Complete Callback");
-      break;
-    }
-    
-    /*
-     * GENA Stuff 
-     */
-  case UPNP_EVENT_RECEIVED:
-    {
-      struct Upnp_Event *e_event = ( struct Upnp_Event * )Event;
-      
-      HandleEvent (e_event->Sid, e_event->EventKey,
-		   e_event->ChangedVariables);
-      break;
-    }
-    
-  case UPNP_EVENT_SUBSCRIBE_COMPLETE:
-  case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
-  case UPNP_EVENT_RENEWAL_COMPLETE:
-    {
-      struct Upnp_Event_Subscribe* es_event =
-	(struct Upnp_Event_Subscribe *) Event;
-      
-      if ( es_event->ErrCode != UPNP_E_SUCCESS ) {
-	      Log_Printf (LOG_ERROR,
-			  "Error in Event Subscribe Callback -- %d",
-			  es_event->ErrCode );
-      } else {
-	      Log_Printf (LOG_DEBUG, "Received Event Renewal for eventURL %s", 
-			  NN(es_event->PublisherUrl));
+		if (e->ErrCode != UPNP_E_SUCCESS ) {
+			Log_Printf (LOG_ERROR,
+				    "Error in Event Subscribe Callback -- %d",
+				    e->ErrCode );
+		} else {
+			Log_Printf (LOG_DEBUG, 
+				    "Received Event Renewal for eventURL %s", 
+				    NN(e->PublisherUrl));
 
-	      ithread_mutex_lock( &DeviceListMutex );
+			ithread_mutex_lock (&DeviceListMutex);
 
-	      Service* serv = GetService (es_event->PublisherUrl,
-					  FROM_EVENT_URL);
-	      if (serv) {
-		      if (event_type == UPNP_EVENT_UNSUBSCRIBE_COMPLETE)
-			      Service_SetSid (serv, NULL);
-		      else			      
-			      Service_SetSid (serv, es_event->Sid);
-	      }
-	      ithread_mutex_unlock( &DeviceListMutex );
-      }
-      break;
-    }
+			Service* const serv = GetService (e->PublisherUrl,
+							  FROM_EVENT_URL);
+			if (serv) {
+				if (event_type == 
+				    UPNP_EVENT_UNSUBSCRIBE_COMPLETE)
+					Service_SetSid (serv, NULL);
+				else			      
+					Service_SetSid (serv, e->Sid);
+			}
+			ithread_mutex_unlock (&DeviceListMutex);
+		}
+		break;
+	}
     
-  case UPNP_EVENT_AUTORENEWAL_FAILED:
-  case UPNP_EVENT_SUBSCRIPTION_EXPIRED:
-    {
-      struct Upnp_Event_Subscribe* es_event =
-	(struct Upnp_Event_Subscribe *) Event;
+	case UPNP_EVENT_AUTORENEWAL_FAILED:
+	case UPNP_EVENT_SUBSCRIPTION_EXPIRED:
+    	{
+		struct Upnp_Event_Subscribe* e = 
+			(struct Upnp_Event_Subscribe*) event;
 
-      Log_Printf (LOG_DEBUG, "Renewing subscription for eventURL %s", 
-		  NN(es_event->PublisherUrl));
+		Log_Printf (LOG_DEBUG, "Renewing subscription for eventURL %s",
+			    NN(e->PublisherUrl));
      
-      ithread_mutex_lock( &DeviceListMutex );
+		ithread_mutex_lock (&DeviceListMutex);
       
-      Service* serv = GetService (es_event->PublisherUrl, FROM_EVENT_URL);
-      if (serv) 
-	      Service_SubscribeEventURL (serv);
-
-      ithread_mutex_unlock( &DeviceListMutex );
-
-      break;
-    }
+		Service* const serv = GetService (e->PublisherUrl, 
+						  FROM_EVENT_URL);
+		if (serv) 
+			Service_SubscribeEventURL (serv);
+		
+		ithread_mutex_unlock (&DeviceListMutex);
+		
+		break;
+	}
     
-    /*
-     * ignore these cases, since this is not a device 
-     */
-  case UPNP_EVENT_SUBSCRIPTION_REQUEST:
-  case UPNP_CONTROL_GET_VAR_REQUEST:
-  case UPNP_CONTROL_ACTION_REQUEST:
-    break;
-  }
-  
-  return 0;
+	/*
+	 * ignore these cases, since this is not a device 
+	 */
+	case UPNP_EVENT_SUBSCRIPTION_REQUEST:
+	case UPNP_CONTROL_GET_VAR_REQUEST:
+	case UPNP_CONTROL_ACTION_REQUEST:
+		break;
+	}
+  	
+  	// Delete all temporary strings
+	talloc_free (tmp_ctx);
+
+	return 0;
 }
 
 
@@ -735,24 +744,6 @@ DeviceList_GetStatusString (void* context)
   return ret;
 }
 
-
-/*****************************************************************************
- * DeviceList_PrintStatus
- *****************************************************************************/
-int
-DeviceList_PrintStatus (Log_Level level)
-{
-  int rc;
-  char* const s = DeviceList_GetStatusString (NULL);
-  if (s) {
-    Log_Print (level, s);
-    talloc_free (s);
-    rc = UPNP_E_SUCCESS;
-  } else {
-    rc = UPNP_E_OUTOF_MEMORY;
-  }
-  return rc;
-}
 
 
 /*****************************************************************************
