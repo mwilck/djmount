@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * Object base class.
@@ -59,26 +60,27 @@ static pthread_mutex_t g_class_mutex;
 static int
 destroy (void* ptr)
 {
-  if (ptr) {
-    /*
-     * Chain all 'finalize' functions
-     */
-    Object* const obj = (Object*) ptr;
-    const ObjectClass* objclass = obj->isa;
-    while (objclass) {
-      if (objclass->finalize)
-	objclass->finalize (obj);  
-      objclass = objclass->super;
-    }
-
-    // Reset all data to 0 
-    if (obj->isa && obj->isa->initializer)
-      memcpy (obj, obj->isa->initializer, obj->isa->size);
-
-    // Delete type information
-    obj->isa = NULL;
-  }
-  return 0; // 0 -> ok for talloc to deallocate memory
+	if (ptr) {
+		/*
+		 * Chain all 'finalize' functions
+		 */
+		Object* const obj = (Object*) ptr;
+		const Object_Class* const objclass = OBJECT_GET_CLASS(obj);
+		const Object_Class* c = objclass;
+		while (c) {
+			if (c->finalize)
+				c->finalize (obj);  
+			c = c->super;
+		}
+		
+		// Reset all data to 0 
+		if (objclass && objclass->initializer)
+			memcpy (obj, objclass->initializer, objclass->size);
+		
+		// Delete type information
+		_OBJECT_SET_CLASS (obj, NULL);
+	}
+	return 0; // 0 -> ok for talloc to deallocate memory
 }
 
 
@@ -114,85 +116,130 @@ _ObjectClass_Unlock()
  * _Object_IsA
  *****************************************************************************/
 bool
-_Object_IsA (const Object* const obj, const ObjectClass* searched_class)
+_Object_IsA (const void* const objptr, const Object_Class* searched_class)
 {
-  if (obj && searched_class) {
-    register const ObjectClass* objclass = obj->isa;
+	if (objptr && searched_class) {
+		const Object* const obj = (const Object*) objptr;
+		const Object_Class* const objclass = OBJECT_GET_CLASS(obj);
 
-    if (objclass == NULL || objclass->magic != CLASS_MAGIC) {
-      Log_Printf (LOG_ERROR, 
-		  "Object_IsA : not an object ; memory might be corrupted !!");
-      return false; // ---------->
-    }
+		if (objclass == NULL || objclass->magic != CLASS_MAGIC) {
+			Log_Printf (LOG_ERROR, 
+				    "Object_IsA : not an object ; "
+				    "memory might be corrupted !!");
+			return false; // ---------->
+		}
     
 #if 0
-    Log_Printf (LOG_DEBUG, "Object_IsA : '%s' isa '%s' ?", 
-                NN(objclass->name), NN(searched_class->name));
+		Log_Printf (LOG_DEBUG, "Object_IsA : '%s' isa '%s' ?", 
+			    NN(objclass->name), NN(searched_class->name));
 #endif
 
-    while (objclass) {
-      if (objclass == searched_class)
-	return true; // ---------->
-      objclass = objclass->super;
-    }  
-
-    Log_Printf (LOG_ERROR, "Object_IsA : '%s' is not a '%s' ", 
-		NN(obj->isa->name), NN(searched_class->name));
-  }
-  return false;
+		register const Object_Class* c = objclass;
+		while (c) {
+			if (c == searched_class)
+				return true; // ---------->
+			c = c->super;
+		}  
+		
+		Log_Printf (LOG_ERROR, "Object_IsA : '%s' is not a '%s' ", 
+			    NN(objclass->name), NN(searched_class->name));
+	}
+	return false;
 }
 
 /*****************************************************************************
  * OBJECT_CLASS_PTR(Object)
  *****************************************************************************/
 
-const ObjectClass* OBJECT_CLASS_PTR(Object)
+const Object_Class* OBJECT_CLASS_PTR(Object)
 {
-  static ObjectClass the_class = {
-    .magic	        = CLASS_MAGIC,
-    .name 	        = "Object",
-    .super	        = NULL,
-    .size	        = sizeof (Object),
-    .initializer 	= NULL,
-    .finalize		= NULL,
-  };
-  static const Object the_default_object = { .isa = &the_class };
-
-  if (the_class.initializer == NULL) {
-    _ObjectClass_Lock();
-    the_class.initializer = &the_default_object;
-    _ObjectClass_Unlock();
-  }
-
-  return &the_class;
+	static Object_Class the_class = {
+		.magic	        = CLASS_MAGIC,
+		.name 	        = "Object",
+		.super	        = NULL,
+		.size	        = sizeof (Object),
+		.initializer 	= NULL,
+		.finalize	= NULL,
+	};
+	static const Object the_default_object = { ._.isa = &the_class };
+	
+	if (the_class.initializer == NULL) {
+		_ObjectClass_Lock();
+		the_class.initializer = &the_default_object;
+		_ObjectClass_Unlock();
+	}
+	
+	return &the_class;
 }
+
+const Object_Class* OBJECT_BASE_CLASS_PTR(Object)
+{					
+	return OBJECT_CLASS_PTR(Object);
+}
+
 
 
 /*****************************************************************************
- * _Object_talloc
+ * _Object_check_alloc
  *****************************************************************************/
+
+static const char* const NAME_UNDER_CONSTRUCTION = "under construction";
+
 Object*
-_Object_talloc (void* talloc_context, const ObjectClass* isa)
+_Object_check_alloc (void* talloc_context, const Object_Class* isa)
 {
-  if (isa == NULL) {
-    Log_Print (LOG_ERROR, "Object CreateBase NULL isa class");
-    return NULL; // ---------->
-  }
+	/*
+	 * 1) check if we have a "real" context, or an object already 
+	 *    allocated and under construction.
+	 */
+	if (talloc_get_name (talloc_context) == NAME_UNDER_CONSTRUCTION) {
+		return talloc_context; // ---------->
+	} 
 
-  Object* obj = talloc_named_const (talloc_context, isa->size, isa->name);
-  if (obj == NULL) {
-    Log_Print (LOG_ERROR, "Object CreateBase Out of Memory");
-    return NULL; // ---------->
-  }
+	/*
+	 * 2) Allocate a new object
+	 */
 
-  // Init fields to default values
-  if (isa->initializer)
-    memcpy (obj, isa->initializer, isa->size);
-  obj->isa = isa;
+	if (isa == NULL) {
+		Log_Print (LOG_ERROR, "Object CreateBase NULL isa class");
+		return NULL; // ---------->
+	}
+	
+	Object* obj = talloc_named_const (talloc_context, isa->size, 
+					  NAME_UNDER_CONSTRUCTION);
+	if (obj == NULL) {
+		Log_Print (LOG_ERROR, "Object CreateBase Out of Memory");
+		return NULL; // ---------->
+	}
 
-  // Register destructor
-  talloc_set_destructor (obj, destroy);
-
-  return obj;
+	// Init fields to default values
+	if (isa->initializer)
+		memcpy (obj, isa->initializer, isa->size);
+	_OBJECT_SET_CLASS (obj, isa);
+	
+	// Register destructor
+	talloc_set_destructor (obj, destroy);
+	
+	return obj;
 }
+
+/*****************************************************************************
+ * Object_Create
+ *****************************************************************************/
+
+Object* 
+Object_Create (void* parent_context, void* unused)
+{
+	(void) unused;
+
+	Object* self = _Object_check_alloc (parent_context, 
+					    OBJECT_BASE_CLASS_PTR (Object));
+	
+	// Finalize construction
+	if (self != NULL) 
+		talloc_set_name_const (self, OBJECT_GET_CLASS_NAME (self));
+		
+	return self;
+}
+
 

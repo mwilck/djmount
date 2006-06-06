@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Content Directory Service implementation (private / protected).
@@ -34,33 +35,16 @@
  *
  *****************************************************************************/
 
-union _ContentDirClass {
-
-	ObjectClass o;
-	
-	struct {
-		// Inherit parent fields
-		ServiceClass _; 
-		// No additional methods
-	} m;
-};
+OBJECT_DEFINE_METHODS(ContentDir,
+		      // No additional methods
+		      );
 
 
-struct _ContentDir_CacheEntry;
-
-union _ContentDir {
-  
-	const ContentDirClass* isa;
-	
-	struct {
-		// Inherit parent fields
-		Service _; 
-		
-		// Additional fields
-		struct _Cache*	 cache;
-		ithread_mutex_t  cache_mutex;
-	} m;
-};
+OBJECT_DEFINE_STRUCT(ContentDir,
+		     // Additional fields
+		     struct _Cache*   cache;
+		     ithread_mutex_t  cache_mutex;
+		     );
 
 
 #endif /* CONTENT_DIR_P_INCLUDED */

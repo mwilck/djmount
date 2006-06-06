@@ -1,3 +1,7 @@
+2006-06-06  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/object*.* : improved Object class and macros
+
 2006-05-20  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/device_list: suppress DeviceList_PrintStatus

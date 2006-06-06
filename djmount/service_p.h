@@ -37,65 +37,37 @@
  *
  *****************************************************************************/
 
-union _ServiceClass {
+OBJECT_DEFINE_STRUCT(Service,
+		     // Object properties
+		     char* serviceId;
+		     char* serviceType;
+		     char* eventURL;
+		     char* controlURL;
+		     char* sid;
+		     
+		     // TBD XXX to replace by hashtable XXX
+		     LinkedList	variables;
+		     
+		     UpnpClient_Handle ctrlpt_handle;
+		     
+		     // Last Action information, for debugging
+		     char* la_name;
+		     int   la_result;
+		     char* la_error_code;
+		     char* la_error_desc;
+		     );
 
-	ObjectClass o;
-	
-	struct {
-		// Inherit parent fields
-		ObjectClass _;
-		
-		// Addition Virtual methods
-		void  (*update_variable) (Service*, 
-					  const char* name, const char* value);
-		char* (*get_status_string) (const Service* serv, 
-					    void* result_context, 
-					    bool debug, const char* spacer);
-	} m;
-	
-};
+OBJECT_DEFINE_METHODS(Service,
+		      // Additional Virtual methods
+		      void  (*update_variable) (Service*, 
+						const char* name, 
+						const char* value);
+		      char* (*get_status_string) (const Service* serv, 
+						  void* result_context, 
+						  bool debug, 
+						  const char* spacer);
+		      );
 
-
-
-union _Service {
-
-	const ServiceClass* isa;
-
-	struct {
-		Object _;
-
-		char* serviceId;
-		char* serviceType;
-		char* eventURL;
-		char* controlURL;
-		char* sid;
-		
-		// TBD XXX to replace by hashtable XXX
-		LinkedList	variables;
-		
-		UpnpClient_Handle ctrlpt_handle;
-		
-		// Last Action information, for debugging
-		char* la_name;
-		int   la_result;
-		char* la_error_code;
-		char* la_error_desc;
-	} m;
-};
-
-
-/******************************************************************************
- *
- * 	Initialize a Service object (must be created beforehand
- *	with _Object_talloc). Return 0 if ok, or error code.
- *
- *****************************************************************************/
-
-int
-_Service_Initialize (Service* serv,
-		     UpnpClient_Handle ctrlpt_handle, 
-		     IXML_Element* serviceDesc, 
-		     const char* base_url);
 
 
 

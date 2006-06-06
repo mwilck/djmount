@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * Object base class.
@@ -30,17 +31,6 @@ extern "C" {
 #endif
 
 
-/******************************************************************************
- * @var Object
- *
- *	This opaque type encapsulates access to a generic object.
- *
- *****************************************************************************/
-
-struct _Object;
-typedef struct _Object Object;
-
-
 
 /******************************************************************************
  * @fn		OBJECT_DECLARE_CLASS
@@ -51,20 +41,47 @@ typedef struct _Object Object;
  *	OBJECT_DECLARE_CLASS(Service,Object);
  * will declare the new type "Service".
  *
+ * The following public definitions are made available :
+ *	typedef struct _Service Service;
+ *	inline Object* Service_ToObject (Service*);
+ *	inline const Object* Service_ToConstObject (const Service*);
+ *	
  *****************************************************************************/
 
 // Returns the class singleton for a given type
-#define OBJECT_CLASS_PTR(TYPE)	_ ## TYPE ## Class_Get()
+#define OBJECT_BASE_CLASS_PTR(OBJTYPE)	_ ## OBJTYPE ## _GetBaseClass()
+#define OBJECT_CLASS_PTR(OBJTYPE)	_ ## OBJTYPE ## _GetClass()
 
-typedef struct _ObjectClass ObjectClass;
-extern const ObjectClass* OBJECT_CLASS_PTR(Object);
+#define _OBJECT_SUPERCLASS_PTR(OBJTYPE)	_ ## OBJTYPE ## _GetBaseSuperClass()
+
+#define _OBJECT_DECLARE_CLASS(OBJTYPE)					\
+	typedef struct _ ## OBJTYPE OBJTYPE;				\
+	typedef struct _ ## OBJTYPE ## _Class OBJTYPE ## _Class;	\
+	extern const OBJTYPE ## _Class* OBJECT_CLASS_PTR(OBJTYPE);	\
+	extern const Object_Class* OBJECT_BASE_CLASS_PTR(OBJTYPE)	
+
+#define OBJECT_DECLARE_CLASS(OBJTYPE,SUPERTYPE)				\
+	_OBJECT_DECLARE_CLASS(OBJTYPE);					\
+	typedef SUPERTYPE _ ## OBJTYPE ## _SuperType;			\
+	static inline SUPERTYPE*					\
+	OBJTYPE ## _To ## SUPERTYPE (OBJTYPE* obj)			\
+	{ return (SUPERTYPE*) obj; }					\
+	static inline const SUPERTYPE*					\
+	OBJTYPE ## _ToConst ## SUPERTYPE (const OBJTYPE* obj)		\
+	{ return (const SUPERTYPE*) obj; }				\
+	typedef struct _ ## SUPERTYPE ## _Class _ ## OBJTYPE ## _SuperClass
 
 
-#define OBJECT_DECLARE_CLASS(OBJTYPE,SUPERTYPE)			\
-typedef union _ ## OBJTYPE OBJTYPE;				\
-typedef union _  ## OBJTYPE ## Class OBJTYPE ## Class;		\
-extern const OBJTYPE ## Class* OBJECT_CLASS_PTR(OBJTYPE)
 
+
+/******************************************************************************
+ * @var Object (topmost superclass)
+ *
+ *	This opaque type encapsulates access to a generic object.
+ *
+ *****************************************************************************/
+
+_OBJECT_DECLARE_CLASS(Object);
 
 
 /******************************************************************************
@@ -78,7 +95,7 @@ extern const OBJTYPE ## Class* OBJECT_CLASS_PTR(OBJTYPE)
  *****************************************************************************/
 
 extern bool
-_Object_IsA (const Object* obj, const ObjectClass* searched_class);
+_Object_IsA (const void* obj, const Object_Class* searched_class);
 
 // GCC-specific optimisations for compile-time checks :
 // checks if object already of the target type
@@ -93,8 +110,7 @@ _Object_IsA (const Object* obj, const ObjectClass* searched_class);
 
 #define OBJECT_IS_A(OBJ,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE	\
   (OBJ, TYPE*, true,						\
-   _Object_IsA((const Object*) OBJ,				\
-	       (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)))
+   _Object_IsA(OBJ, OBJECT_BASE_CLASS_PTR(TYPE)))
   
 
 
@@ -109,9 +125,8 @@ _Object_IsA (const Object* obj, const ObjectClass* searched_class);
  *****************************************************************************/
 
 #define OBJECT_DYNAMIC_CAST(OBJ,TYPE) _OBJECT_IF_COMPILE_CHECK_TYPE	\
-  (OBJ, TYPE*, OBJ,							\
-   _Object_IsA((const Object*) OBJ,					\
-	       (const ObjectClass*) OBJECT_CLASS_PTR(TYPE)) ? (TYPE*)OBJ :NULL)
+	(OBJ, TYPE*, OBJ,						\
+	 _Object_IsA(OBJ, OBJECT_BASE_CLASS_PTR(TYPE)) ? (TYPE*)OBJ : NULL)
 
 
 

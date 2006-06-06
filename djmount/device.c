@@ -83,8 +83,9 @@ ServiceFactory (Device* dev,
 
 	if ( serviceType && strcmp (serviceType, 
 				    CONTENT_DIR_SERVICE_TYPE) == 0 ) {
-		serv = (Service*) ContentDir_Create (dev, ctrlpt_handle, 
-						     serviceDesc, base_url);
+		serv = ContentDir_ToService 
+			(ContentDir_Create (dev, ctrlpt_handle, 
+					    serviceDesc, base_url));
 	} else {
 		serv = Service_Create (dev, ctrlpt_handle,
 				       serviceDesc, base_url);

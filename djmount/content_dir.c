@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Content Directory Service 
@@ -32,6 +33,7 @@
 #include <upnp/upnp.h>
 #include "service_p.h"
 #include "cache.h"
+#include "log.h"
 
 
 
@@ -135,7 +137,7 @@ BrowseAction (ContentDir* cds,
 
   IXML_Document* doc = NULL;
   int rc = Service_SendActionVa
-    (SUPER_CAST(cds), &doc, "Browse", 
+    (OBJECT_SUPER_CAST(cds), &doc, "Browse", 
      "ObjectID", 	objectId,
      "BrowseFlag", 	( (metadata == BROWSE_METADATA) ? 
 			  "BrowseMetadata" : "BrowseDirectChildren"),
@@ -328,16 +330,16 @@ DestroyResult (void* ptr)
 	BrowseResult* br = ptr;
 	
 	if (br) {
-		if (br->cds && br->cds->m.cache)
-			ithread_mutex_lock (&br->cds->m.cache_mutex);
+		if (br->cds && br->cds->cache)
+			ithread_mutex_lock (&br->cds->cache_mutex);
 		
 		// Cached data will be really freed by talloc 
 		// when its reference count drops to zero.
 		if (talloc_free (br->children) == 0)
 			Log_Printf (LOG_DEBUG, "ContentDir CACHE_FREE");
 		
-		if (br->cds && br->cds->m.cache)
-			ithread_mutex_unlock (&br->cds->m.cache_mutex);
+		if (br->cds && br->cds->cache)
+			ithread_mutex_unlock (&br->cds->cache_mutex);
 		
 		*br = (BrowseResult) { };
 	}
@@ -361,7 +363,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
 		return NULL; // ---------->
 	*br = (BrowseResult) { .cds = cds };
 
-	if (cds->m.cache == NULL) {
+	if (cds->cache == NULL) {
 		/*
 		 * No cache
 		 */
@@ -371,9 +373,9 @@ ContentDir_BrowseChildren (ContentDir* cds,
 		/*
 		 * Lookup and/or update cache 
 		 */   
-		ithread_mutex_lock (&cds->m.cache_mutex);
+		ithread_mutex_lock (&cds->cache_mutex);
 
-		Children** cp = (Children**) Cache_Get(cds->m.cache, objectId);
+		Children** cp = (Children**) Cache_Get(cds->cache, objectId);
 		if (cp) {
 			if (*cp) {
 				// cache hit
@@ -383,7 +385,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
 
 				// Note: use the cache as parent context for 
 				// allocation of result.
-				br->children = BrowseAll (cds, cds->m.cache, 
+				br->children = BrowseAll (cds, cds->cache, 
 							  objectId, 
 							  BROWSE_CHILDREN);
 				// set cache
@@ -396,7 +398,7 @@ ContentDir_BrowseChildren (ContentDir* cds,
 			talloc_set_destructor (br, DestroyResult);
 		}
 		
-		ithread_mutex_unlock (&cds->m.cache_mutex);
+		ithread_mutex_unlock (&cds->cache_mutex);
 	}
 
 	if (br->children == NULL) {
@@ -459,8 +461,8 @@ get_status_string (const Service* serv,
 	
 	tpr (&p, "%s+- Browse Cache\n", spacer);
 	tpr (&p, "%s", Cache_GetStatusString 
-	     (cds->m.cache, tmp_ctx, talloc_asprintf (tmp_ctx, "%s      ",
-						      spacer)));
+	     (cds->cache, tmp_ctx, talloc_asprintf (tmp_ctx, "%s      ",
+						    spacer)));
 	
 	// Delete all temporary strings
 	talloc_free (tmp_ctx);
@@ -482,8 +484,8 @@ finalize (Object* obj)
 {
 	ContentDir* const cds = (ContentDir*) obj;
 
-	if (cds && cds->m.cache) {
-		ithread_mutex_destroy (&cds->m.cache_mutex);
+	if (cds && cds->cache) {
+		ithread_mutex_destroy (&cds->cache_mutex);
 	}
 	
 	// Other "talloc'ed" fields will be deleted automatically : 
@@ -492,45 +494,24 @@ finalize (Object* obj)
 
 
 /*****************************************************************************
- * OBJECT_CLASS_PTR(ContentDir)
+ * OBJECT_INIT_CLASS
  *****************************************************************************/
 
-const ContentDirClass* OBJECT_CLASS_PTR(ContentDir)
-{
-	static ContentDirClass the_class = { .o.size = 0 };
-	static const ContentDir the_default_object = { .isa = &the_class };
-	
-	// Initialize non-const fields on first call 
-	if (the_class.o.size == 0) {
-		
-		_ObjectClass_Lock();
-		
-		// 1. Copy superclass methods
-		const ServiceClass* super = OBJECT_CLASS_PTR(Service);
-		the_class.m._ = *super;
-		
-		// 2. Initialize specific fields
-		the_class.o = (ObjectClass) {
-			.magic		= super->o.magic,
-			.name 		= "ContentDir",
-			.super		= &super->o,
-			.size		= sizeof (ContentDir),
-			.initializer 	= &the_default_object,
-			.finalize 	= finalize,
-		};
-		the_class.m._.m.get_status_string = get_status_string;
-		
-		// Class-specific initialization :
-		// Increase maximum permissible content-length for SOAP 
-		// messages, because "Browse" answers can be very large 
-		// if contain lot of objects.
-		UpnpSetMaxContentLength (MAX_CONTENT_LENGTH);
-		
-		_ObjectClass_Unlock();
-	}
-	
-	return &the_class;
+// Initialize class methods
+static void 
+init_class (ContentDir_Class* const isa) 
+{ 
+	CLASS_BASE_CAST(isa)->finalize = finalize;
+	CLASS_SUPER_CAST(isa)->get_status_string = get_status_string;
+
+	// Class-specific initialization :
+	// Increase maximum permissible content-length for SOAP 
+	// messages, because "Browse" answers can be very large 
+	// if contain lot of objects.
+	UpnpSetMaxContentLength (MAX_CONTENT_LENGTH);
 }
+
+OBJECT_INIT_CLASS(ContentDir, Service, init_class);
 
 
 /*****************************************************************************
@@ -542,29 +523,25 @@ ContentDir_Create (void* talloc_context,
 		   IXML_Element* serviceDesc, 
 		   const char* base_url)
 {
-	ContentDir* cds = _OBJECT_TALLOC (talloc_context, ContentDir);
-	if (cds == NULL)
-		goto error; // ---------->
-	
-	int rc = _Service_Initialize (SUPER_CAST(cds), ctrlpt_handle, 
-				      serviceDesc, base_url);
-	if (rc)
+	OBJECT_SUPER_CONSTRUCT (ContentDir, Service_Create, talloc_context,
+				ctrlpt_handle, serviceDesc, base_url);
+	if (self == NULL)
 		goto error; // ---------->
 	
 	if (CACHE_SIZE > 0 && CACHE_TIMEOUT > 0) {
-		cds->m.cache = Cache_Create (cds, CACHE_SIZE, CACHE_TIMEOUT,
-					     cache_free_expired_data);
-		if (cds->m.cache == NULL)
+		self->cache = Cache_Create (self, CACHE_SIZE, CACHE_TIMEOUT,
+					    cache_free_expired_data);
+		if (self->cache == NULL)
 			goto error; // ---------->
-		ithread_mutex_init (&cds->m.cache_mutex, NULL);
+		ithread_mutex_init (&self->cache_mutex, NULL);
 	}
 	
-	return cds; // ---------->
+	return self; // ---------->
 	
 error:
 	Log_Print (LOG_ERROR, "ContentDir_Create error");
-	// TBD there might be a leak here,
-	// TBD but don't try to call talloc_free on partialy initialized object
+	if (self) 
+		talloc_free (self);
 	return NULL;
 }
 
