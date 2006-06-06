@@ -42,6 +42,12 @@
 #include <upnp/LinkedList.h>
 
 
+
+// How often to check advertisement and subscription timeouts for devices
+static const unsigned int CHECK_SUBSCRIPTIONS_TIMEOUT = 30; // in seconds
+
+
+
 static UpnpClient_Handle g_ctrlpt_handle = -1;
 
 
@@ -817,7 +823,7 @@ VerifyTimeouts (int incr)
 
 
 /*****************************************************************************
- * TimerLoop
+ * CheckSubscriptionsLoop
  *
  * Description: 
  *       Function that runs in its own thread and monitors advertisement
@@ -828,15 +834,14 @@ VerifyTimeouts (int incr)
  *
  *****************************************************************************/
 static void*
-TimerLoop (void* arg)
+CheckSubscriptionsLoop (void* arg)
 {
-  int incr = 30;      // how often to verify the timeouts, in seconds
-  
-  while (1) {
-    isleep( incr );
-    VerifyTimeouts( incr );
-  }
+	while (true) {
+		isleep (CHECK_SUBSCRIPTIONS_TIMEOUT);
+		VerifyTimeouts (CHECK_SUBSCRIPTIONS_TIMEOUT);
+	}
 }
+
 
 /*****************************************************************************
  * DeviceList_Start
@@ -887,7 +892,7 @@ DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
   DeviceList_RefreshAll (target);
 
   // start a timer thread
-  ithread_create (&g_timer_thread, NULL, TimerLoop, NULL);
+  ithread_create (&g_timer_thread, NULL, CheckSubscriptionsLoop, NULL);
 
   return rc;
 }
