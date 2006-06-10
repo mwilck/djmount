@@ -42,15 +42,16 @@ endif
 bin_PROGRAMS 		= djmount
 noinst_PROGRAMS		= test_upnp
 
-check_PROGRAMS 		= test_charset test_ptr_list test_string test_cache
+check_PROGRAMS 		= test_charset test_ptr_list test_string test_cache \
+			  test_vfs
 # auto run some tests
-TESTS			= test_ptr_list test_string test_cache
+TESTS			= test_ptr_list test_string test_cache test_vfs.sh
 
 
 COMMON_SRCS 		= log.c object.c service.c \
 			  device.c device_list.c didl_object.c \
 			  media_file.c file_buffer.c \
-			  content_dir.c djfs.c upnp_util.c \
+			  content_dir.c vfs.c djfs.c upnp_util.c \
 			  string_util.c xml_util.c ptr_list.c talloc_util.c \
 			  cache.c
 if ENABLE_CHARSET
@@ -64,7 +65,8 @@ noinst_HEADERS		= \
 			log.h object.h object_p.h service.h service_p.h \
 		  	device.h device_list.h didl_object.h \
 			media_file.h file_buffer.h \
-		  	content_dir.h content_dir_p.h djfs.h upnp_util.h \
+		  	content_dir.h content_dir_p.h vfs.h vfs_p.h \
+			djfs.h djfs_p.h upnp_util.h \
 		  	string_util.h xml_util.h ptr_list.h talloc_util.h \
 			cache.h \
 		  	charset.h charset_internal.h
@@ -81,6 +83,8 @@ test_ptr_list_SOURCES	= $(COMMON_SRCS) test_ptr_list.c
 test_string_SOURCES	= $(COMMON_SRCS) test_string.c
 
 test_cache_SOURCES	= $(COMMON_SRCS) test_cache.c
+
+test_vfs_SOURCES	= $(COMMON_SRCS) test_vfs.c
 
 
 CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt
@@ -108,6 +112,10 @@ clean-local:
 	-rm -fr $(UPNP_TMPINC)
 
 endif
+
+
+EXTRA_DIST		= test_vfs.sh
+
 
 
 

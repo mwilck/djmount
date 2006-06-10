@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
- * main FUSE interface.
+ * Test VFS object.
  * This file is part of djmount.
  *
  * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
@@ -21,10 +21,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#	include <config.h>
-#endif
+#include <config.h>
 
+#include "vfs_p.h"
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,88 +35,131 @@
 #ifdef HAVE_SETXATTR
 #	include <sys/xattr.h>
 #endif
-#include <stdarg.h>	
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "talloc_util.h"
-#include "device_list.h"
 #include "log.h"
-#include "upnp_util.h"
-#include "string_util.h"
-#include "djfs.h"
-#include "content_dir.h"
-#include "charset.h"
-#include "minmax.h"
+
+
 
 
 
 /*****************************************************************************
- * Configuration related to specific FUSE versions
+ * TestFS
  *****************************************************************************/
 
-// Missing in earlier FUSE versions e.g. 2.2
-#ifndef FUSE_VERSION
-#	define FUSE_VERSION	(FUSE_MAJOR_VERSION * 10 + FUSE_MINOR_VERSION)
-#endif
+OBJECT_DECLARE_CLASS(TestFS,VFS);
 
-// "-o readdir_ino" option available ?
-#if FUSE_VERSION >= 23
-#	define HAVE_FUSE_O_READDIR_INO	1
-#endif
+OBJECT_DEFINE_STRUCT(TestFS, /**/ );
 
-// "-o nonempty" option available ?
-#if FUSE_VERSION >= 24
-#	define HAVE_FUSE_O_NONEMPTY	1
-#endif
-
-// per-file direct_io flag ?
-#if FUSE_VERSION >= 24
-#	define HAVE_FUSE_FILE_INFO_DIRECT_IO	1
-#endif
+OBJECT_DEFINE_METHODS(TestFS, /**/ );
 
 
 
-/*****************************************************************************
- * Global djmount settings
- *****************************************************************************/
-
-static const DJFS_Flags DEFAULT_DJFS_FLAGS = DJFS_SHOW_METADATA
-#if DEBUG
-	| DJFS_SHOW_DEBUG
-#endif
-	;
-
-
-static VFS* g_djfs = NULL;
-
-
-
-/*****************************************************************************
- * Charset conversions (display <-> UTF-8) for filesystem
- *****************************************************************************/
-
-typedef struct {
-	fuse_dirh_t    h;
-	fuse_dirfil_t  filler;
-} my_dir_handle;
-
-static int filler_from_utf8 (fuse_dirh_t h, const char *name, 
-			     int type, ino_t ino)
+static VFS_BrowseStatus
+BrowseSubTest (const VFS* const vfs, const char* const path, 
+	       const VFS_Query* query, void* tmp_ctx)
 {
-	// Convert filename to display charset
-	char buffer [NAME_MAX + 1];
-	char* display_name = Charset_ConvertString (CHARSET_FROM_UTF8, 
-						    name, 
-						    buffer, sizeof (buffer),
-						    NULL);
-	my_dir_handle* const my_h = (my_dir_handle*) h;
-	int rc = my_h->filler (my_h->h, display_name, type, ino);
-	if (display_name != buffer && display_name != name)
-		talloc_free (display_name);
-	return rc;
+	BROWSE_BEGIN(path, query) {
+		
+		DIR_BEGIN("test") {
+			DIR_BEGIN("a1") {
+			} DIR_END;
+			
+			DIR_BEGIN("a2") {
+				DIR_BEGIN("b1") {
+					FILE_BEGIN("f1") {
+						const char* str = "essais";
+						FILE_SET_SIZE (strlen (str));
+						FILE_SET_STRING (str, false);
+					} FILE_END;
+				} DIR_END;
+				
+				DIR_BEGIN("b2") {
+					DIR_BEGIN ("c1") {
+					} DIR_END;
+				} DIR_END;
+			} DIR_END;
+			
+			DIR_BEGIN("a3") {
+				DIR_BEGIN("b3") {
+				} DIR_END;
+				
+				int i;
+				for (i = 4; i < 10; i++) {
+					char buffer [10];
+					sprintf (buffer, "b%d", i);
+					DIR_BEGIN(buffer) {
+						DIR_BEGIN ("toto") {
+						} DIR_END;
+						
+					} DIR_END;
+				}
+			}DIR_END;
+		} DIR_END;
+	} BROWSE_END;
+	return BROWSE_RESULT;
 }
+
+static VFS_BrowseStatus
+BrowseTest (const VFS* const vfs, const char* const path, 
+	    const VFS_Query* query, void* tmp_ctx)
+{
+	BROWSE_BEGIN(path, query) {
+		DIR_BEGIN("atest") {
+#if 0
+			DIR_BEGIN("test") {
+				FILE_BEGIN("begin") {
+				} FILE_END;
+			} DIR_END;
+#endif
+			BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR,
+						   query, tmp_ctx));
+#if 0
+			DIR_BEGIN("test") {
+				FILE_BEGIN("end") {
+				} FILE_END;
+			} DIR_END;
+#endif
+		} DIR_END;
+
+		BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR, query, tmp_ctx));
+	    
+		DIR_BEGIN("zetest") {
+			BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR, 
+						   query, tmp_ctx));
+		} DIR_END;
+	} BROWSE_END;
+
+	VFS_BrowseStatus const s = BROWSE_RESULT;
+	printf ("BROWSE_RESULT : %d (%s) : path='%s', stops at='%s'\n", 
+		s.rc, strerror (-s.rc), path, s.ptr);
+	
+	return s;
+}
+
+
+static void
+init_testfs_class (TestFS_Class* const isa)
+{
+  CLASS_SUPER_CAST(isa)->browse_root = BrowseTest;
+}
+
+OBJECT_INIT_CLASS(TestFS, VFS, init_testfs_class);
+
+TestFS*
+TestFS_Create (void* talloc_context)
+{
+	OBJECT_SUPER_CONSTRUCT (TestFS, VFS_Create, talloc_context, true);
+	return self;
+}
+
+
+static VFS* g_vfs = NULL;
+
 
 static int
 Browse (const char* path, 
@@ -132,25 +174,10 @@ Browse (const char* path,
 		.talloc_context = talloc_context,
 		.file = file
 	};
-	int rc = -EIO;
-	if (! Charset_IsConverting()) {
-		rc = VFS_Browse (g_djfs, path, &q);
-	} else {
-		// Convert filename from display charset 
-		char buffer [PATH_MAX];
-		char* const utf_path = Charset_ConvertString 
-			(CHARSET_TO_UTF8, path, buffer, sizeof (buffer), NULL);
-		my_dir_handle my_h = { .h = h, .filler = filler };
-		if (filler) {
-			q.h = (void*) &my_h;
-			q.filler = filler_from_utf8;
-		}
-		rc = VFS_Browse (g_djfs, utf_path, &q);
-		if (utf_path != buffer && utf_path != path)
-			talloc_free (utf_path);
-	}
+	int rc = VFS_Browse (g_vfs, path, &q);
 	return rc;
 }
+
 
 /*****************************************************************************
  * FUSE Operations
@@ -398,20 +425,6 @@ fs_open (const char* path, struct fuse_file_info* fi)
 	}
 	fi->fh = (intptr_t) file;
 
-#if HAVE_FUSE_FILE_INFO_DIRECT_IO	
-	/*
-	 * Whenever possible, do not set the 'direct_io' flag on files : 
-	 * this allow the 'mmap' operation to succeed on these files.
-	 * However, in some case, we have to set the 'direct_io' :
-	 * a) if the size of the file if not known in advance 
-	 *    (e.g. if the DIDL-Lite attribute <res@size> is not set)
-	 * b) or if the buffer does not guaranty to return exactly the
-	 *    number of bytes requested in a read (except on EOF or error)
-	 */
-	fi->direct_io = ( FileBuffer_GetSize (file) < 0 ||
-			  ! FileBuffer_HasExactRead (file) );
-#endif
-
 	return rc;
 }
 
@@ -574,69 +587,17 @@ stdout_print (Log_Level level, const char* msg)
 		break;
 	}
 	
-	// Convert message to display charset, and print
-	Charset_PrintString (CHARSET_FROM_UTF8, msg, stdout);
+	// print raw message
+	puts (msg);
+	
 	Log_EndColor (level, stdout);
-	printf ("\n");
 }
+
 
 
 /*****************************************************************************
- * Usage
+ * Main
  *****************************************************************************/
-
-#if UPNP_HAVE_DEBUG
-#    define DEBUG_DEFAULT_LEVELS	"upnpall,debug,fuse,leak"
-#else
-#    define DEBUG_DEFAULT_LEVELS	"debug,fuse,leak"
-#endif
-
-static const char* const FUSE_ALLOWED_OPTIONS = \
-	"    default_permissions    enable permission checking by kernel\n"
-	"    allow_other            allow access to other users\n"
-	"    allow_root             allow access to root\n"
-	"    kernel_cache           cache files in kernel\n"
-#if HAVE_FUSE_O_NONEMPTY
-	"    nonempty               allow mounts over non-empty file/dir\n"
-#endif
-	"    fsname=NAME            set filesystem name in mtab\n";
-
-static void
-usage (FILE* stream, const char* progname)
-{
-  fprintf 
-    (stdout,
-     "usage: %s [options] mountpoint\n"
-     "\n"
-     "Options:\n"
-     "    -h or --help           print this help, then exit\n"
-     "    --version              print version number, then exit\n"
-     "    -o [options]           mount options (see below)\n"
-     "    -d[levels]             enable debug output (implies -f)\n"
-     "    -f                     foreground operation (default: daemonized)\n"
-     "\n"
-     "Mount options (one or more comma separated options) :\n"
-#if HAVE_CHARSET
-     "    iocharset=<charset>    filenames encoding (default: environment)\n"
-#endif
-     "    playlists              use playlists for AV files, instead of plain files\n"
-     "\n"
-     "See FUSE documentation for the following mount options:\n"
-     "%s\n"
-     "Debug levels are one or more comma separated words :\n"
-#if UPNP_HAVE_DEBUG
-     "    upnperr, upnpall : increasing level of UPnP traces\n"
-#endif
-     "    error, warn, info, debug : increasing level of djmount traces\n"
-     "    fuse : activates FUSE traces\n"
-     "    leak, leakfull : enable talloc leak reports at exit\n"
-     "'-d' alone defaults to '" DEBUG_DEFAULT_LEVELS "' i.e. all traces.\n"
-     "\n"
-     "Report bugs to <" PACKAGE_BUGREPORT ">.\n",
-     progname, FUSE_ALLOWED_OPTIONS);
-  exit (EXIT_SUCCESS); // ---------->
-}
-
 
 static void
 bad_usage (const char* progname, ...)
@@ -647,42 +608,15 @@ bad_usage (const char* progname, ...)
 	const char* const format = va_arg (ap, const char*);
 	vfprintf (stderr, format, ap);
 	va_end (ap);
-	fprintf (stderr, "\nTry '%s --help' for more information.\n",
-		 progname);
 	exit (EXIT_FAILURE); // ---------->
 }
-
-
-static void
-version (FILE* stream, const char* progname)
-{
-	fprintf (stream, 
-		 "%s (" PACKAGE ") " VERSION "\n", progname);
-	fprintf (stream, "Copyright (C) 2005 Rémi Turboult\n");
-	fprintf (stream, "Compiled against: ");
-	fprintf (stream, "FUSE %d.%d", FUSE_MAJOR_VERSION, 
-		 FUSE_MINOR_VERSION);
-#ifdef UPNP_VERSION_STRING
-	fprintf (stream, ", libupnp %s", UPNP_VERSION_STRING);
-#endif
-	fputs ("\n\
-This is free software. You may redistribute copies of it under the terms of\n\
-the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n\
-There is NO WARRANTY, to the extent permitted by law.\n\
-\n", stream);
-	exit (EXIT_SUCCESS); // ---------->
-}
-
-
-/*****************************************************************************
- * Main
- *****************************************************************************/
 
 int 
 main (int argc, char *argv[])
 {
 	int rc;
-	bool background = true;
+
+	talloc_enable_leak_report();
 
 	// Create a working context for temporary strings
 	void* const tmp_ctx = talloc_autofree_context();
@@ -693,16 +627,12 @@ main (int argc, char *argv[])
 		exit (rc); // ---------->
 	}  
 	Log_Colorize (true);
-#if UPNP_HAVE_DEBUG
-	SetLogFileNames ("/dev/null", "/dev/null");
-#endif
+	Log_SetMaxLevel (LOG_DEBUG);
 	
 	/*
 	 * Handle options
 	 */
-	char* charset = NULL;
-	DJFS_Flags djfs_flags = DEFAULT_DJFS_FLAGS;
-
+	
 	char* fuse_argv[32] = { argv[0] };
 	int fuse_argc = 1;
 	
@@ -715,16 +645,7 @@ main (int argc, char *argv[])
 	int opt = 1;
 	char* o;
 	while ((o = argv[opt++])) {
-		if (strcmp (o, "-h") == 0 || strcmp (o, "--help") == 0) {
-			usage (stdout, argv[0]); // ---------->
-			
-		} else if (strcmp (o, "--version") == 0) {
-			version (stdout, argv[0]); // ---------->
-			
-		} else if (strcmp(o, "-f") == 0) {
-			background = false;
-
-		} else if (*o != '-') { 
+		if (*o != '-') { 
 			// mount point
 			FUSE_ARG (o);
 			
@@ -737,140 +658,41 @@ main (int argc, char *argv[])
 			for (s = strtok_r (options_copy, ",", &tokptr); 
 			     s != NULL; 
 			     s = strtok_r (NULL, ",", &tokptr)) {
-				if (strncmp (s,"playlists", 5) == 0) {
-					djfs_flags |= DJFS_USE_PLAYLISTS;
-#if HAVE_CHARSET
-				} else if (strncmp(s, "iocharset=", 10) == 0) {
-					charset = talloc_strdup(tmp_ctx, s+10);
-#endif
-				} else if (strncmp(s, "fsname=", 7) == 0 ||
-					   strstr (FUSE_ALLOWED_OPTIONS, s)) {
-					FUSE_ARG ("-o");
-					FUSE_ARG (talloc_strdup (tmp_ctx, s));
-				} else {
-					bad_usage (argv[0], 
-						   "unknown mount option '%s'",
-						   s); // ---------->
-				}
+				FUSE_ARG ("-o");
+				FUSE_ARG (talloc_strdup (tmp_ctx, s));
 			}
 			free (options_copy);
 			Log_Printf (LOG_INFO, "  Mount options = %s", options);
-			
-		} else if (strncmp (o, "-d", 2) == 0) {
-			background = false;
-
-			// Parse debug levels
-			const char* const levels = 
-				(o[2] ? o+2 : DEBUG_DEFAULT_LEVELS);
-			char* levels_copy = strdup (levels);
-			char* tokptr = 0;
-			char* s;
-			for (s = strtok_r (levels_copy, ",", &tokptr); 
-			     s != NULL; 
-			     s = strtok_r (NULL, ",", &tokptr)) {
-				if (strcmp (s, "leak") == 0) {
-					talloc_enable_leak_report();
-				} else if (strcmp (s, "leakfull") == 0) {
-					talloc_enable_leak_report_full();
-				} else if (strcmp (s, "fuse") == 0) {
-					FUSE_ARG ("-d");
-				} else if (strcmp (s, "debug") == 0) {
-					Log_SetMaxLevel (LOG_DEBUG);
-				} else if (strcmp (s, "info") == 0) {
-					Log_SetMaxLevel (LOG_INFO);
-				} else if (strncmp (s, "warn", 4) == 0) {
-					Log_SetMaxLevel (LOG_WARNING);
-				} else if (strncmp (s, "error", 3) == 0) {
-					Log_SetMaxLevel (LOG_ERROR);
-#if UPNP_HAVE_DEBUG
-				} else if (strcmp (s, "upnperr") == 0) {
-					SetLogFileNames ("/dev/stdout", 
-							 "/dev/null");
-				} else if (strcmp (s, "upnpall") == 0) {
-					SetLogFileNames ("/dev/stdout", 
-							 "/dev/stdout");
-#endif
-				} else {
-					bad_usage (argv[0],
-						   "unknown debug level '%s'",
-						   s); // ---------->
-				}
-			}
-			free (levels_copy);
-			Log_Printf (LOG_DEBUG, "  Debug options = %s", levels);
 			
 		} else {
 			bad_usage (argv[0], "unrecognized option '%s'", 
 				   o); // ---------->
 		}
 	}
-	
-	// Force Read-only (write operations not implemented yet)
-	FUSE_ARG ("-r"); 
 
-#if HAVE_FUSE_O_READDIR_INO
-	// try to fill in d_ino in readdir
-	FUSE_ARG ("-o");
-	FUSE_ARG ("readdir_ino");
-#endif
-#if !HAVE_FUSE_FILE_INFO_DIRECT_IO	
-	// Set global "direct_io" option, if not available per open file,
-	// because we are not sure that every open file can be opened 
-	// without this mode : see comment in fs_open() function.
-	FUSE_ARG ("-o");
-	FUSE_ARG ("direct_io");
-#endif
-
-	/*
-	 * Set charset encoding
-	 */
-	rc = Charset_Initialize (charset);
-	if (rc) {
-		Log_Printf (LOG_ERROR, "Error initialising charset='%s'",
-			    NN(charset));
-	}
 
 	/* 
 	 * Create virtual file system
 	 */
-	g_djfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, djfs_flags));
-	if (g_djfs == NULL) {
+	g_vfs = TestFS_ToVFS (TestFS_Create (tmp_ctx));
+	if (g_vfs == NULL) {
 		Log_Printf (LOG_ERROR, "Failed to create virtual file system");
 		exit (EXIT_FAILURE); // ---------->
 	}
 
+
 	/*
-	 * Daemonize process if necessary (must be done before UPnP
-	 * initialisation, so not relying on fuse_main function).
-	 */
-	FUSE_ARG ("-f");
-	if (background) {
-		// Avoid chdir, else a relative mountpoint given as 
-		// argument to FUSE won't work.
-		//  TBD FIXME  close stdout/stderr : how do we see errors 
-		//  TBD FIXME  if UPnP or FUSE fails in background mode ?
-	        rc = daemon (/* nochdir => */ 1, /* noclose => */ 0);
-		if (rc == -1) {
-			int const err = errno;
-			Log_Printf (LOG_ERROR, 
-				    "Failed to daemonize program : %s",
-				    strerror (err));
-			exit (err); // ---------->
-		}
-	}
-	
-	/*
-	 * Initialise UPnP Control point and starts FUSE file system
+	 * Initialise FUSE
 	 */
 	
-	rc = DeviceList_Start (CONTENT_DIR_SERVICE_TYPE, NULL);
-	if (rc != UPNP_E_SUCCESS) {
-		Log_Printf (LOG_ERROR, 
-			    "Error starting UPnP Control Point : %d (%s)",
-			    rc, UpnpGetErrorMessage (rc));
-		exit (rc); // ---------->
-	}
-	
+	// Force Read-only (write operations not implemented yet)
+	FUSE_ARG ("-r"); 
+
+#if FUSE_VERSION >= 23
+	// try to fill in d_ino in readdir
+	FUSE_ARG ("-o");
+	FUSE_ARG ("readdir_ino");
+#endif
 
 	fuse_argv[fuse_argc] = NULL; // End FUSE arguments list
 	rc = fuse_main (fuse_argc, fuse_argv, &fs_oper);
@@ -879,9 +701,7 @@ main (int argc, char *argv[])
 	}
 	
 	Log_Printf (LOG_DEBUG, "Shutting down ...");
-	DeviceList_Stop();
 	
-	(void) Charset_Finish();
 	Log_Finish();
 
 	return rc; 

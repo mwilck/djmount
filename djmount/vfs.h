@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
- * djfs : file system implementation for djmount.
+ * vfs : virtual file system implementation for djmount.
  * This file is part of djmount.
  *
  * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
@@ -23,19 +23,17 @@
 
 
 
-#ifndef DJFS_H_INCLUDED
-#define DJFS_H_INCLUDED 1
+#ifndef VFS_H_INCLUDED
+#define VFS_H_INCLUDED 1
 
+#include "object.h"
 #include <fuse.h>
-#include "vfs.h"
-
+#include "file_buffer.h"
 
 
 /******************************************************************************
- * @var DJFS
- *      This opaque type encapsulates access to a djfs file system.
- *      This type is derived from the "VFS" type : all VFS_* methods
- *      can be used on DJFS.
+ * @var VFS
+ *      This opaque type encapsulates access to a virtual file system.
  *
  *      NOTE THAT THE FUNCTION API IS NOT THREAD SAFE. Callers should
  *      take care of the necessary locks if an object is shared between
@@ -43,54 +41,71 @@
  *
  *****************************************************************************/
 
-OBJECT_DECLARE_CLASS(DJFS,VFS);
+OBJECT_DECLARE_CLASS(VFS, Object);
 
 
 
 /*****************************************************************************
- * Flags for DJFS_Create
+ * @typedef	VFS_Query
+ * @brief	query parameters for browse operations on the file system.
+ *
+ * 	This query groups all parameters for the 'browse' operations : 
+ *	"stat", "get_dir" and "read".
+ *	The corresponding fields must be set to non-NULL to use a given 
+ *	operation. It is possible to use several operation simultaneously 
+ *	e.g. stat + read.
+ *
  *****************************************************************************/
-typedef enum _DJFS_Flags {
+
+typedef struct _VFS_Query {
+	/*
+	 * STAT 
+	 */
+	struct stat* stbuf;
 	
-	DJFS_SHOW_DEBUG    = 01, // show debug directory
-	DJFS_USE_PLAYLISTS = 02, // use playlists for AV files (default: files)
-	DJFS_SHOW_METADATA = 04, // show XML files containing DIDL metadata
-	
-} DJFS_Flags;
+	/* 
+	 * GETDIR 
+	 */
+	void* h;
+	fuse_dirfil_t filler;
+
+	/*
+	 * READ
+	 */
+	void* talloc_context;
+	FileBuffer** file;
+
+} VFS_Query;
+
 
 
 /*****************************************************************************
- * @fn 		DJFS_Create
- * @brief	create a djfs file system object.
+ * @fn 		VFS_Create
+ * @brief	create a virtual file system object.
  *
  *****************************************************************************/
-DJFS*
-DJFS_Create (void* talloc_context, DJFS_Flags flags);
-
+VFS*
+VFS_Create (void* talloc_context, bool show_debug_dir);
 
 
 /*****************************************************************************
- * @fn		_DJFS_BrowseCDS
- * @brief	browse the ContentDirectory service associated to a UPnP device
+ * @fn 		VFS_Browse
+ * @brief	browse the virtual file system.
  *
- *	path must be an absolute, canonical, path.
- *	DIDL-Lite containers titles are interpreted as directories names.
- *	It is left to the caller to interpret DIDL-Lite items / file names
- *	so this function returns when the current path part matches an item,
- *	or does not match anything.
+ * 	The 'browse' function allows to describe the filesystem structure
+ *      into only one place, and groups the "stat", "get_dir" and "read"
+ *	FUSE operations.
  *
- * 	Result should be freed using "talloc_free" when finished.
- *
- *	Note: this function is used internaly by "djfs" ; it is exported 
- *	for testing purposes only.
+ * @param self		the VFS object
+ * @param path		the path to browse
+ * @param query		query parameters
+ * @return 		0 if success, or -errno if error.
  *
  *****************************************************************************/
-const struct _ContentDir_BrowseResult*
-_DJFS_BrowseCDS (void* result_context,
-		 const char* deviceName, const char* path,
-		 size_t* nb_char_matched);
+int
+VFS_Browse (const VFS* self, const char* path, const VFS_Query* query);
 
 
 
-#endif // DJFS_H_INCLUDED
+#endif // VFS_H_INCLUDED
 
