@@ -112,6 +112,22 @@ _String_ToInteger (const char* s, intmax_t error_value);
 	} while (0)					
 
 
+
+/*****************************************************************************
+ * @fn		String_ToBoolean
+ * @brief  	Convert a string to a boolean.
+ *		Accepted values are per UPnP Device Architecture 1.0 
+ *		(1,0,true,false,yes,no). Whitespaces and case are ignored.
+ *		Set to default_value if string null, empty or incorrect.
+ *
+ * @param s		the string
+ * @param default_value	value to set in case of null or incorrect string.
+ *****************************************************************************/
+
+bool
+String_ToBoolean (const char* s, bool default_value);
+
+
 /*****************************************************************************
  * @fn 		String_Hash
  * @brief	Hash a string

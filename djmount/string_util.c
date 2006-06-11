@@ -96,6 +96,33 @@ _String_ToInteger (const char* s, intmax_t error_value)
 
 
 /*****************************************************************************
+ * String_ToBoolean
+ *****************************************************************************/
+bool
+String_ToBoolean (const char* s, bool default_value)
+{
+	bool ret = default_value;
+	if (s && *s) {
+		while (isspace (*s))
+			s++;
+		switch (tolower (*s)) {
+		case '1':
+		case 't':	
+		case 'y':
+			ret = true;
+			break;
+		case '0':	
+		case 'f':
+		case 'n':
+			ret = false;
+			break;
+		}
+	}
+	return ret;
+}
+
+
+/*****************************************************************************
  * String_Hash
  * Refer to :
  *	http://www.cs.yorku.ca/~oz/hash.html
