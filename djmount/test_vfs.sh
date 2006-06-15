@@ -33,7 +33,7 @@ trap "cd / ; fusermount -u $mntpoint 2> /dev/null ; rmdir $mntpoint" EXIT HUP IN
 
 cd $mntpoint || exit 1
 
-diff - <(find . -print) <<-EOF || exit 1 
+diff -u - <(find . -print) <<-EOF || exit 1 
 	.
 	./atest
 	./atest/test
@@ -57,6 +57,7 @@ diff - <(find . -print) <<-EOF || exit 1
 	./atest/test/a3/b8/toto
 	./atest/test/a3/b9
 	./atest/test/a3/b9/toto
+	./atest/link_to_test
 	./test
 	./test/a1
 	./test/a2
@@ -78,6 +79,8 @@ diff - <(find . -print) <<-EOF || exit 1
 	./test/a3/b8/toto
 	./test/a3/b9
 	./test/a3/b9/toto
+	./void_file
+	./broken_link
 	./zetest
 	./zetest/test
 	./zetest/test/a1
@@ -100,6 +103,7 @@ diff - <(find . -print) <<-EOF || exit 1
 	./zetest/test/a3/b8/toto
 	./zetest/test/a3/b9
 	./zetest/test/a3/b9/toto
+	./zetest/link_to_test
 	./.debug
 	./.debug/talloc_total
 	./.debug/talloc_report
@@ -110,15 +114,18 @@ EOF
 echo -n "essais" | diff - ./atest/test/a2/b1/f1 || exit 1
 
 
-diff - <(/bin/ls -lR) <<-EOF || exit 1 
+diff -u - <(/bin/ls -lR) <<-EOF || exit 1 
 .:
 total 2
 dr-xr-xr-x  3 root root 512 jan  1  2000 atest
+lr--r--r--  1 root root  11 jan  1  2000 broken_link -> broken/link
 dr-xr-xr-x  5 root root 512 jan  1  2000 test
+-r--r--r--  1 root root   0 jan  1  2000 void_file
 dr-xr-xr-x  3 root root 512 jan  1  2000 zetest
 
 ./atest:
 total 1
+lr--r--r--  1 root root   4 jan  1  2000 link_to_test -> test
 dr-xr-xr-x  5 root root 512 jan  1  2000 test
 
 ./atest/test:
@@ -283,6 +290,7 @@ total 0
 
 ./zetest:
 total 1
+lr--r--r--  1 root root   7 jan  1  2000 link_to_test -> ../test
 dr-xr-xr-x  5 root root 512 jan  1  2000 test
 
 ./zetest/test:

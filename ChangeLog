@@ -1,6 +1,6 @@
 2006-06-15  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* djmount/: improve VFS API
+	* djmount/vfs: add SYMLINK capability to VFS + improve API
 
 2006-06-11  Rémi Turboult  <r3mi@users.sourceforge.net>
 

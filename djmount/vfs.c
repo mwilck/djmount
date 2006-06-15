@@ -79,11 +79,15 @@ vfs_begin_dir (register const VFS_Query* const q)
 		q->stbuf->st_nlink = 2;			
 		q->stbuf->st_size  = 512;
 	};		
-	
 	if (q->filler) {				
 		rc = q->filler (q->h, ".", DT_DIR, 0);	
 		if (rc == 0)				
 			rc = q->filler (q->h, "..", DT_DIR, 0);	
+	}
+	if (q->buffer) {
+		Log_Printf (LOG_DEBUG, "error, readlink on directory : '%s'", 
+			    q->path);
+		rc = -EINVAL;
 	}
 	return rc;
 }
@@ -93,19 +97,39 @@ vfs_begin_dir (register const VFS_Query* const q)
  * vfs_begin_file
  *****************************************************************************/
 
-inline void
-vfs_begin_file (register const VFS_Query* const q)
+inline int
+vfs_begin_file (register const VFS_Query* const q, int const d_type)
 {
-	Log_Printf (LOG_DEBUG, "FILE_BEGIN '%s'", q->path);    
+	int rc = 0;
+
+	Log_Printf (LOG_DEBUG, "%s_BEGIN '%s'", 
+		    (d_type == DT_LNK ? "SYMLINK" : "FILE"), q->path);    
 	
 	if (q->stbuf) {	
-		q->stbuf->st_mode  = S_IFREG | 0444;     
+		q->stbuf->st_mode  = DTTOIF(d_type) | 0444;     
 		q->stbuf->st_nlink = 1;
 		q->stbuf->st_size  = DEFAULT_SIZE; // to be computed latter
 	}
-
-	if (q->file) 
+	if (q->filler) {
+		Log_Printf (LOG_DEBUG, "error, listing not a directory : '%s'",
+			    q->path);
+		rc = -ENOTDIR;
+	}
+	if (q->file) {
 		*(q->file) = NULL;
+	}
+	if (q->buffer) {
+		if (d_type == DT_LNK) {
+			if (q->bufsiz > 0) 
+				*(q->buffer) = NUL;
+		} else {
+			Log_Printf (LOG_DEBUG, 
+				    "error, readlink on regular file : '%s'", 
+				    q->path);
+			rc = -EINVAL;
+		}
+	}
+	return rc;
 }
 
 

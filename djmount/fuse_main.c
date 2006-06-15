@@ -141,6 +141,18 @@ Browse (const VFS_Query* query)
 		rc = VFS_Browse (g_djfs, &utfq);
 		if (utf_path != buffer && utf_path != query->path)
 			talloc_free (utf_path);
+		// Convert symlink content (if any) to display charset
+		if (query->buffer) {
+			char* const display_name = Charset_ConvertString 
+				(CHARSET_FROM_UTF8, query->buffer,
+				 buffer, sizeof (buffer), NULL);
+			if (display_name && display_name != query->buffer) 
+				strncpy (query->buffer, display_name,
+					 query->bufsiz);
+			if (display_name != buffer && 
+			    display_name != query->buffer)
+				talloc_free (display_name);
+		}
 	}
 	return rc;
 }
@@ -159,20 +171,13 @@ fs_getattr (const char* path, struct stat* stbuf)
 	return rc;
 }
 
-#if 1
-#  define fs_readlink	NULL
-#else
-static int fs_readlink (const char *path, char *buf, size_t size)
+static int 
+fs_readlink (const char *path, char *buf, size_t size)
 {
-  int rc;
-      
-  // TBD not implemented yet
-  rc = -EIO;
-
-  return rc;
+	VFS_Query const q = { .path = path, .buffer = buf, .bufsiz = size };
+	int rc = Browse (&q);
+	return rc;
 }
-#endif
-
 
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)

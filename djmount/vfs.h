@@ -50,7 +50,7 @@ OBJECT_DECLARE_CLASS(VFS, Object);
  * @brief	query parameters for browse operations on the file system.
  *
  * 	This query groups all parameters for the 'browse' operations : 
- *	"stat", "get_dir" and "read".
+ *	"stat", "get_dir", "read" and "readlink".
  *	The corresponding fields must be set to non-NULL to use a given 
  *	operation. It is possible to use several operation simultaneously 
  *	e.g. stat + read.
@@ -80,6 +80,12 @@ typedef struct _VFS_Query {
 	 */
 	void* talloc_context;
 	FileBuffer** file;
+	
+	/*
+	 * READLINK
+	 */
+	char* buffer;
+	size_t bufsiz;
 
 } VFS_Query;
 
@@ -99,8 +105,7 @@ VFS_Create (void* talloc_context, bool show_debug_dir);
  * @brief	browse the virtual file system.
  *
  * 	The 'browse' function allows to describe the filesystem structure
- *      into only one place, and groups the "stat", "get_dir" and "read"
- *	FUSE operations.
+ *      into only one place, and groups the FUSE operations.
  *
  * @param self		the VFS object
  * @param query		query parameters

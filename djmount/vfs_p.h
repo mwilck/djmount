@@ -94,8 +94,8 @@ vfs_match_start_of_path (const char* path, const char* name);
 extern int
 vfs_begin_dir (register const VFS_Query* const q);
 
-extern void
-vfs_begin_file (register const VFS_Query* const q);
+extern int
+vfs_begin_file (register const VFS_Query* const q, int const d_type);
 
 static inline int
 vfs_add_dir_entry (const char* const name, int const d_type,
@@ -168,16 +168,21 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 		} if (*_s.ptr == '\0') goto cleanup;			\
 	}
 	
-#define FILE_BEGIN(X)							\
+
+#define _FILE_BEGIN(X,D_TYPE)						\
 	if (*_s.ptr == '\0') {						\
-		_s.rc = vfs_add_dir_entry (X, DT_REG, _q);		\
+		_s.rc = vfs_add_dir_entry (X, D_TYPE, _q);		\
 	} else {							\
 		const char* const _p = vfs_match_start_of_path (_s.ptr, X); \
 		if (_p) {						\
 			_s.ptr = _p;					\
-			if (*_s.ptr != '\0' || _q->filler)		\
-				BROWSE_ABORT(-ENOTDIR) ;		\
-			vfs_begin_file (_q);
+			if (*_s.ptr != '\0')				\
+				_s.rc = -ENOTDIR;			\
+			else						\
+				_s.rc = vfs_begin_file (_q, D_TYPE);	\
+			if (_s.rc) goto cleanup;
+
+#define FILE_BEGIN(X)	_FILE_BEGIN(X, DT_REG)
 
 #define FILE_SET_SIZE(SIZE)						\
 	if (_q->stbuf) {						\
@@ -206,9 +211,27 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 					 _q->path);			\
 	}
 
-#define FILE_END					\
+#define _FILE_END					\
 		} if (*_s.ptr == '\0') goto cleanup;	\
 	}
+
+#define FILE_END	_FILE_END
+
+
+#define SYMLINK_BEGIN(X)	_FILE_BEGIN(X, DT_LNK)
+
+#define SYMLINK_SET_PATH(PATH)						\
+	{								\
+		const char* const _p = PATH;				\
+		if (_q->buffer && _p) {					\
+			strncpy (_q->buffer, _p, _q->bufsiz);		\
+		}							\
+		if (_q->stbuf) {					\
+			_q->stbuf->st_size = _p ? strlen (_p) : 0;	\
+		}							\
+	}
+						\
+#define SYMLINK_END		_FILE_END
 
 
 

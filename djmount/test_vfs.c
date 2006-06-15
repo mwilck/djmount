@@ -110,27 +110,28 @@ BrowseTest (VFS* const vfs, const char* const path,
 {
 	BROWSE_BEGIN(path, query) {
 		DIR_BEGIN("atest") {
-#if 0
-			DIR_BEGIN("test") {
-				FILE_BEGIN("begin") {
-				} FILE_END;
-			} DIR_END;
-#endif
 			BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR,
 						   query, tmp_ctx));
-#if 0
-			DIR_BEGIN("test") {
-				FILE_BEGIN("end") {
-				} FILE_END;
-			} DIR_END;
-#endif
+			SYMLINK_BEGIN("link_to_test") {
+				SYMLINK_SET_PATH("test");
+			} SYMLINK_END;
 		} DIR_END;
 
 		BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR, query, tmp_ctx));
-	    
+
+		FILE_BEGIN("void_file") {
+		} FILE_END;
+		
+		SYMLINK_BEGIN("broken_link") {
+			SYMLINK_SET_PATH("broken/link");
+		} SYMLINK_END;
+		
 		DIR_BEGIN("zetest") {
 			BROWSE_SUB (BrowseSubTest (vfs, BROWSE_PTR, 
 						   query, tmp_ctx));
+			SYMLINK_BEGIN("link_to_test") {
+				SYMLINK_SET_PATH("../test");
+			} SYMLINK_END;
 		} DIR_END;
 	} BROWSE_END;
 
@@ -177,20 +178,13 @@ fs_getattr (const char* path, struct stat* stbuf)
 	return rc;
 }
 
-#if 1
-#  define fs_readlink	NULL
-#else
-static int fs_readlink (const char *path, char *buf, size_t size)
+static int 
+fs_readlink (const char* path, char* buf, size_t size)
 {
-  int rc;
-      
-  // TBD not implemented yet
-  rc = -EIO;
-
-  return rc;
+	VFS_Query const q = { .path = path, .buffer = buf, .bufsiz = size };
+	int rc = VFS_Browse (g_vfs, &q);
+	return rc;
 }
-#endif
-
 
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
