@@ -58,16 +58,22 @@ OBJECT_DECLARE_CLASS(VFS, Object);
  *****************************************************************************/
 
 typedef struct _VFS_Query {
+
+	/*
+	 * for all operation : the original path to browse
+	 */
+	const char* path; 
+
 	/*
 	 * STAT 
 	 */
-	struct stat* stbuf;
+	struct stat* stbuf; 
 	
 	/* 
 	 * GETDIR 
 	 */
-	void* h;
-	fuse_dirfil_t filler;
+	void* h; 
+	fuse_dirfil_t filler; 
 
 	/*
 	 * READ
@@ -97,13 +103,12 @@ VFS_Create (void* talloc_context, bool show_debug_dir);
  *	FUSE operations.
  *
  * @param self		the VFS object
- * @param path		the path to browse
  * @param query		query parameters
  * @return 		0 if success, or -errno if error.
  *
  *****************************************************************************/
 int
-VFS_Browse (const VFS* self, const char* path, const VFS_Query* query);
+VFS_Browse (VFS* self, const VFS_Query* query);
 
 
 

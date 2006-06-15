@@ -120,33 +120,26 @@ static int filler_from_utf8 (fuse_dirh_t h, const char *name,
 }
 
 static int
-Browse (const char* path, 
-	/* for STAT => */	struct stat* stbuf, 
-	/* for GETDIR => */	fuse_dirh_t h, fuse_dirfil_t filler, 
-	/* for READ => */	void* talloc_context, FileBuffer** file)
+Browse (const VFS_Query* query)
 {
-	VFS_Query q = { 
-		.stbuf = stbuf, 
-		.h = h,
-		.filler = filler,
-		.talloc_context = talloc_context,
-		.file = file
-	};
 	int rc = -EIO;
 	if (! Charset_IsConverting()) {
-		rc = VFS_Browse (g_djfs, path, &q);
+		rc = VFS_Browse (g_djfs, query);
 	} else {
+		VFS_Query utfq = *query;
 		// Convert filename from display charset 
 		char buffer [PATH_MAX];
 		char* const utf_path = Charset_ConvertString 
-			(CHARSET_TO_UTF8, path, buffer, sizeof (buffer), NULL);
-		my_dir_handle my_h = { .h = h, .filler = filler };
-		if (filler) {
-			q.h = (void*) &my_h;
-			q.filler = filler_from_utf8;
+			(CHARSET_TO_UTF8, query->path, buffer, sizeof (buffer),
+			 NULL);
+		utfq.path = utf_path;
+		my_dir_handle my_h = { .h = query->h, .filler = query->filler};
+		if (query->filler) {
+			utfq.h = (void*) &my_h;
+			utfq.filler = filler_from_utf8;
 		}
-		rc = VFS_Browse (g_djfs, utf_path, &q);
-		if (utf_path != buffer && utf_path != path)
+		rc = VFS_Browse (g_djfs, &utfq);
+		if (utf_path != buffer && utf_path != query->path)
 			talloc_free (utf_path);
 	}
 	return rc;
@@ -160,8 +153,8 @@ static int
 fs_getattr (const char* path, struct stat* stbuf)
 {
 	*stbuf = (struct stat) { .st_mode = 0 };
-	
-	int rc = Browse (path, stbuf, NULL, NULL, NULL, NULL);
+	const VFS_Query q = { .path = path, .stbuf = stbuf };
+	int rc = Browse (&q);
 	
 	return rc;
 }
@@ -184,7 +177,8 @@ static int fs_readlink (const char *path, char *buf, size_t size)
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
-	int rc = Browse (path, NULL, h, filler, NULL, NULL);
+	const VFS_Query q = { .path = path, .h = h, .filler = filler };
+	int rc = Browse (&q);
 	return rc;
 }  
 
@@ -391,7 +385,9 @@ fs_open (const char* path, struct fuse_file_info* fi)
 	
 	void* context = NULL; // TBD
 	FileBuffer* file = NULL;
-	int rc = Browse (path, NULL, NULL, NULL, context, &file);
+	const VFS_Query q = { .path = path, .talloc_context = context, 
+			      .file = &file };
+	int rc = Browse (&q);
 	if (rc) {
 		talloc_free (file);
 		file = NULL;

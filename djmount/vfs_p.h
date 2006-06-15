@@ -52,8 +52,8 @@ typedef struct _VFS_BrowseStatus {
     const char* ptr;
 } VFS_BrowseStatus;
 
-typedef VFS_BrowseStatus (*VFS_BrowseFunction) (const VFS* self,
-						const char* const path, 
+typedef VFS_BrowseStatus (*VFS_BrowseFunction) (VFS* self,
+						const char* const sub_path, 
 						const VFS_Query* query, 
 						void* tmp_context);
 
@@ -91,40 +91,11 @@ vfs_match_start_of_path (const char* path, const char* name);
  * Browse helpers
  *****************************************************************************/
 
-static inline int
-vfs_begin_dir (register const VFS_Query* const q)
-{
-	int rc = 0;
+extern int
+vfs_begin_dir (register const VFS_Query* const q);
 
-	if (q->stbuf) {
-		q->stbuf->st_mode  = S_IFDIR | 0555;
-		q->stbuf->st_nlink = 2;			
-		q->stbuf->st_size  = 512;
-	};		
-	
-	if (q->filler) {				
-		rc = q->filler (q->h, ".", DT_DIR, 0);	
-		if (rc == 0)				
-			rc = q->filler (q->h, "..", DT_DIR, 0);	
-	}
-	return rc;
-}
-
-static inline void
-vfs_begin_file (register const VFS_Query* const q)
-{
-	// for unknown file sizes e.g. streams
-	const off_t DEFAULT_SIZE = 0; 
-
-	if (q->stbuf) {	
-		q->stbuf->st_mode  = S_IFREG | 0444;     
-		q->stbuf->st_nlink = 1;
-		q->stbuf->st_size  = DEFAULT_SIZE; // to be computed latter
-	}
-
-	if (q->file) 
-		*(q->file) = NULL;
-}
+extern void
+vfs_begin_file (register const VFS_Query* const q);
 
 static inline int
 vfs_add_dir_entry (const char* const name, int const d_type,
@@ -153,9 +124,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 	register const VFS_Query* const _q = QUERY;	\
 	if (_q == NULL || _s.ptr == NULL) {		\
 		_s.rc = -EFAULT;			\
-	} else {					\
-		const char* const _savepath = _s.ptr;	\
-		(void) _savepath;
+	} else {
 
 #define BROWSE_PTR		_s.ptr
 
@@ -208,7 +177,6 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 			_s.ptr = _p;					\
 			if (*_s.ptr != '\0' || _q->filler)		\
 				BROWSE_ABORT(-ENOTDIR) ;		\
-			Log_Printf (LOG_DEBUG, "FILE_BEGIN '%s'", _savepath); \
 			vfs_begin_file (_q);
 
 #define FILE_SET_SIZE(SIZE)						\
@@ -225,7 +193,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 		if (*(_q->file))					\
 			talloc_set_name (*(_q->file),			\
 					 "file[%s] at " __location__,	\
-					 _savepath);			\
+					 _q->path);			\
 	}
 
 #define FILE_SET_URL(URL,SIZE)						\
@@ -235,7 +203,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 		if (*(_q->file))					\
 			talloc_set_name (*(_q->file),			\
 					 "file[%s] at " __location__,	\
-					 _savepath);			\
+					 _q->path);			\
 	}
 
 #define FILE_END					\

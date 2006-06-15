@@ -105,7 +105,7 @@ BrowseSubTest (const VFS* const vfs, const char* const path,
 }
 
 static VFS_BrowseStatus
-BrowseTest (const VFS* const vfs, const char* const path, 
+BrowseTest (VFS* const vfs, const char* const path, 
 	    const VFS_Query* query, void* tmp_ctx)
 {
 	BROWSE_BEGIN(path, query) {
@@ -171,8 +171,8 @@ fs_getattr (const char* path, struct stat* stbuf)
 {
 	*stbuf = (struct stat) { .st_mode = 0 };
 	
-	VFS_Query const q = { .stbuf = stbuf };
-	int rc = VFS_Browse (g_vfs, path, &q);
+	VFS_Query const q = { .path = path, .stbuf = stbuf };
+	int rc = VFS_Browse (g_vfs, &q);
 	
 	return rc;
 }
@@ -195,8 +195,8 @@ static int fs_readlink (const char *path, char *buf, size_t size)
 static int 
 fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
-	VFS_Query q = { .h = h, .filler = filler };
-	int rc = VFS_Browse (g_vfs, path, &q);
+	VFS_Query q = { .path = path, .h = h, .filler = filler };
+	int rc = VFS_Browse (g_vfs, &q);
 	return rc;
 }  
 
@@ -403,8 +403,9 @@ fs_open (const char* path, struct fuse_file_info* fi)
 	
 	void* context = NULL; // TBD
 	FileBuffer* file = NULL;
-	VFS_Query q = { .talloc_context = context, .file = &file };
-	int rc = VFS_Browse (g_vfs, path, &q);
+	VFS_Query q = { .path = path, .talloc_context = context, 
+			.file = &file };
+	int rc = VFS_Browse (g_vfs, &q);
 	if (rc) {
 		talloc_free (file);
 		file = NULL;

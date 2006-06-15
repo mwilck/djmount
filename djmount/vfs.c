@@ -40,11 +40,15 @@
 
 
 
+// for unknown file sizes e.g. streams
+static const off_t DEFAULT_SIZE = 0; 
+
 
 
 /*****************************************************************************
  * vfs_match_start_of_path
  *****************************************************************************/
+
 const char*
 vfs_match_start_of_path (const char* path, const char* name) 
 {
@@ -61,7 +65,48 @@ vfs_match_start_of_path (const char* path, const char* name)
 }
 
 
+/*****************************************************************************
+ * vfs_begin_dir
+ *****************************************************************************/
 
+inline int
+vfs_begin_dir (register const VFS_Query* const q)
+{
+	int rc = 0;
+
+	if (q->stbuf) {
+		q->stbuf->st_mode  = S_IFDIR | 0555;
+		q->stbuf->st_nlink = 2;			
+		q->stbuf->st_size  = 512;
+	};		
+	
+	if (q->filler) {				
+		rc = q->filler (q->h, ".", DT_DIR, 0);	
+		if (rc == 0)				
+			rc = q->filler (q->h, "..", DT_DIR, 0);	
+	}
+	return rc;
+}
+
+
+/*****************************************************************************
+ * vfs_begin_file
+ *****************************************************************************/
+
+inline void
+vfs_begin_file (register const VFS_Query* const q)
+{
+	Log_Printf (LOG_DEBUG, "FILE_BEGIN '%s'", q->path);    
+	
+	if (q->stbuf) {	
+		q->stbuf->st_mode  = S_IFREG | 0444;     
+		q->stbuf->st_nlink = 1;
+		q->stbuf->st_size  = DEFAULT_SIZE; // to be computed latter
+	}
+
+	if (q->file) 
+		*(q->file) = NULL;
+}
 
 
 /*****************************************************************************
@@ -69,10 +114,10 @@ vfs_match_start_of_path (const char* path, const char* name)
  *****************************************************************************/
 
 static VFS_BrowseStatus
-BrowseDebug (const VFS* const self, const char* const path,
+BrowseDebug (VFS* const self, const char* const sub_path,
 	     const VFS_Query* const query, void* const tmp_ctx)
 {
-	BROWSE_BEGIN(path, query) {
+	BROWSE_BEGIN(sub_path, query) {
 	   
 		FILE_BEGIN("talloc_total") {
 			const char* const str = talloc_asprintf 
@@ -122,17 +167,17 @@ BrowseDebug (const VFS* const self, const char* const path,
  *****************************************************************************/
 
 int
-VFS_Browse (const VFS* const self, const char* const path, const VFS_Query* q)
+VFS_Browse (VFS* const self, const VFS_Query* q)
 {
-	if (path == NULL || *path == NUL || q == NULL) 
+	if (q == NULL || q->path == NULL || *(q->path) == NUL)
 		return -EFAULT; // ---------->
 
-	Log_Printf (LOG_DEBUG, "fuse browse : looking for '%s' ...", path);
+	Log_Printf (LOG_DEBUG, "fuse browse : looking for '%s' ...", q->path);
 	
 	// Create a working context for temporary memory allocations
 	void* tmp_ctx = talloc_new (NULL);
 	
-	BROWSE_BEGIN(path, q) {
+	BROWSE_BEGIN(q->path, q) {
 		DIR_BEGIN("") {
 			VFS_BrowseFunction b = 
 				OBJECT_METHOD (self, browse_root);
@@ -160,7 +205,7 @@ VFS_Browse (const VFS* const self, const char* const path, const VFS_Query* q)
 	if (*s.ptr != NUL && s.rc == 0) {
 		Log_Printf (LOG_WARNING, 
 			    "VFW_Browse : inconsistent result, path='%s'",
-			    path);
+			    q->path);
 		s.rc = -ENOENT;
 	}
 
@@ -183,7 +228,7 @@ VFS_Browse (const VFS* const self, const char* const path, const VFS_Query* q)
 	if (s.rc) 
 		Log_Printf (LOG_DEBUG, "fuse browse => error %d (%s) : "
 			    "path='%s', stops at='%s'", 
-			    s.rc, strerror (-s.rc), path, s.ptr);
+			    s.rc, strerror (-s.rc), q->path, s.ptr);
 	
 	return s.rc;
 }

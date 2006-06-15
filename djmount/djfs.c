@@ -145,15 +145,15 @@ _DJFS_BrowseCDS (void* result_context,
  *****************************************************************************/
 
 static VFS_BrowseStatus
-BrowseRoot (const VFS* const vfs, const char* const path,
+BrowseRoot (VFS* const vfs, const char* const sub_path,
 	    const VFS_Query* const query, void* const tmp_ctx)
 {
-  const DJFS* const self = (DJFS*) vfs;
+  DJFS* const self = (DJFS*) vfs;
 
   // Keep a pointer to acquired lock, if any
   ithread_mutex_t* lock = NULL;
   
-  BROWSE_BEGIN(path, query) {
+  BROWSE_BEGIN(sub_path, query) {
     
     const StringArray* const names = DeviceList_GetDevicesNames (tmp_ctx);
     
