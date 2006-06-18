@@ -142,15 +142,15 @@ Browse (const VFS_Query* query)
 		if (utf_path != buffer && utf_path != query->path)
 			talloc_free (utf_path);
 		// Convert symlink content (if any) to display charset
-		if (query->buffer) {
+		if (query->lnk_buf) {
 			char* const display_name = Charset_ConvertString 
-				(CHARSET_FROM_UTF8, query->buffer,
+				(CHARSET_FROM_UTF8, query->lnk_buf,
 				 buffer, sizeof (buffer), NULL);
-			if (display_name && display_name != query->buffer) 
-				strncpy (query->buffer, display_name,
-					 query->bufsiz);
+			if (display_name && display_name != query->lnk_buf) 
+				strncpy (query->lnk_buf, display_name,
+					 query->lnk_bufsiz);
 			if (display_name != buffer && 
-			    display_name != query->buffer)
+			    display_name != query->lnk_buf)
 				talloc_free (display_name);
 		}
 	}
@@ -174,7 +174,8 @@ fs_getattr (const char* path, struct stat* stbuf)
 static int 
 fs_readlink (const char *path, char *buf, size_t size)
 {
-	VFS_Query const q = { .path = path, .buffer = buf, .bufsiz = size };
+	VFS_Query const q = { .path = path,
+			      .lnk_buf = buf, .lnk_bufsiz = size };
 	int rc = Browse (&q);
 	return rc;
 }

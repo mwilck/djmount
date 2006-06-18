@@ -181,7 +181,8 @@ fs_getattr (const char* path, struct stat* stbuf)
 static int 
 fs_readlink (const char* path, char* buf, size_t size)
 {
-	VFS_Query const q = { .path = path, .buffer = buf, .bufsiz = size };
+	VFS_Query const q = { .path = path, 
+			      .lnk_buf = buf, .lnk_bufsiz = size };
 	int rc = VFS_Browse (g_vfs, &q);
 	return rc;
 }

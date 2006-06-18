@@ -84,7 +84,7 @@ vfs_begin_dir (register const VFS_Query* const q)
 		if (rc == 0)				
 			rc = q->filler (q->h, "..", DT_DIR, 0);	
 	}
-	if (q->buffer) {
+	if (q->lnk_buf) {
 		Log_Printf (LOG_DEBUG, "error, readlink on directory : '%s'", 
 			    q->path);
 		rc = -EINVAL;
@@ -118,10 +118,10 @@ vfs_begin_file (register const VFS_Query* const q, int const d_type)
 	if (q->file) {
 		*(q->file) = NULL;
 	}
-	if (q->buffer) {
+	if (q->lnk_buf) {
 		if (d_type == DT_LNK) {
-			if (q->bufsiz > 0) 
-				*(q->buffer) = NUL;
+			if (q->lnk_bufsiz > 0) 
+				*(q->lnk_buf) = NUL;
 		} else {
 			Log_Printf (LOG_DEBUG, 
 				    "error, readlink on regular file : '%s'", 

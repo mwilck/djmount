@@ -84,8 +84,8 @@ typedef struct _VFS_Query {
 	/*
 	 * READLINK
 	 */
-	char* buffer;
-	size_t bufsiz;
+	char*	lnk_buf;
+	size_t	lnk_bufsiz;
 
 } VFS_Query;
 

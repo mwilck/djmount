@@ -223,14 +223,14 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 #define SYMLINK_SET_PATH(PATH)						\
 	{								\
 		const char* const _p = PATH;				\
-		if (_q->buffer && _p) {					\
-			strncpy (_q->buffer, _p, _q->bufsiz);		\
+		if (_q->lnk_buf && _p) {				\
+			strncpy (_q->lnk_buf, _p, _q->lnk_bufsiz);	\
 		}							\
 		if (_q->stbuf) {					\
 			_q->stbuf->st_size = _p ? strlen (_p) : 0;	\
 		}							\
 	}
-						\
+						
 #define SYMLINK_END		_FILE_END
 
 
