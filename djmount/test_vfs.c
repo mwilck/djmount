@@ -73,7 +73,6 @@ BrowseSubTest (const VFS* const vfs, const char* const path,
 				DIR_BEGIN("b1") {
 					FILE_BEGIN("f1") {
 						const char* str = "essais";
-						FILE_SET_SIZE (strlen (str));
 						FILE_SET_STRING (str, false);
 					} FILE_END;
 				} DIR_END;

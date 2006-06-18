@@ -133,6 +133,54 @@ vfs_file_begin (register const VFS_Query* const q, int const d_type)
 
 
 /*****************************************************************************
+ * vfs_file_set_string
+ *****************************************************************************/
+
+inline void
+vfs_file_set_string (const char* const str, bool steal,
+		     const char* const location,
+		     register const VFS_Query* const q)
+{
+	if (q->file) {					
+		*(q->file) = FileBuffer_CreateFromString (q->talloc_context, 
+							  str, steal);
+		if (*(q->file)) {
+			talloc_set_name (*(q->file), "file[%s] at %s", 
+					 q->path, location);
+		}
+	}								
+	if (q->stbuf) {	
+		q->stbuf->st_size = (str ? strlen (str) : 0);
+	}
+}
+
+
+/*****************************************************************************
+ * vfs_file_set_url
+ *****************************************************************************/
+
+inline void
+vfs_file_set_url (const char* const url, off_t size,
+		  const char* const location,
+		  register const VFS_Query* const q)
+{
+	if (q->file) {							
+		*(q->file) = FileBuffer_CreateFromURL (q->talloc_context, 
+						       url, size);
+		if (*(q->file)) {
+			talloc_set_name (*(q->file), "file[%s] at %s",
+					 q->path, location);
+		}
+	}
+	if (size >= 0 && q->stbuf) {	
+		q->stbuf->st_size = size;
+		Log_Printf (LOG_DEBUG, "FILE_SET_URL size = %" PRIdMAX,	
+			    (intmax_t) size);
+	} 
+}
+
+
+/*****************************************************************************
  * BrowseDebug
  *****************************************************************************/
 
@@ -148,7 +196,6 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 				 (intmax_t) talloc_total_size (NULL));
 			// Don't dump talloc_total_blocks because
 			// crash on NULL context ...
-			FILE_SET_SIZE (str ? strlen (str) : 0);
 			FILE_SET_STRING (str, true);
 		} FILE_END;
 		
@@ -156,10 +203,8 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			StringStream* const ss = StringStream_Create (tmp_ctx);
 			FILE* const file = StringStream_GetFile (ss);
 			talloc_report (NULL, file);
-			size_t size = 0;
 			const char* const str = StringStream_GetSnapshot 
-				(ss, tmp_ctx, &size);
-			FILE_SET_SIZE (size);
+				(ss, tmp_ctx, NULL);
 			FILE_SET_STRING (str, true);
 			// close stream as early as possible 
 			// to avoid too many open files
@@ -170,10 +215,8 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			StringStream* const ss = StringStream_Create (tmp_ctx);
 			FILE* const file = StringStream_GetFile (ss);
 			talloc_report_full (NULL, file);
-			size_t size = 0;
 			const char* const str = StringStream_GetSnapshot 
-				(ss, tmp_ctx, &size);
-			FILE_SET_SIZE (size);
+				(ss, tmp_ctx, NULL);
 			FILE_SET_STRING (str, true);
 			// close stream as early as possible 
 			// to avoid too many open files

@@ -32,6 +32,7 @@
 #include <dirent.h>
 #include <inttypes.h>	// Import intmax_t and PRIdMAX
 #include <string.h>
+#include <sys/types.h>	// Import "off_t"
 
 
 
@@ -112,6 +113,16 @@ vfs_dir_add_entry (const char* const name, int const d_type,
 	
 	return rc;
 }
+
+extern void
+vfs_file_set_string (const char* const str, bool steal,
+		     const char* const location,
+		     register const VFS_Query* const q);
+
+extern void
+vfs_file_set_url (const char* const url, off_t size,
+		  const char* const location,
+		  register const VFS_Query* const q);
 
 static inline void
 vfs_symlink_set_path (const char* const p,
@@ -198,32 +209,11 @@ vfs_symlink_set_path (const char* const p,
 
 #define FILE_BEGIN(X)	_FILE_BEGIN(X, DT_REG)
 
-#define FILE_SET_SIZE(SIZE)						\
-	if (_q->stbuf) {						\
-		_q->stbuf->st_size = (SIZE);				\
-		Log_Printf (LOG_DEBUG, "FILE_SET_SIZE = %" PRIdMAX,	\
-			    (intmax_t) _q->stbuf->st_size);		\
-	} 
-
 #define FILE_SET_STRING(CONTENT,STEAL)					\
-	if (_q->file) {							\
-		*(_q->file) = FileBuffer_CreateFromString		\
-			(_q->talloc_context, (CONTENT), (STEAL));	\
-		if (*(_q->file))					\
-			talloc_set_name (*(_q->file),			\
-					 "file[%s] at " __location__,	\
-					 _q->path);			\
-	}
+	vfs_file_set_string ((CONTENT), (STEAL), __location__, _q)
 
-#define FILE_SET_URL(URL,SIZE)						\
-	if (_q->file) {							\
-		*(_q->file) = FileBuffer_CreateFromURL			\
-			(_q->talloc_context,(URL),(SIZE));		\
-		if (*(_q->file))					\
-			talloc_set_name (*(_q->file),			\
-					 "file[%s] at " __location__,	\
-					 _q->path);			\
-	}
+#define FILE_SET_URL(URL,SIZE)					\
+	vfs_file_set_url ((URL), (SIZE), __location__, _q)
 
 #define _FILE_END					\
 		} if (*_s.ptr == '\0') goto cleanup;	\

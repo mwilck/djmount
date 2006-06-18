@@ -164,7 +164,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	for (i = 0; i < names->nb; i++) {
 	  str = talloc_asprintf_append (str, "%s\n", names->str[i]);
 	}
-	FILE_SET_SIZE (str ? strlen (str) : 0);
 	FILE_SET_STRING (str, true);
       }
       // else content defaults to NULL if no devices
@@ -178,7 +177,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	  FILE_BEGIN("status") {
 	    const char* const str = DeviceList_GetDeviceStatusString 
 	      (tmp_ctx, devName, true);
-	    FILE_SET_SIZE (str ? strlen (str) : 0);
 	    FILE_SET_STRING (str, true);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
@@ -212,7 +210,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 			FILE_BEGIN (name) {
 			  const char* const str = MediaFile_GetPlaylistContent 
 			    (&file, tmp_ctx);
-			  FILE_SET_SIZE (str ? strlen (str) : 0);
 			  FILE_SET_STRING (str, true);
 			} FILE_END;
 		      } else {
@@ -220,8 +217,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 							file.extension);
 			FILE_BEGIN (name) {
 			  FILE_SET_URL (file.uri, res_size);
-			  if (res_size >= 0)
-			    FILE_SET_SIZE (res_size);
 			} FILE_END;
 		      }
 		    }
@@ -236,7 +231,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 			  (tmp_ctx, 
 			   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
 			   DIDLObject_GetElementString (o, tmp_ctx));
-			FILE_SET_SIZE (str ? strlen (str) : 0);
 			FILE_SET_STRING (str, true);
 		      } FILE_END;
 		    } PTR_LIST_FOR_EACH_PTR_END;

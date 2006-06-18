@@ -1,3 +1,8 @@
+2006-06-18  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/vfs_p.h: merge FILE_SET_SIZE into FILE_SET_STRING and
+	  FILE_SET_URL
+
 2006-06-15  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/vfs: add SYMLINK capability to VFS + improve API
