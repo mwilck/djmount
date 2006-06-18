@@ -27,7 +27,6 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <string.h>
 
 #include "didl_object.h"
 #include "file_buffer.h"
@@ -66,11 +65,11 @@ vfs_match_start_of_path (const char* path, const char* name)
 
 
 /*****************************************************************************
- * vfs_begin_dir
+ * vfs_dir_begin
  *****************************************************************************/
 
 inline int
-vfs_begin_dir (register const VFS_Query* const q)
+vfs_dir_begin (register const VFS_Query* const q)
 {
 	int rc = 0;
 
@@ -94,11 +93,11 @@ vfs_begin_dir (register const VFS_Query* const q)
 
 
 /*****************************************************************************
- * vfs_begin_file
+ * vfs_file_begin
  *****************************************************************************/
 
 inline int
-vfs_begin_file (register const VFS_Query* const q, int const d_type)
+vfs_file_begin (register const VFS_Query* const q, int const d_type)
 {
 	int rc = 0;
 

@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <inttypes.h>	// Import intmax_t and PRIdMAX
+#include <string.h>
 
 
 
@@ -92,13 +93,13 @@ vfs_match_start_of_path (const char* path, const char* name);
  *****************************************************************************/
 
 extern int
-vfs_begin_dir (register const VFS_Query* const q);
+vfs_dir_begin (register const VFS_Query* const q);
 
 extern int
-vfs_begin_file (register const VFS_Query* const q, int const d_type);
+vfs_file_begin (register const VFS_Query* const q, int const d_type);
 
 static inline int
-vfs_add_dir_entry (const char* const name, int const d_type,
+vfs_dir_add_entry (const char* const name, int const d_type,
 		   register const VFS_Query* const q)
 {
 	int rc = 0;
@@ -110,6 +111,19 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 		rc = q->filler (q->h, name, d_type, 0);		
 	
 	return rc;
+}
+
+static inline void
+vfs_symlink_set_path (const char* const p,
+		      register const VFS_Query* const q)
+{
+	if (p && q->lnk_buf && q->lnk_bufsiz > 0) {		
+		strncpy (q->lnk_buf, p, q->lnk_bufsiz);	
+		q->lnk_buf[q->lnk_bufsiz-1] = '\0';
+	}
+	if (q->stbuf) {	
+		q->stbuf->st_size = p ? strlen (p) : 0;	
+	}	
 }
 
 
@@ -152,14 +166,14 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 
 #define DIR_BEGIN(X)							\
 	if (*_s.ptr == '\0') {						\
-		_s.rc = vfs_add_dir_entry (X, DT_DIR, _q);		\
+		_s.rc = vfs_dir_add_entry (X, DT_DIR, _q);		\
 		if (_s.rc) goto cleanup;				\
 	} else {							\
 		const char* const _p = vfs_match_start_of_path (_s.ptr, X); \
 		if (_p) {						\
 			_s.ptr = _p;					\
 			if (*_s.ptr == '\0') {				\
-				_s.rc = vfs_begin_dir (_q);		\
+				_s.rc = vfs_dir_begin (_q);		\
 				if (_s.rc) goto cleanup;		\
 			}   			
 
@@ -171,7 +185,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 
 #define _FILE_BEGIN(X,D_TYPE)						\
 	if (*_s.ptr == '\0') {						\
-		_s.rc = vfs_add_dir_entry (X, D_TYPE, _q);		\
+		_s.rc = vfs_dir_add_entry (X, D_TYPE, _q);		\
 	} else {							\
 		const char* const _p = vfs_match_start_of_path (_s.ptr, X); \
 		if (_p) {						\
@@ -179,7 +193,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 			if (*_s.ptr != '\0')				\
 				_s.rc = -ENOTDIR;			\
 			else						\
-				_s.rc = vfs_begin_file (_q, D_TYPE);	\
+				_s.rc = vfs_file_begin (_q, D_TYPE);	\
 			if (_s.rc) goto cleanup;
 
 #define FILE_BEGIN(X)	_FILE_BEGIN(X, DT_REG)
@@ -220,16 +234,7 @@ vfs_add_dir_entry (const char* const name, int const d_type,
 
 #define SYMLINK_BEGIN(X)	_FILE_BEGIN(X, DT_LNK)
 
-#define SYMLINK_SET_PATH(PATH)						\
-	{								\
-		const char* const _p = PATH;				\
-		if (_q->lnk_buf && _p) {				\
-			strncpy (_q->lnk_buf, _p, _q->lnk_bufsiz);	\
-		}							\
-		if (_q->stbuf) {					\
-			_q->stbuf->st_size = _p ? strlen (_p) : 0;	\
-		}							\
-	}
+#define SYMLINK_SET_PATH(PATH)	vfs_symlink_set_path (PATH, _q)
 						
 #define SYMLINK_END		_FILE_END
 
