@@ -90,10 +90,10 @@ _DJFS_BrowseCDS (void* result_context,
   // Walk path, or until error
   while (*ptr && current && current->children) {
     // Find current directory
-    PtrList_Iterator it = PtrList_IteratorStart (current->children->objects);
+    PtrArray_Iterator it = PtrArray_IteratorStart (current->children->objects);
     const DIDLObject* found = NULL;
-    while (PtrList_IteratorLoop (&it)) {
-      const DIDLObject* o = PtrList_IteratorGetElement (&it);
+    while (PtrArray_IteratorLoop (&it)) {
+      const DIDLObject* o = PtrArray_IteratorGetElement (&it);
       if (o->is_container) {
 	const char* const p = vfs_match_start_of_path (ptr, o->basename);
 	if (p) {
@@ -193,7 +193,7 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 		DIDLObject* o = NULL;               
 		ithread_mutex_lock (&res->children->mutex);
 		lock = &res->children->mutex;
-		PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+		PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
 		  if (o->is_container) {
 		    DIR_BEGIN (o->basename) {
 		    } DIR_END;
@@ -221,10 +221,10 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 		      }
 		    }
 		  }
-		} PTR_LIST_FOR_EACH_PTR_END;
+		} PTR_ARRAY_FOR_EACH_PTR_END;
 		if (self->flags & DJFS_SHOW_METADATA) {
 		  DIR_BEGIN (".metadata") {
-		    PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+		    PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
 		      char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
 		      FILE_BEGIN (name) {
 			const char* const str = talloc_asprintf
@@ -233,7 +233,7 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 			   DIDLObject_GetElementString (o, tmp_ctx));
 			FILE_SET_STRING (str, true);
 		      } FILE_END;
-		    } PTR_LIST_FOR_EACH_PTR_END;
+		    } PTR_ARRAY_FOR_EACH_PTR_END;
 		  } DIR_END;
 		}
 	      } DIR_END;

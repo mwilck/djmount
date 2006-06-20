@@ -1,3 +1,8 @@
+2006-06-20  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/ptr_array: rename PtrList to PtrArray, and add some 
+	  methods (PtrArray_GetElementAt, RemoveAt, RemoveAtReorder)
+
 2006-06-18  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/vfs_p.h: merge FILE_SET_SIZE into FILE_SET_STRING and

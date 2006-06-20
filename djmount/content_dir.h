@@ -34,7 +34,7 @@ extern "C" {
 #include <upnp/ithread.h>
 
 #include "service.h"
-#include "ptr_list.h"
+#include "ptr_array.h"
 #include "didl_object.h"
 
 
@@ -69,7 +69,7 @@ OBJECT_DECLARE_CLASS(ContentDir, Service);
  */
 typedef struct _ContentDir_Children {
 
-	PtrList* 	 objects; // List element type = "DIDLObject*"
+	PtrArray* 	 objects; // List element type = "DIDLObject*"
 	ithread_mutex_t  mutex;   // to synchronise modifications to the list
                                   // content
 	// TBD mutex used ?

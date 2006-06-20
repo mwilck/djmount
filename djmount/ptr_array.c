@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
- * PtrList - Generic list of pointers.
+ * PtrArray - Generic array of pointers.
  * This file is part of djmount.
  *
  * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
@@ -21,16 +21,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#	include <config.h>
-#endif
+#include <config.h>
 
-#include "ptr_list.h"
+#include "ptr_array.h"
 #include "talloc_util.h"
 #include <string.h>
 
 
-// the initial default capacity of the list
+// the initial default capacity of the array
 #define DEFAULT_INIT_CAPACITY	16
 
 
@@ -38,117 +36,118 @@
 
 
 /*****************************************************************************
- * PtrList_Create
+ * PtrArray_Create
  *****************************************************************************/
 
-PtrList*
-PtrList_Create (void* context)
+PtrArray*
+PtrArray_Create (void* context)
 {
-	PtrList* list = talloc (context, PtrList);
-	if (list) {
-		*list = (PtrList) {
+	PtrArray* self = talloc (context, PtrArray);
+	if (self) {
+		*self = (PtrArray) {
 			._array    = NULL,
 			._capacity = 0,
 			._size     = 0,
 		};
 	}
-	return list;
+	return self;
 }
 
 
 /*****************************************************************************
- * PtrList_CreateWithCapacity
+ * PtrArray_CreateWithCapacity
  *****************************************************************************/
 
-PtrList*
-PtrList_CreateWithCapacity (void* context, size_t capacity)
+PtrArray*
+PtrArray_CreateWithCapacity (void* context, size_t capacity)
 {
-	PtrList* list = PtrList_Create (context);
-	(void) PtrList_ReserveExtraSize (list, capacity);
-	return list;
+	PtrArray* self = PtrArray_Create (context);
+	(void) PtrArray_ReserveExtraSize (self, capacity);
+	return self;
 }
 
 
 
 /*****************************************************************************
- * PtrList_ReserveExtraSize
+ * PtrArray_ReserveExtraSize
  *****************************************************************************/
 
 bool
-PtrList_ReserveExtraSize (PtrList* list, size_t extra_size)
+PtrArray_ReserveExtraSize (PtrArray* self, size_t extra_size)
 {
-	if (list == NULL)
+	if (self == NULL)
 		return false; // ---------->
 	
-	size_t const size = list->_size + extra_size;
-	if (size > list->_capacity) {
-		size_t capacity = (list->_capacity > 0 ? (list->_capacity * 2) 
+	size_t const size = self->_size + extra_size;
+	if (size > self->_capacity) {
+		size_t capacity = (self->_capacity > 0 ? (self->_capacity * 2) 
 				   : DEFAULT_INIT_CAPACITY);
 		if (capacity < size)
 			capacity = size;
 		
-		list->_array = talloc_realloc (list, list->_array, 
-					       PtrList_Element, capacity);
-		if (list->_array == NULL) {
+		self->_array = talloc_realloc (self, self->_array, 
+					       PtrArray_Element, capacity);
+		if (self->_array == NULL) {
 			// failure
-			list->_capacity = list->_size = 0;
+			self->_capacity = self->_size = 0;
 			return false; // ---------->
 		}
-		list->_capacity = capacity;
+		self->_capacity = capacity;
 	}
 	return true; 
 }
 
 
 /*****************************************************************************
- * PtrList_AddTail
+ * PtrArray_Append
  *****************************************************************************/
 
 bool
-PtrList_AddTail (PtrList* list, PtrList_Element element)
+PtrArray_Append (PtrArray* self, PtrArray_Element element)
 {
-	if (PtrList_ReserveExtraSize (list, 1)) {
-		list->_array [list->_size++] = element;
+	if (PtrArray_ReserveExtraSize (self, 1)) {
+		self->_array [self->_size++] = element;
 		return true; // ---------->
 	}
 	return false;
 }
 
+
 /*****************************************************************************
- * PtrList_InsertAt
+ * PtrArray_InsertAt
  *****************************************************************************/
 bool 
-PtrList_InsertAt (PtrList* list, PtrList_Element element, int i)
+PtrArray_InsertAt (PtrArray* self, PtrArray_Element element, size_t i)
 {
-	if (list == NULL || i < 0)
+	if (self == NULL || i < 0)
 		return false; // ---------->
 
-	if (i >= list->_size)
-		return PtrList_AddTail (list, element); // ---------->
+	if (i >= self->_size)
+		return PtrArray_Append (self, element); // ---------->
 
-	if (! PtrList_ReserveExtraSize (list, 1)) 
+	if (! PtrArray_ReserveExtraSize (self, 1)) 
 		return false; // ---------->
 	
 	// shift up elements
-	memmove (list->_array + i + 1, list->_array + i,
-		 (list->_size - i) * sizeof (PtrList_Element));
+	memmove (self->_array + i + 1, self->_array + i,
+		 (self->_size - i) * sizeof (PtrArray_Element));
 
-	list->_array[i] = element;
-	list->_size++;
+	self->_array[i] = element;
+	self->_size++;
 	return true;
 }
 
 
 /*****************************************************************************
- * PtrList_GetElementIndex
+ * PtrArray_GetElementIndex
  *****************************************************************************/
-int
-PtrList_GetElementIndex (const PtrList* list, PtrList_Element element)
+ssize_t
+PtrArray_GetElementIndex (const PtrArray* self, PtrArray_Element element)
 {
-	if (list) {
-		int i;
-		for (i = 0; i < list->_size; i++) {
-			if (list->_array[i] == element)
+	if (self) {
+		ssize_t i;
+		for (i = 0; i < self->_size; i++) {
+			if (self->_array[i] == element)
 				return i; // ---------->
 		}
 	}
@@ -157,37 +156,42 @@ PtrList_GetElementIndex (const PtrList* list, PtrList_Element element)
 
 
 /*****************************************************************************
- * PtrList_GetElementAt
+ * PtrArray_RemoveAt
  *****************************************************************************/
-PtrList_Element 
-PtrList_GetElementAt (const PtrList* list, int i)
+PtrArray_Element
+PtrArray_RemoveAt (PtrArray* self, size_t i)
 {
-	if (list && i >= 0 && i < list->_size)
-		return list->_array[i]; // ---------->
-	return NULL;
+	if (self == NULL || i < 0 || i >= self->_size)
+		return NULL; // ---------->
+
+	PtrArray_Element const element = self->_array[i];
+
+	size_t const nb = self->_size - i - 1;
+	if (nb > 0) {
+		// shift down elements
+		memmove (self->_array + i, self->_array + i + 1,
+			 nb * sizeof (PtrArray_Element));
+	}
+	self->_size--;
+	return element;
 }
 
 
 /*****************************************************************************
- * PtrList_RemoveAt
+ * PtrArray_RemoveAtReorder
  *****************************************************************************/
-bool 
-PtrList_RemoveAt (PtrList* list, int i, PtrList_Element* ret)
+PtrArray_Element
+PtrArray_RemoveAtReorder (PtrArray* self, size_t i)
 {
-	if (list == NULL || i < 0 || i >= list->_size)
-		return false; // ---------->
+	if (self == NULL || i < 0 || i >= self->_size)
+		return NULL; // ---------->
 
-	if (ret)
-		*ret = list->_array[i];
+	PtrArray_Element const element = self->_array[i];
+	
+	self->_array[i] = self->_array[self->_size-1];
+	self->_size--;
 
-	int const nb = list->_size - i - 1;
-	if (nb > 0) {
-		// shift down elements
-		memmove (list->_array + i, list->_array + i + 1,
-			 nb * sizeof (PtrList_Element));
-	}
-	list->_size--;
-	return true;
+	return element;
 }
 
 

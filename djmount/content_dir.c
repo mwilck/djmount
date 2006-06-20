@@ -125,7 +125,7 @@ BrowseAction (ContentDir* cds,
 	      Count requested_count,
 	      Count* nb_matched,
 	      Count* nb_returned,
-	      PtrList* objects)
+	      PtrArray* objects)
 {
   if (cds == NULL || objectId == NULL) {
     Log_Printf (LOG_ERROR, "ContentDir_BrowseAction NULL parameter");
@@ -201,7 +201,7 @@ BrowseAction (ContentDir* cds,
 			   is_container ? i : i - nb_containers);
       DIDLObject* o = DIDLObject_Create (result_context, elem, is_container);
       if (o) {
-        PtrList_AddTail (objects, o);
+        PtrArray_Append (objects, o);
       }
     }
       
@@ -242,7 +242,7 @@ BrowseAll (ContentDir* cds,
 	if (result == NULL)
 		return NULL; // ---------->
 
-	PtrList* objects = PtrList_Create (result);
+	PtrArray* objects = PtrArray_Create (result);
 	if (objects == NULL) 
 		goto FAIL; // ---------->
 
@@ -272,11 +272,11 @@ BrowseAll (ContentDir* cds,
 	// (this is not normal : "RequestedCount" == 0 means to request 
 	// all entries according to ContentDirectory specification)
 	int nb_retry = 0;
-	while (PtrList_GetSize (objects) < nb_matched && nb_retry++ < 2) {
+	while (PtrArray_GetSize (objects) < nb_matched && nb_retry++ < 2) {
 		Log_Printf (LOG_WARNING, 
 			    "ContentDir_BrowseId ObjectId=%s : "
 			    "got %d results, expected %d. Retry %d ...",
-			    objectId, (int) PtrList_GetSize (objects), 
+			    objectId, (int) PtrArray_GetSize (objects), 
 			    (int) nb_matched, nb_retry);
     
 		// Workaround : request missing entries.
@@ -285,9 +285,9 @@ BrowseAll (ContentDir* cds,
 			 objects,
 			 objectId, 
 			 metadata,
-			 /* starting_index  => */ PtrList_GetSize (objects),
+			 /* starting_index  => */ PtrArray_GetSize (objects),
 			 /* requested_count => */ 
-			 nb_matched - PtrList_GetSize (objects),
+			 nb_matched - PtrArray_GetSize (objects),
 			 &nb_matched,
 			 &nb_returned,
 			 objects);
@@ -421,7 +421,7 @@ ContentDir_BrowseMetadata (ContentDir* cds,
 {
 	// TBD: no cache in BrowseMetadata method for the time being
   
-	PtrList* objects = PtrList_Create (NULL);
+	PtrArray* objects = PtrArray_Create (NULL);
 	if (objects == NULL)
 		return NULL; // ---------->
 
@@ -433,7 +433,7 @@ ContentDir_BrowseMetadata (ContentDir* cds,
 		Log_Printf (LOG_ERROR, "ContentDir_BrowseMetadata : "
 			    "not 1 result exactly Id=%s", NN(objectId));
 	}
-	DIDLObject* res = PtrList_GetHead (objects);
+	DIDLObject* res = PtrArray_GetHead (objects);
 	talloc_free (objects);
 	return res;
 }

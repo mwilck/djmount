@@ -250,9 +250,9 @@ process_command (const char* cmdline)
 					  tmp_ctx, strarg2);
 		if (res) {
 			const DIDLObject* o = NULL;
-			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
 				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
-			} PTR_LIST_FOR_EACH_PTR_END;
+			} PTR_ARRAY_FOR_EACH_PTR_END;
 		}
 	}
 	break;
@@ -279,9 +279,9 @@ process_command (const char* cmdline)
 					 &nb_matched);
 		if (res) {
 			const DIDLObject* o = NULL;
-			PTR_LIST_FOR_EACH_PTR (res->children->objects, o) {
+			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
 				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
-			} PTR_LIST_FOR_EACH_PTR_END;
+			} PTR_ARRAY_FOR_EACH_PTR_END;
 			if (nb_matched > 0) {
 				Log_Printf (LOG_MAIN, 
 					    "-> path left to match : '%s'",
