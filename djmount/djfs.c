@@ -155,24 +155,23 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
   
   BROWSE_BEGIN(sub_path, query) {
     
-    const StringArray* const names = DeviceList_GetDevicesNames (tmp_ctx);
+    const PtrArray* const names = DeviceList_GetDevicesNames (tmp_ctx);
     
     FILE_BEGIN("devices") {
       if (names) {
 	char* str = talloc_strdup(tmp_ctx, "");
-	int i;
-	for (i = 0; i < names->nb; i++) {
-	  str = talloc_asprintf_append (str, "%s\n", names->str[i]);
-	}
+	const char* devName;
+	PTR_ARRAY_FOR_EACH_PTR (names, devName) {
+	  str = talloc_asprintf_append (str, "%s\n", devName);
+	} PTR_ARRAY_FOR_EACH_PTR_END;
 	FILE_SET_STRING (str, true);
       }
       // else content defaults to NULL if no devices
     } FILE_END;
     
     if (names) {
-      int i;
-      for (i = 0; i < names->nb; i++) {
-	const char* const devName = names->str[i];
+      const char* devName;
+      PTR_ARRAY_FOR_EACH_PTR (names, devName) {
 	DIR_BEGIN(devName) {
 	  FILE_BEGIN("status") {
 	    const char* const str = DeviceList_GetDeviceStatusString 
@@ -240,8 +239,8 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	    }
 	  } DIR_END; // "browse"
 	} DIR_END; // devName
-      }
-    }
+      } PTR_ARRAY_FOR_EACH_PTR_END;
+    } // if (names)
   } BROWSE_END;
   
   // Release any acquired lock

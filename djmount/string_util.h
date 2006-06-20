@@ -37,21 +37,6 @@ extern "C" {
 #define NUL	'\0'
 
 
-/*****************************************************************************
- * StringArray
- *****************************************************************************/
-
-typedef struct _StringArray {
-  
-  int    nb;
-  char*  str[]; // struct hack, aka C99 "Flexible array member"
-
-} StringArray;
-
-
-#define StringArray_talloc(ctx,nb) \
-  talloc_zero_size ((ctx), sizeof (StringArray) + (nb) * sizeof (char*))
-
 
 /*****************************************************************************
  * StringPair

@@ -27,8 +27,9 @@
 
 #include <upnp/ixml.h>
 
-#include "string_util.h"	// import StringArray
+#include "string_util.h"	// import StringPair
 #include "service.h"
+#include "ptr_array.h"
 
 
 #ifdef __cplusplus
@@ -167,8 +168,9 @@ extern "C" {
  * 	  The returned array should be freed using "talloc_free".
  *
  * @param talloc_context	parent context to allocate result, may be NULL
+ * @return 			PtrArray (element type = "const char*")
  *****************************************************************************/
-StringArray*
+PtrArray*
 DeviceList_GetDevicesNames (void* talloc_context);
 
 

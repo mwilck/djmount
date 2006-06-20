@@ -693,30 +693,33 @@ DeviceList_SendAction (const char* deviceName, const char* serviceType,
 /*****************************************************************************
  * GetDevicesNames
  *****************************************************************************/
-StringArray*
+PtrArray*
 DeviceList_GetDevicesNames (void* context)
 {
-  ithread_mutex_lock (&DeviceListMutex);
+	ithread_mutex_lock (&DeviceListMutex);
 
-  Log_Printf (LOG_DEBUG, "GetDevicesNames");
-  StringArray* const ret = StringArray_talloc (context, 
-					       ListSize (&GlobalDeviceList));
-  if (ret) {
-    ListNode* node;
-    for (node = ListHead (&GlobalDeviceList);
-	 node != 0;
-	 node = ListNext (&GlobalDeviceList, node)) {
-      const DeviceNode* const devnode = node->item;
-      if (devnode) {
-	const char* name = (devnode->d ? talloc_get_name(devnode->d) : NULL);
-	ret->str[ret->nb++] = (char*) NN(name); // no need to copy
-      }
-    }
-  }
+	Log_Printf (LOG_DEBUG, "GetDevicesNames");
+	PtrArray* const a = PtrArray_CreateWithCapacity 
+		(context, ListSize (&GlobalDeviceList));
+	if (a) {
+		ListNode* node;
+		for (node = ListHead (&GlobalDeviceList);
+		     node != 0;
+		     node = ListNext (&GlobalDeviceList, node)) {
+			const DeviceNode* const devnode = node->item;
+			if (devnode) {
+				const char* const name = 
+					(devnode->d ? 
+					 talloc_get_name (devnode->d) : NULL);
+				// add pointer directly (no need to copy)
+				PtrArray_Append (a, (char*) NN(name)); 
+			}
+		}
+	}
   
-  ithread_mutex_unlock (&DeviceListMutex);
-  
-  return ret;
+	ithread_mutex_unlock (&DeviceListMutex);
+	
+	return a;
 }
 
 
