@@ -711,7 +711,8 @@ DeviceList_GetDevicesNames (void* context)
 				const char* const name = 
 					(devnode->d ? 
 					 talloc_get_name (devnode->d) : NULL);
-				// add pointer directly (no need to copy)
+				// add pointer directly 
+				// TBD no need to copy ??? XXX
 				PtrArray_Append (a, (char*) NN(name)); 
 			}
 		}
