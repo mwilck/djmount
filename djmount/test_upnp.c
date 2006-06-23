@@ -24,9 +24,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
  
-#ifdef HAVE_CONFIG_H
-#	include <config.h>
-#endif
+#include <config.h>
 
 #include "device_list.h"
 #include "log.h"
@@ -97,18 +95,18 @@ struct CommandStruct {
  * and required command arguments for command line commands 
  */
 static const struct CommandStruct CMDLIST[] = {
-  { "help", 	CMD_HELP, 1, ""},
-  { "loglevel", CMD_LOGLEVEL, 2, "<max log level (0-3)>"},
-  { "leak", 	CMD_LEAK, 1, ""},
-  { "leakfull", CMD_LEAK_FULL, 1, ""},
-  { "listdev", 	CMD_LISTDEV, 1, ""},
-  { "refresh", 	CMD_REFRESH, 1, ""},
-  { "printdev", CMD_PRINTDEV, 2, "<devname>"},
-  { "browse", 	CMD_BROWSE, 3, "<devname> <objectId>"},
-  { "metadata", CMD_METADATA, 3, "<devname> <objectId>"},
-  { "ls", 	CMD_LS, 3, "<devname> <path>"},
-  { "action", 	CMD_ACTION, 4, "<devname> <serviceType> <actionName>"},
-  { "exit", 	CMD_EXIT, 1, ""}
+  { "help", 	CMD_HELP, 	1, ""},
+  { "loglevel", CMD_LOGLEVEL, 	2, "<max log level (0-3)>"},
+  { "leak", 	CMD_LEAK, 	1, ""},
+  { "leakfull", CMD_LEAK_FULL, 	1, ""},
+  { "listdev", 	CMD_LISTDEV, 	1, ""},
+  { "refresh", 	CMD_REFRESH, 	1, ""},
+  { "printdev", CMD_PRINTDEV, 	2, "<devname>"},
+  { "browse", 	CMD_BROWSE, 	3, "<devname> <objectId>"},
+  { "metadata", CMD_METADATA, 	3, "<devname> <objectId>"},
+  { "ls", 	CMD_LS, 	2, "<path>"},
+  { "action", 	CMD_ACTION, 	4, "<devname> <serviceType> <actionName>"},
+  { "exit", 	CMD_EXIT, 	1, ""}
 };
 
 static const int CMDNUM = sizeof(CMDLIST)/sizeof(CMDLIST[0]);
@@ -183,6 +181,14 @@ print_commands()
  * Description: 
  *	Parse a command line and calls the appropriate functions
  *****************************************************************************/
+static int fuse_dirfil_for_ls (fuse_dirh_t h, const char *name, 
+			       int type, ino_t ino)
+{
+	Log_Printf (LOG_MAIN, "  <ls>  %s", NN(name));
+	return 0;
+}
+
+
 static int
 process_command (const char* cmdline)
 {
@@ -196,16 +202,50 @@ process_command (const char* cmdline)
 	// Convert from display charset
 	cmdline = Charset_ConvertString (CHARSET_TO_UTF8, cmdline, 
 					 NULL, 0, tmp_ctx);
-	
-	char cmd[100];
-	char strarg1[100];
-	char strarg2[100];
-	char strarg3[100];
-	int validargs = sscanf (cmdline, "%99s %99s %99s %99s", 
-				cmd, strarg1, strarg2, strarg3);
+
+	// Parse strings
+	char* strarg[100] = { [0] = NULL };
+	char buffer [ strlen(cmdline) + 1];
+	strcpy (buffer, cmdline);
+	int validargs = 0;
 	int invalidargs = 0;
+	char* p = buffer;
+	while (*p) {
+		while (isspace (*p))
+			p++;
+
+		if (*p == '"' || *p == '\'') {
+			char const delim = *p;
+			char* const begin = ++p;
+			while (*p && *p != delim)
+				p++;
+			if (*p) {
+				*p++ = '\0';
+				strarg [validargs++] = begin;
+			} else {
+				invalidargs++;
+				goto cleanup; // ---------->
+			}
+		} else {
+			char* const begin = p;
+			while (*p && ! isspace (*p))
+				p++;
+			if (*p) {
+				*p++ = '\0';
+				strarg [validargs++] = begin;
+			} else if (p != begin) {
+				strarg [validargs++] = begin;
+			}
+		}
+	}
+		
+	const char* const cmd = strarg[0];
+	if (cmd == NULL) {
+		invalidargs++;
+		goto cleanup; // ---------->
+	}
+
 	int cmdnum = -1;
-	
 	int i;
 	for (i = 0; i < CMDNUM; i++) {
 		if (strcasecmp (cmd, CMDLIST[i].str) == 0 ) {
@@ -226,7 +266,7 @@ process_command (const char* cmdline)
 	{
 		// Parse log level
 		int level;
-		if (sscanf (strarg1, "%d", &level) == 1)
+		if (sscanf (strarg[1], "%d", &level) == 1)
 			Log_SetMaxLevel ((Log_Level) level);
 		else
 			invalidargs++;
@@ -244,10 +284,10 @@ process_command (const char* cmdline)
 	case CMD_BROWSE:
 	{
 		const ContentDir_BrowseResult* res = NULL;
-		DEVICE_LIST_CALL_SERVICE (res, strarg1, 
+		DEVICE_LIST_CALL_SERVICE (res, strarg[1], 
 					  CONTENT_DIR_SERVICE_TYPE,
 					  ContentDir, BrowseChildren, 
-					  tmp_ctx, strarg2);
+					  tmp_ctx, strarg[2]);
 		if (res) {
 			const DIDLObject* o = NULL;
 			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
@@ -257,52 +297,50 @@ process_command (const char* cmdline)
 	}
 	break;
 	
-	case CMD_METADATA:
-	{
+	case CMD_METADATA: {
 		const DIDLObject* o = NULL;
-		DEVICE_LIST_CALL_SERVICE (o, strarg1, 
+		DEVICE_LIST_CALL_SERVICE (o, strarg[1], 
 					  CONTENT_DIR_SERVICE_TYPE,
 					  ContentDir, BrowseMetadata,
-					  tmp_ctx, strarg2);
+					  tmp_ctx, strarg[2]);
 		if (o) {
 			Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
 		}
+		break;
 	}
-	break;
 	
-	case CMD_LS:
-	{
-		Log_Printf (LOG_MAIN, "ls '%s' :", strarg2);
-		size_t nb_matched = 0;
-		const ContentDir_BrowseResult* res = 
-			_DJFS_BrowseCDS (tmp_ctx, strarg1, strarg2, 
-					 &nb_matched);
-		if (res) {
-			const DIDLObject* o = NULL;
-			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
-				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
-			} PTR_ARRAY_FOR_EACH_PTR_END;
-			if (nb_matched > 0) {
-				Log_Printf (LOG_MAIN, 
-					    "-> path left to match : '%s'",
-					    strarg2 + nb_matched);
+	case CMD_LS: {
+		Log_Printf (LOG_MAIN, "ls '%s' :", strarg[1]);
+		VFS* vfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, 077));
+		if (vfs == NULL) {
+			Log_Printf (LOG_MAIN, 
+				    "** Failed to create virtual file system");
+		} else {
+			VFS_Query q = { .path = strarg[1],
+					.filler = fuse_dirfil_for_ls };
+			int rc = VFS_Browse (vfs, &q);
+			if (rc != 0) {
+				Log_Printf (LOG_MAIN,
+					    "** error %d (%s)", rc, 
+					    strerror (-rc));
 			}
 		}
-	}
-	break;
-	
-	case CMD_ACTION:
-		rc = DeviceList_SendActionAsync (strarg1, strarg2, strarg3, 
-						 0, NULL);
 		break;
-		
-	case CMD_PRINTDEV:
-	{
-		char* s = DeviceList_GetDeviceStatusString (tmp_ctx, strarg1, 
-							    true);
-		Log_Print (LOG_MAIN, s);
 	}
-	break;
+	
+	case CMD_ACTION: {
+		rc = DeviceList_SendActionAsync (strarg[1], strarg[2], 
+						 strarg[3], 0, NULL);
+		break;
+	}
+		
+	case CMD_PRINTDEV: {
+		char* const s = DeviceList_GetDeviceStatusString (tmp_ctx,
+								  strarg[1], 
+								  true);
+		Log_Print (LOG_MAIN, s);
+		break;
+	}
 	
 	case CMD_LISTDEV:
 	{

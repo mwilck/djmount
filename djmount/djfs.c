@@ -4,7 +4,7 @@
  * djfs : file system implementation for djmount.
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#	include <config.h>
-#endif
+#include <config.h>
 
 #include "djfs_p.h"
 #include "didl_object.h"
@@ -61,83 +59,86 @@
 
 
 
-
-/******************************************************************************
- * _DJFS_BrowseCDS
+/*****************************************************************************
+ * BrowseChildren
  *****************************************************************************/
-const ContentDir_BrowseResult*
-_DJFS_BrowseCDS (void* result_context,
-		 const char* deviceName, const char* const path, 
-		 size_t* nb_char_matched)
+
+static VFS_BrowseStatus
+BrowseChildren (DJFS* const self, const char* const sub_path,
+		const VFS_Query* const query, void* const tmp_ctx,
+		const char* const devName, 
+		ContentDir_Children* const children)
 {
-  if (path == NULL)
-    return NULL; // ---------->
-  
-  // Create a working context for temporary memory allocations
-  void* tmp_ctx = talloc_new (NULL);
-  
-  // Browse root 
-  const char* ptr = path;
-  while (*ptr == '/')
-    ptr++;
-  
-  const ContentDir_BrowseResult* current = NULL;
-  DEVICE_LIST_CALL_SERVICE (current, deviceName, 
-			    CONTENT_DIR_SERVICE_TYPE,
-			    ContentDir, BrowseChildren,
-			    tmp_ctx, "0");
-  
-  // Walk path, or until error
-  while (*ptr && current && current->children) {
-    // Find current directory
-    PtrArray_Iterator it = PtrArray_IteratorStart (current->children->objects);
-    const DIDLObject* found = NULL;
-    while (PtrArray_IteratorLoop (&it)) {
-      const DIDLObject* o = PtrArray_IteratorGetElement (&it);
-      if (o->is_container) {
-	const char* const p = vfs_match_start_of_path (ptr, o->basename);
-	if (p) {
-	  ptr = p;
-	  found = o;
-	  break; // ---------->
+  // Keep a pointer to acquired lock, if any
+  ithread_mutex_t* lock = NULL;
+ 
+  BROWSE_BEGIN(sub_path, query) {
+    
+    if (children) {
+      DIDLObject* o = NULL;               
+      ithread_mutex_lock (&children->mutex);
+      lock = &children->mutex;
+      PTR_ARRAY_FOR_EACH_PTR (children->objects, o) {
+	if (o->is_container) {
+	  DIR_BEGIN (o->basename) {
+	    const ContentDir_BrowseResult* res;
+	    DEVICE_LIST_CALL_SERVICE (res, devName,
+				      CONTENT_DIR_SERVICE_TYPE,
+				      ContentDir, BrowseChildren,
+				      tmp_ctx, o->id);
+	    if (res) {
+	      BROWSE_SUB(BrowseChildren (self, BROWSE_PTR, query, tmp_ctx, 
+					 devName, 
+					 res->children));
+	    }
+	  } DIR_END;
+	} else {
+	  MediaFile file = { .o = NULL };
+	  if (MediaFile_GetPreferred (o, &file)) {
+	    off_t const res_size = MediaFile_GetResSize (&file);
+	    if ( file.playlist &&
+		 ( (self->flags & DJFS_USE_PLAYLISTS) ||
+		   res_size < 0 ||
+		   res_size > FILE_BUFFER_MAX_CONTENT_LENGTH) ) {
+	      char* name = MediaFile_GetName (tmp_ctx, o, file.playlist);
+	      FILE_BEGIN (name) {
+		const char* const str = MediaFile_GetPlaylistContent 
+		  (&file, tmp_ctx);
+		FILE_SET_STRING (str, true);
+	      } FILE_END;
+	    } else {
+	      char* name = MediaFile_GetName (tmp_ctx, o, file.extension);
+	      FILE_BEGIN (name) {
+		FILE_SET_URL (file.uri, res_size);
+	      } FILE_END;
+	    }
+	  }
 	}
+      } PTR_ARRAY_FOR_EACH_PTR_END;
+      if ( (self->flags & DJFS_SHOW_METADATA) && 
+	   !PtrArray_IsEmpty(children->objects) ) {
+	DIR_BEGIN (".metadata") {
+	  PTR_ARRAY_FOR_EACH_PTR (children->objects, o) {
+	    char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
+	    FILE_BEGIN (name) {
+	      const char* const str = talloc_asprintf
+		(tmp_ctx, 
+		 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
+		 DIDLObject_GetElementString (o, tmp_ctx));
+	      FILE_SET_STRING (str, true);
+	    } FILE_END;
+	  } PTR_ARRAY_FOR_EACH_PTR_END;
+	} DIR_END;
       }
     }
-    if (found == NULL) {
-      Log_Printf (LOG_DEBUG, "browse '%s' stops at '%s'", path, ptr);
-      goto cleanup; // ---------->
-    } else {
-      // "id" valid as long as tmp_ctx is not deallocated
-      char* id = found->id; 
-      DEVICE_LIST_CALL_SERVICE (current, deviceName,
-				CONTENT_DIR_SERVICE_TYPE,
-				ContentDir, BrowseChildren,
-				tmp_ctx, id);
-    }
-  }
+  } BROWSE_END;  
   
- cleanup:
+  // Release any acquired lock
+  if (lock)
+    ithread_mutex_unlock (lock);
   
-  if (current)
-    current = talloc_steal (result_context, current);
-  else
-    Log_Printf (LOG_ERROR, "CDS can't browse '%s' for path='%s'",
-		deviceName, path); 
-  
-  // Delete all temporary storage
-  talloc_free (tmp_ctx);
-  tmp_ctx = NULL;
-  
-  if (nb_char_matched) {
-    // Suppress terminating "/" in nb. of character matched
-    while (ptr > path && *(ptr-1) == '/')
-      ptr--;
-    *nb_char_matched = (ptr - path);
-  }
-  
-  return current;
+  return BROWSE_RESULT;
 }
-
 
 
 /*****************************************************************************
@@ -149,9 +150,6 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	    const VFS_Query* const query, void* const tmp_ctx)
 {
   DJFS* const self = (DJFS*) vfs;
-
-  // Keep a pointer to acquired lock, if any
-  ithread_mutex_t* lock = NULL;
   
   BROWSE_BEGIN(sub_path, query) {
     
@@ -179,73 +177,22 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	    FILE_SET_STRING (str, true);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
-	    size_t nb_matched = 0;
-	    const ContentDir_BrowseResult* const res = 
-	      _DJFS_BrowseCDS (tmp_ctx, devName, BROWSE_PTR, &nb_matched);
-	    if (res && res->children) {
-	      char* dirname = talloc_strndup (tmp_ctx, BROWSE_PTR, nb_matched);
-	      Log_Printf (LOG_DEBUG, "dirname = '%s'", dirname);
-	      if (*dirname == NUL)
-		goto skip_dir;
-	      DIR_BEGIN (dirname) {
-	      skip_dir: ;
-		DIDLObject* o = NULL;               
-		ithread_mutex_lock (&res->children->mutex);
-		lock = &res->children->mutex;
-		PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
-		  if (o->is_container) {
-		    DIR_BEGIN (o->basename) {
-		    } DIR_END;
-		  } else {
-		    MediaFile file = { .o = NULL };
-		    if (MediaFile_GetPreferred (o, &file)) {
-		      off_t const res_size = MediaFile_GetResSize (&file);
-		      if ( file.playlist &&
-			   ( (self->flags & DJFS_USE_PLAYLISTS) ||
-			     res_size < 0 ||
-			     res_size > FILE_BUFFER_MAX_CONTENT_LENGTH) ) {
-			char* name = MediaFile_GetName (tmp_ctx, o, 
-							file.playlist);
-			FILE_BEGIN (name) {
-			  const char* const str = MediaFile_GetPlaylistContent 
-			    (&file, tmp_ctx);
-			  FILE_SET_STRING (str, true);
-			} FILE_END;
-		      } else {
-			char* name = MediaFile_GetName (tmp_ctx, o,
-							file.extension);
-			FILE_BEGIN (name) {
-			  FILE_SET_URL (file.uri, res_size);
-			} FILE_END;
-		      }
-		    }
-		  }
-		} PTR_ARRAY_FOR_EACH_PTR_END;
-		if (self->flags & DJFS_SHOW_METADATA) {
-		  DIR_BEGIN (".metadata") {
-		    PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
-		      char* const name = MediaFile_GetName (tmp_ctx, o, "xml");
-		      FILE_BEGIN (name) {
-			const char* const str = talloc_asprintf
-			  (tmp_ctx, 
-			   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
-			   DIDLObject_GetElementString (o, tmp_ctx));
-			FILE_SET_STRING (str, true);
-		      } FILE_END;
-		    } PTR_ARRAY_FOR_EACH_PTR_END;
-		  } DIR_END;
-		}
-	      } DIR_END;
+	    const ContentDir_BrowseResult* current = NULL;
+	    const char* const id = "0";
+	    DEVICE_LIST_CALL_SERVICE (current, devName, 
+				      CONTENT_DIR_SERVICE_TYPE,
+				      ContentDir, BrowseChildren,
+				      tmp_ctx, id);
+	    if (current) {
+	      BROWSE_SUB(BrowseChildren (self, BROWSE_PTR, query, tmp_ctx, 
+					 devName, current->children));
 	    }
-	  } DIR_END; // "browse"
+	  } DIR_END;
 	} DIR_END; // devName
       } PTR_ARRAY_FOR_EACH_PTR_END;
-    } // if (names)
+    }
+    
   } BROWSE_END;
-  
-  // Release any acquired lock
-  if (lock)
-    ithread_mutex_unlock (lock);
   
   return BROWSE_RESULT;
 }
@@ -278,5 +225,6 @@ DJFS_Create (void* talloc_context, DJFS_Flags flags)
   }
   return self;
 }
+
 
 

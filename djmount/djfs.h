@@ -4,7 +4,7 @@
  * djfs : file system implementation for djmount.
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,10 +37,6 @@
  *      This type is derived from the "VFS" type : all VFS_* methods
  *      can be used on DJFS.
  *
- *      NOTE THAT THE FUNCTION API IS NOT THREAD SAFE. Callers should
- *      take care of the necessary locks if an object is shared between
- *      multiple threads.
- *
  *****************************************************************************/
 
 OBJECT_DECLARE_CLASS(DJFS,VFS);
@@ -52,10 +48,10 @@ OBJECT_DECLARE_CLASS(DJFS,VFS);
  *****************************************************************************/
 typedef enum _DJFS_Flags {
 	
-	DJFS_SHOW_DEBUG    = 01, // show debug directory
-	DJFS_USE_PLAYLISTS = 02, // use playlists for AV files (default: files)
-	DJFS_SHOW_METADATA = 04, // show XML files containing DIDL metadata
-	
+	DJFS_SHOW_DEBUG    = 001, // show debug directory
+	DJFS_USE_PLAYLISTS = 002, // use playlists for AV files (default:files)
+	DJFS_SHOW_METADATA = 004, // show XML files containing DIDL metadata
+
 } DJFS_Flags;
 
 
@@ -63,32 +59,12 @@ typedef enum _DJFS_Flags {
  * @fn 		DJFS_Create
  * @brief	create a djfs file system object.
  *
+ * @param flags		     	see DJFS_Flags
+ * @param search_history_size	size of search history, set to 0 to disable 
+ *				"search" sub-directories
  *****************************************************************************/
 DJFS*
 DJFS_Create (void* talloc_context, DJFS_Flags flags);
-
-
-
-/*****************************************************************************
- * @fn		_DJFS_BrowseCDS
- * @brief	browse the ContentDirectory service associated to a UPnP device
- *
- *	path must be an absolute, canonical, path.
- *	DIDL-Lite containers titles are interpreted as directories names.
- *	It is left to the caller to interpret DIDL-Lite items / file names
- *	so this function returns when the current path part matches an item,
- *	or does not match anything.
- *
- * 	Result should be freed using "talloc_free" when finished.
- *
- *	Note: this function is used internaly by "djfs" ; it is exported 
- *	for testing purposes only.
- *
- *****************************************************************************/
-const struct _ContentDir_BrowseResult*
-_DJFS_BrowseCDS (void* result_context,
-		 const char* deviceName, const char* path,
-		 size_t* nb_char_matched);
 
 
 

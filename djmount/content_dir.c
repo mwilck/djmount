@@ -248,8 +248,14 @@ BrowseAll (ContentDir* cds,
 
 	*result = (ContentDir_Children) {
 		.objects = objects
-	};		
-	ithread_mutex_init (&result->mutex, NULL);
+	};
+		
+	ithread_mutexattr_t attr;
+	ithread_mutexattr_init (&attr);
+	ithread_mutexattr_setkind_np (&attr, ITHREAD_MUTEX_RECURSIVE_NP);
+	ithread_mutex_init (&result->mutex, &attr);
+	ithread_mutexattr_destroy (&attr);
+
         talloc_set_destructor (result, DestroyChildren);
 
 	// Request all objects
