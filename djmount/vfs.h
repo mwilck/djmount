@@ -35,10 +35,6 @@
  * @var VFS
  *      This opaque type encapsulates access to a virtual file system.
  *
- *      NOTE THAT THE FUNCTION API IS NOT THREAD SAFE. Callers should
- *      take care of the necessary locks if an object is shared between
- *      multiple threads.
- *
  *****************************************************************************/
 
 OBJECT_DECLARE_CLASS(VFS, Object);
