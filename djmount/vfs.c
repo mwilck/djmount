@@ -4,7 +4,7 @@
  * vfs : virtual file system implementation for djmount 
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ vfs_match_start_of_path (const char* path, const char* name)
  * vfs_dir_begin
  *****************************************************************************/
 
-inline int
+int
 vfs_dir_begin (register const VFS_Query* const q)
 {
 	int rc = 0;
@@ -96,7 +96,7 @@ vfs_dir_begin (register const VFS_Query* const q)
  * vfs_file_begin
  *****************************************************************************/
 
-inline int
+int
 vfs_file_begin (register const VFS_Query* const q, int const d_type)
 {
 	int rc = 0;
@@ -136,7 +136,7 @@ vfs_file_begin (register const VFS_Query* const q, int const d_type)
  * vfs_file_set_string
  *****************************************************************************/
 
-inline void
+void
 vfs_file_set_string (const char* const str, bool steal,
 		     const char* const location,
 		     register const VFS_Query* const q)
@@ -159,7 +159,7 @@ vfs_file_set_string (const char* const str, bool steal,
  * vfs_file_set_url
  *****************************************************************************/
 
-inline void
+void
 vfs_file_set_url (const char* const url, off_t size,
 		  const char* const location,
 		  register const VFS_Query* const q)
