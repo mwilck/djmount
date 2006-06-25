@@ -396,7 +396,11 @@ cd test/a2 || exit 1
 
 ls b1 > /dev/null || exit 1
 
-ls a3 >& /dev/null && exit 1
+# check there is no "leak" between directories
+for d in a1 a3 b3 b4 b5 b6 b7 b8 b9 toto c1 f1 test atest zetest
+do
+    ls $d >& /dev/null && exit 1
+done
 
 
 exit 0
