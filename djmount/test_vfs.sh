@@ -148,7 +148,7 @@ dr-xr-xr-x  3 root root 512 Jan  1  2000 b2
 
 ./atest/test/a2/b1:
 total 1
--r--r--r--  1 root root 6 Jan  1  2000 f1
+-r--r--r--  1 root root 6 Jun 25  2004 f1
 
 ./atest/test/a2/b2:
 total 1
@@ -160,12 +160,12 @@ total 0
 ./atest/test/a3:
 total 4
 dr-xr-xr-x  2 root root 512 Jan  1  2000 b3
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b4
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b5
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b6
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b7
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b8
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b9
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b4
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b5
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b6
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b7
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b8
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b9
 
 ./atest/test/a3/b3:
 total 0
@@ -228,7 +228,7 @@ dr-xr-xr-x  3 root root 512 Jan  1  2000 b2
 
 ./test/a2/b1:
 total 1
--r--r--r--  1 root root 6 Jan  1  2000 f1
+-r--r--r--  1 root root 6 Jun 25  2004 f1
 
 ./test/a2/b2:
 total 1
@@ -240,12 +240,12 @@ total 0
 ./test/a3:
 total 4
 dr-xr-xr-x  2 root root 512 Jan  1  2000 b3
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b4
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b5
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b6
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b7
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b8
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b9
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b4
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b5
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b6
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b7
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b8
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b9
 
 ./test/a3/b3:
 total 0
@@ -313,7 +313,7 @@ dr-xr-xr-x  3 root root 512 Jan  1  2000 b2
 
 ./zetest/test/a2/b1:
 total 1
--r--r--r--  1 root root 6 Jan  1  2000 f1
+-r--r--r--  1 root root 6 Jun 25  2004 f1
 
 ./zetest/test/a2/b2:
 total 1
@@ -325,12 +325,12 @@ total 0
 ./zetest/test/a3:
 total 4
 dr-xr-xr-x  2 root root 512 Jan  1  2000 b3
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b4
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b5
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b6
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b7
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b8
-dr-xr-xr-x  3 root root 512 Jan  1  2000 b9
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b4
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b5
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b6
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b7
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b8
+dr-xr-xr-x  3 root root 512 Jun 25  2004 b9
 
 ./zetest/test/a3/b3:
 total 0
@@ -376,6 +376,19 @@ dr-xr-xr-x  2 root root 512 Jan  1  2000 toto
 
 ./zetest/test/a3/b9/toto:
 total 0
+EOF
+
+
+diff -u - <(stat --format="%n %A s=%s b=%b l=%h at='%x' mt='%y' ct='%z'" ./test/a3/* ./atest/link_to_test ./test/a2/b1/f1 ) <<-EOF || exit 1 
+./test/a3/b3 dr-xr-xr-x s=512 b=1 l=2 at='2000-01-01 12:00:00.000000000 +0100' mt='2000-01-01 12:00:00.000000000 +0100' ct='2000-01-01 12:00:00.000000000 +0100'
+./test/a3/b4 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 04:03:00.000000000 +0200' mt='2004-06-25 04:03:00.000000000 +0200' ct='2004-06-25 04:03:00.000000000 +0200'
+./test/a3/b5 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 05:04:00.000000000 +0200' mt='2004-06-25 05:04:00.000000000 +0200' ct='2004-06-25 05:04:00.000000000 +0200'
+./test/a3/b6 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 06:05:00.000000000 +0200' mt='2004-06-25 06:05:00.000000000 +0200' ct='2004-06-25 06:05:00.000000000 +0200'
+./test/a3/b7 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 07:06:00.000000000 +0200' mt='2004-06-25 07:06:00.000000000 +0200' ct='2004-06-25 07:06:00.000000000 +0200'
+./test/a3/b8 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 08:07:00.000000000 +0200' mt='2004-06-25 08:07:00.000000000 +0200' ct='2004-06-25 08:07:00.000000000 +0200'
+./test/a3/b9 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 09:08:00.000000000 +0200' mt='2004-06-25 09:08:00.000000000 +0200' ct='2004-06-25 09:08:00.000000000 +0200'
+./atest/link_to_test lr--r--r-- s=4 b=1 l=1 at='2000-01-01 12:00:00.000000000 +0100' mt='2000-01-01 12:00:00.000000000 +0100' ct='2000-01-01 12:00:00.000000000 +0100'
+./test/a2/b1/f1 -r--r--r-- s=6 b=1 l=1 at='2004-06-25 15:00:00.000000000 +0200' mt='2004-06-25 15:00:00.000000000 +0200' ct='2004-06-25 15:00:00.000000000 +0200'
 EOF
 
 

@@ -33,6 +33,7 @@
 #include <inttypes.h>	// Import intmax_t and PRIdMAX
 #include <string.h>
 #include <sys/types.h>	// Import "off_t"
+#include <time.h>
 
 
 
@@ -97,7 +98,7 @@ extern int
 vfs_dir_begin (register const VFS_Query* const q);
 
 extern int
-vfs_file_begin (register const VFS_Query* const q, int const d_type);
+vfs_file_begin (int const d_type, register const VFS_Query* const q);
 
 static inline int
 vfs_dir_add_entry (const char* const name, int const d_type,
@@ -124,18 +125,12 @@ vfs_file_set_url (const char* const url, off_t size,
 		  const char* const location,
 		  register const VFS_Query* const q);
 
-static inline void
-vfs_symlink_set_path (const char* const p,
-		      register const VFS_Query* const q)
-{
-	if (p && q->lnk_buf && q->lnk_bufsiz > 0) {		
-		strncpy (q->lnk_buf, p, q->lnk_bufsiz);	
-		q->lnk_buf[q->lnk_bufsiz-1] = '\0';
-	}
-	if (q->stbuf) {	
-		q->stbuf->st_size = p ? strlen (p) : 0;	
-	}	
-}
+extern void
+vfs_symlink_set_path (const char* const p, register const VFS_Query* const q);
+
+extern void
+vfs_set_time (const time_t t, register const VFS_Query* const q);
+
 
 
 /*****************************************************************************
@@ -211,7 +206,7 @@ vfs_symlink_set_path (const char* const p,
 				if (*_s.ptr != '\0')			\
 					_s.rc = -ENOTDIR;		\
 				else					\
-					_s.rc = vfs_file_begin(_q,D_TYPE); \
+					_s.rc = vfs_file_begin(D_TYPE,_q); \
 				if (_s.rc) goto cleanup;
 
 #define FILE_BEGIN(BASENAME)	_FILE_BEGIN(BASENAME, DT_REG)
@@ -235,6 +230,9 @@ vfs_symlink_set_path (const char* const p,
 #define SYMLINK_SET_PATH(PATH)	vfs_symlink_set_path (PATH, _q)
 						
 #define SYMLINK_END		_FILE_END
+
+
+#define VFS_SET_TIME(TIME_T)	vfs_set_time (TIME_T, _q)
 
 
 

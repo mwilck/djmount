@@ -43,6 +43,10 @@
 static const off_t DEFAULT_SIZE = 0; 
 
 
+// for unknown file times (atime, mtime, ctime)
+static const time_t DEFAULT_TIME = 946724400; // Y2K
+
+
 
 /*****************************************************************************
  * vfs_match_start_of_path
@@ -77,6 +81,7 @@ vfs_dir_begin (register const VFS_Query* const q)
 		q->stbuf->st_mode  = S_IFDIR | 0555;
 		q->stbuf->st_nlink = 2;			
 		q->stbuf->st_size  = 512;
+		vfs_set_time (DEFAULT_TIME, q);
 	};		
 	if (q->filler) {				
 		rc = q->filler (q->h, ".", DT_DIR, 0);	
@@ -97,7 +102,7 @@ vfs_dir_begin (register const VFS_Query* const q)
  *****************************************************************************/
 
 int
-vfs_file_begin (register const VFS_Query* const q, int const d_type)
+vfs_file_begin (int const d_type, register const VFS_Query* const q)
 {
 	int rc = 0;
 
@@ -108,6 +113,7 @@ vfs_file_begin (register const VFS_Query* const q, int const d_type)
 		q->stbuf->st_mode  = DTTOIF(d_type) | 0444;     
 		q->stbuf->st_nlink = 1;
 		q->stbuf->st_size  = DEFAULT_SIZE; // to be computed latter
+		vfs_set_time (DEFAULT_TIME, q);
 	}
 	if (q->filler) {
 		Log_Printf (LOG_DEBUG, "error, listing not a directory : '%s'",
@@ -177,6 +183,40 @@ vfs_file_set_url (const char* const url, off_t size,
 		Log_Printf (LOG_DEBUG, "FILE_SET_URL size = %" PRIdMAX,	
 			    (intmax_t) size);
 	} 
+}
+
+
+/*****************************************************************************
+ * vfs_symlink_set_path
+ *****************************************************************************/
+
+void
+vfs_symlink_set_path (const char* const p,
+		      register const VFS_Query* const q)
+{
+	if (p && q->lnk_buf && q->lnk_bufsiz > 0) {		
+		strncpy (q->lnk_buf, p, q->lnk_bufsiz);	
+		q->lnk_buf [q->lnk_bufsiz-1] = NUL;
+	}
+	if (q->stbuf) {	
+		q->stbuf->st_size = p ? strlen (p) : 0;	
+	}	
+}
+
+
+/*****************************************************************************
+ * vfs_set_time
+ *****************************************************************************/
+
+void
+vfs_set_time (const time_t t, register const VFS_Query* const q)
+{
+	// No difference between the various timestamps (atime, mtime, ctime)
+	if (q->stbuf) {	
+		q->stbuf->st_atime =
+			q->stbuf->st_mtime = 
+			q->stbuf->st_ctime = t;
+	}
 }
 
 
@@ -278,13 +318,6 @@ VFS_Browse (VFS* const self, const VFS_Query* q)
 	// Adjust some fields
 	if (s.rc == 0 && q->stbuf) {
 		q->stbuf->st_blocks = (q->stbuf->st_size + 511) / 512;
-		// TBD not yet implemented : time management
-		// XXX   for the time being, just invent some arbitrary time 
-		// XXX   different from 0 (epoch)
-		struct tm Y2K = { .tm_year = 100, .tm_mon = 0, .tm_mday = 1, 
-				  .tm_hour = 12 };
-		q->stbuf->st_atime = q->stbuf->st_mtime = q->stbuf->st_ctime = 
-			mktime (&Y2K);
 	}
 	
 	if (s.rc) 

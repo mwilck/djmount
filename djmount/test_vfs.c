@@ -68,12 +68,17 @@ BrowseSubTest (const VFS* const vfs, const char* const path,
 		DIR_BEGIN("test") {
 			DIR_BEGIN("a1") {
 			} DIR_END;
+
+			struct tm t = { .tm_year = 104, .tm_mon = 5, 
+					.tm_mday = 25};
 			
 			DIR_BEGIN("a2") {
 				DIR_BEGIN("b1") {
 					FILE_BEGIN("f1") {
 						const char* str = "essais";
 						FILE_SET_STRING (str, false);
+						t.tm_hour = 14;
+						VFS_SET_TIME (mktime (&t));
 					} FILE_END;
 				} DIR_END;
 				
@@ -92,9 +97,10 @@ BrowseSubTest (const VFS* const vfs, const char* const path,
 					char buffer [10];
 					sprintf (buffer, "b%d", i);
 					DIR_BEGIN(buffer) {
+						t.tm_hour = t.tm_min = i-1;
+						VFS_SET_TIME (mktime (&t));
 						DIR_BEGIN ("toto") {
 						} DIR_END;
-						
 					} DIR_END;
 				}
 			}DIR_END;
@@ -132,6 +138,15 @@ BrowseTest (VFS* const vfs, const char* const path,
 				SYMLINK_SET_PATH("../test");
 			} SYMLINK_END;
 		} DIR_END;
+
+		// should be ignored
+		DIR_BEGIN("") {
+		} DIR_END;
+
+		// should be ignored
+		FILE_BEGIN(NULL) {
+		} FILE_END;
+
 	} BROWSE_END;
 
 	VFS_BrowseStatus const s = BROWSE_RESULT;
