@@ -76,7 +76,7 @@ typedef struct _DIDLObject {
 	 */
 
 	// Similar to "title", but suitable for filename generation : 
-	// never empty "", or reserved name (e.g. "." or "..")
+	// never empty "", or reserved name (e.g. starting with "." or "_")
 	char* basename;
 
 } DIDLObject;

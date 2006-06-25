@@ -82,6 +82,7 @@ DIDLObject_Create (void* talloc_context,
 			 (IXML_Node*) elem, &node);
 		o->element = (IXML_Element*) node;
 
+		// TBD need to copy ??
 		o->id = talloc_strdup (o, ixmlElement_getAttribute
 				       (o->element, "id"));
 		if (o->id == NULL || o->id[0] == NUL) {
@@ -94,23 +95,21 @@ DIDLObject_Create (void* talloc_context,
 			return NULL; // ---------->
 		}
 
-		o->title = String_CleanFileName (o, XMLUtil_GetFirstNodeValue
-						 (node, "dc:title"));
+		o->title = XMLUtil_GetFirstNodeValue (node, "dc:title");
 		if (o->title == NULL)
 			o->title = "";
 
-		o->basename = o->title;
+		o->basename = String_CleanFileName (o, o->title);
 		if (o->basename[0] == NUL) {
 			char* s = DIDLObject_GetElementString (o, NULL);
 			Log_Printf (LOG_WARNING, 
 				    "DIDLObject NULL or empty <dc:title>, "
 				    "XML = %s", s);
 			talloc_free (s);
-			o->basename = talloc_asprintf (o, "_id%s", o->id);
-		} else if (strcmp (o->basename, ".") == 0) {
-			o->basename = "._";
-		} else if (strcmp (o->basename, "..") == 0) {
-			o->basename = ".._";
+			talloc_free (o->basename);
+			o->basename = talloc_asprintf (o, "-id-%s", o->id);
+		} else if (o->basename[0] == '.' || o->basename[0] == '_') {
+			o->basename[0] = '-';
 		}
 		
 		o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
