@@ -287,7 +287,7 @@ VFS_Browse (VFS* const self, const VFS_Query* q)
 			}
 #if DEBUG
 			if (self->show_debug_dir) {
-				DIR_BEGIN(".debug") {
+				DIR_BEGIN(VFS_DEBUG_DIR_BASENAME) {
 					func = OBJECT_METHOD (self, 
 							      browse_debug);
 					if (func) {

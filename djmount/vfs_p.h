@@ -69,6 +69,9 @@ OBJECT_DEFINE_METHODS(VFS,
                       );
 
 
+// Name of "debug" directory
+#define VFS_DEBUG_DIR_BASENAME	".debug"
+
 
 
 /******************************************************************************
