@@ -1,3 +1,8 @@
+2006-06-25  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/vfs_p.h: add protection against NULL or empty names
+	  in DIR_BEGIN and FILE_BEGIN
+
 2006-06-23  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/djfs: rewrite Browse to suppress 

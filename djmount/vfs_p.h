@@ -149,7 +149,8 @@ vfs_symlink_set_path (const char* const p,
 	register const VFS_Query* const _q = QUERY;	\
 	if (_q == NULL || _s.ptr == NULL) {		\
 		_s.rc = -EFAULT;			\
-	} else {
+	} else {					\
+		const char* _p;
 
 #define BROWSE_PTR		_s.ptr
 
@@ -175,39 +176,45 @@ vfs_symlink_set_path (const char* const p,
 #define BROWSE_RESULT		_s
 
 
-#define DIR_BEGIN(X)							\
-	if (*_s.ptr == '\0') {						\
-		_s.rc = vfs_dir_add_entry (X, DT_DIR, _q);		\
-		if (_s.rc) goto cleanup;				\
-	} else {							\
-		const char* const _p = vfs_match_start_of_path (_s.ptr, X); \
-		if (_p) {						\
-			_s.ptr = _p;					\
-			if (*_s.ptr == '\0') {				\
-				_s.rc = vfs_dir_begin (_q);		\
-				if (_s.rc) goto cleanup;		\
-			}   			
+#define _DIR_BEGIN(BASENAME,ALLOW_EMPTY)				\
+	if ((_p = BASENAME) && (*_p || ALLOW_EMPTY)) {			\
+		if (*_s.ptr == '\0') {					\
+			_s.rc = vfs_dir_add_entry (_p, DT_DIR, _q);	\
+			if (_s.rc) goto cleanup;			\
+		} else {						\
+			_p = vfs_match_start_of_path (_s.ptr, _p);	\
+			if (_p) {					\
+				_s.ptr = _p;				\
+				if (*_s.ptr == '\0') {			\
+					_s.rc = vfs_dir_begin (_q);	\
+					if (_s.rc) goto cleanup;	\
+				}		
 
-#define DIR_END								\
-			if (*_s.ptr != '\0') BROWSE_ABORT(-ENOENT);	\
-		} if (*_s.ptr == '\0') goto cleanup;			\
+#define DIR_BEGIN(BASENAME)	_DIR_BEGIN(BASENAME,false)
+
+#define DIR_END							\
+				if (*_s.ptr != '\0')		\
+					BROWSE_ABORT(-ENOENT);	\
+			} if (*_s.ptr == '\0') goto cleanup;	\
+		}						\
 	}
 	
 
-#define _FILE_BEGIN(X,D_TYPE)						\
-	if (*_s.ptr == '\0') {						\
-		_s.rc = vfs_dir_add_entry (X, D_TYPE, _q);		\
-	} else {							\
-		const char* const _p = vfs_match_start_of_path (_s.ptr, X); \
-		if (_p) {						\
-			_s.ptr = _p;					\
-			if (*_s.ptr != '\0')				\
-				_s.rc = -ENOTDIR;			\
-			else						\
-				_s.rc = vfs_file_begin (_q, D_TYPE);	\
-			if (_s.rc) goto cleanup;
+#define _FILE_BEGIN(BASENAME,D_TYPE)					\
+	if ((_p = BASENAME) && *_p) {					\
+		if (*_s.ptr == '\0') {					\
+			_s.rc = vfs_dir_add_entry (_p, D_TYPE, _q);	\
+		} else {						\
+			_p = vfs_match_start_of_path (_s.ptr, _p);	\
+			if (_p) {					\
+				_s.ptr = _p;				\
+				if (*_s.ptr != '\0')			\
+					_s.rc = -ENOTDIR;		\
+				else					\
+					_s.rc = vfs_file_begin(_q,D_TYPE); \
+				if (_s.rc) goto cleanup;
 
-#define FILE_BEGIN(X)	_FILE_BEGIN(X, DT_REG)
+#define FILE_BEGIN(BASENAME)	_FILE_BEGIN(BASENAME, DT_REG)
 
 #define FILE_SET_STRING(CONTENT,STEAL)					\
 	vfs_file_set_string ((CONTENT), (STEAL), __location__, _q)
@@ -215,14 +222,15 @@ vfs_symlink_set_path (const char* const p,
 #define FILE_SET_URL(URL,SIZE)					\
 	vfs_file_set_url ((URL), (SIZE), __location__, _q)
 
-#define _FILE_END					\
-		} if (*_s.ptr == '\0') goto cleanup;	\
+#define _FILE_END						\
+			} if (*_s.ptr == '\0') goto cleanup;	\
+		}						\
 	}
 
-#define FILE_END	_FILE_END
+#define FILE_END		_FILE_END
 
 
-#define SYMLINK_BEGIN(X)	_FILE_BEGIN(X, DT_LNK)
+#define SYMLINK_BEGIN(BASENAME)	_FILE_BEGIN(BASENAME, DT_LNK)
 
 #define SYMLINK_SET_PATH(PATH)	vfs_symlink_set_path (PATH, _q)
 						

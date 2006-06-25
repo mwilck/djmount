@@ -238,20 +238,22 @@ VFS_Browse (VFS* const self, const VFS_Query* q)
 	void* tmp_ctx = talloc_new (NULL);
 	
 	BROWSE_BEGIN(q->path, q) {
-		DIR_BEGIN("") {
-			VFS_BrowseFunction b = 
+		_DIR_BEGIN("", true) {
+			VFS_BrowseFunction func = 
 				OBJECT_METHOD (self, browse_root);
-			if (b) {
-				BROWSE_SUB (b (self, BROWSE_PTR, q, tmp_ctx));
+			if (func) {
+				BROWSE_SUB (func (self, BROWSE_PTR, q, 
+						  tmp_ctx));
 			}
 #if DEBUG
 			if (self->show_debug_dir) {
 				DIR_BEGIN(".debug") {
-					b = OBJECT_METHOD (self, browse_debug);
-					if (b) {
-						BROWSE_SUB (b (self, 
-							       BROWSE_PTR, 
-							       q, tmp_ctx));
+					func = OBJECT_METHOD (self, 
+							      browse_debug);
+					if (func) {
+						BROWSE_SUB (func (self, 
+								  BROWSE_PTR, 
+								  q, tmp_ctx));
 					}
 				} DIR_END;
 			}
