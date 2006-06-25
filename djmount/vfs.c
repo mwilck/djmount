@@ -206,9 +206,6 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			const char* const str = StringStream_GetSnapshot 
 				(ss, tmp_ctx, NULL);
 			FILE_SET_STRING (str, true);
-			// close stream as early as possible 
-			// to avoid too many open files
-			talloc_free (ss); 
 		} FILE_END;
 		
 		FILE_BEGIN("talloc_report_full") {
@@ -218,9 +215,6 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			const char* const str = StringStream_GetSnapshot 
 				(ss, tmp_ctx, NULL);
 			FILE_SET_STRING (str, true);
-			// close stream as early as possible 
-			// to avoid too many open files
-			talloc_free (ss); 
 		} FILE_END;
 		
 	} BROWSE_END;
