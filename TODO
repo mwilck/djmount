@@ -60,5 +60,7 @@ To Be Decided
 
 - redirect errors to syslog if daemonized ?
 
+- gnome vfs or KIO native interface ?
+
 
 
