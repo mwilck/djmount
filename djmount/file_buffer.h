@@ -64,22 +64,45 @@ typedef struct _FileBuffer FileBuffer;
 
 
 /*****************************************************************************
+ * @var FileBuffer_StringAlloc
+ *
+ *	This type describes how to handle the original string paramater
+ *	in FileBuffer_CreateFromString() :
+ *
+ *	- COPY : the provided string content is copied internally
+ *	- STEAL : the provided string MUST have been allocated with talloc.
+ *	  It is NOT copied, but instead its talloc parent context is changed
+ *	  to the new FileBuffer object (using "talloc_steal") and will be 
+ *	  deallocated when the FileBuffer object is destroyed.
+ *	- EXTERN : the provided string is allocated externaly and only 
+ *	  the pointer is kept : this string SHALL be valid as long as 
+ *	  the FileBuffer object is used.
+ *
+ *	The first mode (COPY) is the standard, safe, behaviour. The other
+ *	modes are optimisation, to be used with care.
+ *
+ *****************************************************************************/
+
+typedef enum _FileBuffer_StringAlloc {
+	
+	FILE_BUFFER_STRING_COPY  = 0,
+	FILE_BUFFER_STRING_STEAL = 1,
+	FILE_BUFFER_STRING_EXTERN
+
+} FileBuffer_StringAlloc;
+
+
+/*****************************************************************************
  * @brief 	Creates a new FileBuffer object, with a given string as
  *		content.
- *		If 'steal' is false (standard behaviour), the provided string 
- *		content is copied internally. 
- *		If 'steal' is true (optimisation), the provided string is NOT
- *		copied, but instead its talloc parent context is changed
- *		to the new FileBuffer object (using "talloc_steal") and
- *		will be deallocated by this new object.
  *
  * @param talloc_context	the talloc parent context
- * @param content		the file content (copied or not, cf. 'steal')
- * @param steal			copy (if false) or steal (if true) the content
+ * @param content		the file content (copied or not, cf. 'alloc')
+ * @param alloc			describes how to copy (or not) the content
  *****************************************************************************/
 FileBuffer*
 FileBuffer_CreateFromString (void* talloc_context, const char* content,
-			     bool steal);
+			     FileBuffer_StringAlloc alloc);
 
 
 /*****************************************************************************

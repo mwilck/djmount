@@ -104,7 +104,7 @@ BrowseChildren (DJFS* const self, const char* const sub_path,
 	      FILE_BEGIN (name) {
 		const char* const str = MediaFile_GetPlaylistContent 
 		  (&file, tmp_ctx);
-		FILE_SET_STRING (str, true);
+		FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 	      } FILE_END;
 	    } else {
 	      char* name = MediaFile_GetName (tmp_ctx, o, file.extension);
@@ -125,7 +125,7 @@ BrowseChildren (DJFS* const self, const char* const sub_path,
 		(tmp_ctx, 
 		 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s",
 		 DIDLObject_GetElementString (o, tmp_ctx));
-	      FILE_SET_STRING (str, true);
+	      FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 	    } FILE_END;
 	  } PTR_ARRAY_FOR_EACH_PTR_END;
 	} DIR_END;
@@ -162,7 +162,7 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	PTR_ARRAY_FOR_EACH_PTR (names, devName) {
 	  str = talloc_asprintf_append (str, "%s\n", devName);
 	} PTR_ARRAY_FOR_EACH_PTR_END;
-	FILE_SET_STRING (str, true);
+	FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
       }
       // else content defaults to NULL if no devices
     } FILE_END;
@@ -174,7 +174,7 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 	  FILE_BEGIN("status") {
 	    const char* const str = DeviceList_GetDeviceStatusString 
 	      (tmp_ctx, devName, true);
-	    FILE_SET_STRING (str, true);
+	    FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 	  } FILE_END;
 	  DIR_BEGIN("browse") {
 	    const ContentDir_BrowseResult* current = NULL;

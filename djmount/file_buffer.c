@@ -57,7 +57,7 @@ struct _FileBuffer {
  *****************************************************************************/
 FileBuffer*
 FileBuffer_CreateFromString (void* talloc_context, const char* content,
-			     bool steal)
+			     FileBuffer_StringAlloc alloc)
 {
 	FileBuffer* const file = talloc (talloc_context, FileBuffer);
 	if (file) {
@@ -68,10 +68,18 @@ FileBuffer_CreateFromString (void* talloc_context, const char* content,
 			.url	      = NULL
 		};
 		if (content) {
-			if (steal)
+			switch (alloc) {
+			case FILE_BUFFER_STRING_STEAL:
 				file->content = talloc_steal (file, content);
-			else
+				break;
+			case FILE_BUFFER_STRING_EXTERN:
+				file->content = content;
+				break;
+			case FILE_BUFFER_STRING_COPY:
+			default:
 				file->content = talloc_strdup (file, content);
+				break;
+			}
 			file->file_size = strlen (content);
 		}
 	}

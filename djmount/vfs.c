@@ -143,13 +143,13 @@ vfs_file_begin (int const d_type, register const VFS_Query* const q)
  *****************************************************************************/
 
 void
-vfs_file_set_string (const char* const str, bool steal,
+vfs_file_set_string (const char* const str, FileBuffer_StringAlloc alloc,
 		     const char* const location,
 		     register const VFS_Query* const q)
 {
 	if (q->file) {					
 		*(q->file) = FileBuffer_CreateFromString (q->talloc_context, 
-							  str, steal);
+							  str, alloc);
 		if (*(q->file)) {
 			talloc_set_name (*(q->file), "file[%s] at %s", 
 					 q->path, location);
@@ -236,7 +236,7 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 				 (intmax_t) talloc_total_size (NULL));
 			// Don't dump talloc_total_blocks because
 			// crash on NULL context ...
-			FILE_SET_STRING (str, true);
+			FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 		} FILE_END;
 		
 		FILE_BEGIN("talloc_report") {
@@ -245,7 +245,7 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			talloc_report (NULL, file);
 			const char* const str = StringStream_GetSnapshot 
 				(ss, tmp_ctx, NULL);
-			FILE_SET_STRING (str, true);
+			FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 		} FILE_END;
 		
 		FILE_BEGIN("talloc_report_full") {
@@ -254,7 +254,7 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 			talloc_report_full (NULL, file);
 			const char* const str = StringStream_GetSnapshot 
 				(ss, tmp_ctx, NULL);
-			FILE_SET_STRING (str, true);
+			FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 		} FILE_END;
 		
 	} BROWSE_END;

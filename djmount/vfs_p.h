@@ -119,7 +119,7 @@ vfs_dir_add_entry (const char* const name, int const d_type,
 }
 
 extern void
-vfs_file_set_string (const char* const str, bool steal,
+vfs_file_set_string (const char* const str, FileBuffer_StringAlloc alloc,
 		     const char* const location,
 		     register const VFS_Query* const q);
 
@@ -214,8 +214,8 @@ vfs_set_time (const time_t t, register const VFS_Query* const q);
 
 #define FILE_BEGIN(BASENAME)	_FILE_BEGIN(BASENAME, DT_REG)
 
-#define FILE_SET_STRING(CONTENT,STEAL)					\
-	vfs_file_set_string ((CONTENT), (STEAL), __location__, _q)
+#define FILE_SET_STRING(CONTENT,STRALLOC)				\
+	vfs_file_set_string ((CONTENT), (STRALLOC), __location__, _q)
 
 #define FILE_SET_URL(URL,SIZE)					\
 	vfs_file_set_url ((URL), (SIZE), __location__, _q)

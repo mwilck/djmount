@@ -76,7 +76,8 @@ BrowseSubTest (const VFS* const vfs, const char* const path,
 				DIR_BEGIN("b1") {
 					FILE_BEGIN("f1") {
 						const char* str = "essais";
-						FILE_SET_STRING (str, false);
+						FILE_SET_STRING (str, 
+								 FILE_BUFFER_STRING_COPY);
 						t.tm_hour = 14;
 						VFS_SET_TIME (mktime (&t));
 					} FILE_END;

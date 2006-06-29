@@ -1,3 +1,7 @@
+2006-06-29  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/file_buffer: new FileBuffer_StringAlloc strategy
+
 2006-06-25  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/didl_object.c: make filenames starting with "." or "_"
