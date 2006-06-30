@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Device
@@ -88,7 +89,7 @@ Device_GetDescDocURL (const Device* dev);
  *	if necessary e.g. if the Device is to be destroyed.	
  */
 const char*
-Device_GetDescDocItem (const Device* dev, const char* item);
+Device_GetDescDocItem (const Device* dev, const char* item, bool log_error);
 
 
 

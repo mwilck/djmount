@@ -79,7 +79,7 @@ ServiceFactory (Device* dev,
 	 * Simple implementation, hardcoding the 2 possible classes of Service.
 	 */
 	const char* const serviceType = XMLUtil_GetFirstNodeValue
-		((IXML_Node*) serviceDesc, "serviceType");
+		((IXML_Node*) serviceDesc, "serviceType", true);
 
 	if ( serviceType && strcmp (serviceType, 
 				    CONTENT_DIR_SERVICE_TYPE) == 0 ) {
@@ -211,19 +211,22 @@ Device* Device_Create (void* context,
 	 * Read key elements from description document 
 	 */
 	
-	dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN"));;
+	dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN", 
+							      true));
 	Log_Printf (LOG_DEBUG, "Device_Create : UDN = %s", dev->udn);
 
 	dev->deviceType = talloc_strdup (dev, Device_GetDescDocItem 
-					 (dev, "deviceType"));
+					 (dev, "deviceType", true));
 	Log_Printf (LOG_DEBUG, "Device_Create : type = %s", dev->deviceType);
 	
 	dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
-					   (dev, "friendlyName"));
+					   (dev, "friendlyName", true));
 
-	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase"); // TBD suppress error message if any
+	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase",
+							   false);
 	const char* const relURL  = Device_GetDescDocItem (dev, 
-							   "presentationURL");
+							   "presentationURL",
+							   false);
   
 	const char* const base = 
 		( baseURL && baseURL[0] ) ? baseURL : descDocURL;
@@ -272,11 +275,11 @@ Device_GetDescDocURL (const Device* dev)
  * Device_GetDescDocItem
  *****************************************************************************/
 const char*
-Device_GetDescDocItem (const Device* dev, const char* item)
+Device_GetDescDocItem (const Device* dev, const char* item, bool log_error)
 {
-	if (dev && item)
+	if (dev)
 		return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, 
-						  item);
+						  item, log_error);
 	else 
 		return NULL;
 }

@@ -407,7 +407,7 @@ AddDevice (const char* deviceId,
 				// Generate a unique, friendly, name 
 				// for this device
 				const char* base = Device_GetDescDocItem 
-					(devnode->d, "friendlyName");
+					(devnode->d, "friendlyName", true);
 				char* name = make_device_name (NULL, base);
 				talloc_set_name (devnode->d, "%s", name);
 				talloc_free (name);

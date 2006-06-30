@@ -43,19 +43,19 @@
  * XMLUtil_GetElementValue
  *****************************************************************************/
 
-char *
+char*
 XMLUtil_GetElementValue (IN IXML_Element* element)
 {
-  IXML_Node* child = ixmlNode_getFirstChild ((IXML_Node *) element );
+	IXML_Node* child = ixmlNode_getFirstChild ((IXML_Node *) element );
 
-  char* res = NULL;
-
-  if ( child && ixmlNode_getNodeType (child) == eTEXT_NODE ) {
-    // The resulting string should be copied if necessary
-    res = ixmlNode_getNodeValue (child);
-  }
-  
-  return res;
+	char* res = NULL;
+	
+	if ( child && ixmlNode_getNodeType (child) == eTEXT_NODE ) {
+		// The resulting string should be copied if necessary
+		res = ixmlNode_getNodeValue (child);
+	}
+	
+	return res;
 }
 
 
@@ -64,38 +64,46 @@ XMLUtil_GetElementValue (IN IXML_Element* element)
  * XMLUtil_GetFirstNodeValue
  *****************************************************************************/
 char*
-XMLUtil_GetFirstNodeValue (IN const IXML_Node* node,
-			   IN const char* item)
+XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char* item,
+			   bool log_error)
 {
-  char* res = 0;
-
-  if (node == 0 || item == 0) {
-    Log_Printf (LOG_ERROR, "GetFirstNodeItem invalid NULL parameter");
-  } else {
-    //// TBD hack
-    //// TBD ixmlNode_getElementsByTagName isn't exported !!!
-    //// TBD to clean !!
-    IXML_NodeList* const nodeList = ixmlDocument_getElementsByTagName 
-      ((IXML_Document*) node, (char *) item);
-    if ( nodeList == 0 ) {
-      Log_Printf (LOG_ERROR, "Error finding %s item in XML Node", item);
-    } else {
-      IXML_Node* tmpNode = ixmlNodeList_item (nodeList, 0);
-      if (tmpNode == 0) {
-	Log_Printf (LOG_ERROR, "Error finding %s item in XML Node", item );
-      } else {
-	IXML_Node* textNode = ixmlNode_getFirstChild (tmpNode);
-  
-	/* Get the node value. This string will be preserved when the NodeList
-	 * is freed, but should be copied if the IXML_Element is to be 
-	 * destroyed.
-	 */
-	res = ixmlNode_getNodeValue (textNode);
-      }
-      ixmlNodeList_free (nodeList);
-    }
-  }
-  return res;
+	char* res = NULL;
+	
+	if (node == NULL || item == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "GetFirstNodeItem invalid NULL parameter");
+	} else {
+		//// TBD hack
+		//// TBD ixmlNode_getElementsByTagName isn't exported !!!
+		//// TBD to clean !!
+		IXML_NodeList* const nodeList = 
+			ixmlDocument_getElementsByTagName 
+			((IXML_Document*) node, (char *) item);
+		if (nodeList == NULL) {
+			Log_Printf ((log_error ? LOG_ERROR : LOG_DEBUG), 
+				    "Can't find '%s' item in XML Node",
+				    item);
+		} else {
+			IXML_Node* tmpNode = ixmlNodeList_item (nodeList, 0);
+			if (tmpNode == NULL) {
+				Log_Printf ((log_error ? LOG_ERROR: LOG_DEBUG),
+					    "Can't find '%s' item in XML Node",
+					    item );
+			} else {
+				IXML_Node* textNode = 
+					ixmlNode_getFirstChild (tmpNode);
+				
+				/* Get the node value. This string will be 
+				 * preserved when the NodeList is freed, 
+				 * but should be copied if the IXML_Element 
+				 * is to be destroyed.
+				 */
+				res = ixmlNode_getNodeValue (textNode);
+			}
+			ixmlNodeList_free (nodeList);
+		}
+	}
+	return res;
 }
 
 
@@ -105,24 +113,25 @@ XMLUtil_GetFirstNodeValue (IN const IXML_Node* node,
 char*
 XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
 {
-  // TBD XXX
-  // TBD prepend <?xml version="1.0"?> if not already done ???
-  // TBD XXX
-
-  char* ret = 0;
-  if (doc) {
-    DOMString s = ixmlPrintDocument (doc);
-    if (s) {
-      ret = talloc_strdup (context, s);
-      ixmlFreeDOMString (s);
-    } else {
-      ret = talloc_strdup (context, "(error)");
-    }
-  } else {
-    ret = talloc_strdup (context, "(null)");
-  }
-  return ret;
+	// TBD XXX
+	// TBD prepend <?xml version="1.0"?> if not already done ???
+	// TBD XXX
+	
+	char* ret = NULL;
+	if (doc) {
+		DOMString s = ixmlPrintDocument (doc);
+		if (s) {
+			ret = talloc_strdup (context, s);
+			ixmlFreeDOMString (s);
+		} else {
+			ret = talloc_strdup (context, "(error)");
+		}
+	} else {
+		ret = talloc_strdup (context, "(null)");
+	}
+	return ret;
 }
+
 
 /******************************************************************************
  * XMLUtil_GetNodeString
@@ -130,19 +139,19 @@ XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
 char*
 XMLUtil_GetNodeString (void* context, IXML_Node* node)
 {
-  char* ret = 0;
-  if (node) {
-    DOMString s = ixmlPrintNode (node);
-    if (s) {
-      ret = talloc_strdup (context, s);
-      ixmlFreeDOMString (s);
-    } else {
-      ret = talloc_strdup (context, "(error)");
-    }
-  } else {
-    ret = talloc_strdup (context, "(null)");
-  }
-  return ret;
+	char* ret = NULL;
+	if (node) {
+		DOMString s = ixmlPrintNode (node);
+		if (s) {
+			ret = talloc_strdup (context, s);
+			ixmlFreeDOMString (s);
+		} else {
+			ret = talloc_strdup (context, "(error)");
+		}
+	} else {
+		ret = talloc_strdup (context, "(null)");
+	}
+	return ret;
 }
 
 

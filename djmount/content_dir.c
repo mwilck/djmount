@@ -154,16 +154,18 @@ BrowseAction (ContentDir* cds,
     goto cleanup; // ---------->
   }
 
-  const char* s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "TotalMatches");
+  const char* s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "TotalMatches",
+					     true);
   STRING_TO_INT (s, *nb_matched, 0);
 
-  s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "NumberReturned");
+  s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "NumberReturned", true);
   STRING_TO_INT (s, *nb_returned, 0);
     
   Log_Printf (LOG_DEBUG, "+++BROWSE RESULT+++\n%s\n", 
 	      XMLUtil_GetDocumentString (tmp_ctx, doc));
   
-  char* const resstr = XMLUtil_GetFirstNodeValue ((IXML_Node*)doc, "Result");
+  char* const resstr = XMLUtil_GetFirstNodeValue ((IXML_Node*)doc, "Result", 
+						  true);
   if (resstr == NULL) {
     Log_Printf (LOG_ERROR,        
 		"BrowseAction ObjectId=%s : can't get 'Result' in doc=%s",

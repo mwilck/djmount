@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * XML Utilities
@@ -26,6 +27,7 @@
 #ifndef XML_UTIL_H_INCLUDED
 #define XML_UTIL_H_INCLUDED
 
+#include <stdbool.h>
 #include <inttypes.h>
 #include <upnp/ixml.h>
 
@@ -52,7 +54,6 @@ char*
 XMLUtil_GetElementValue (IN IXML_Element *element);
 
 
-
 /*****************************************************************************
  * @brief	Get value of first matching element.
  *
@@ -61,12 +62,14 @@ XMLUtil_GetElementValue (IN IXML_Element *element);
  *	The C string should be copied if necessary e.g. if the IXML_Node
  *	is to be destroyed.
  *
- * @param node 	The XML node from which to extract the value
- * @param item 	The item to search for
+ * @param node 		the XML node from which to extract the value
+ * @param item 		the item to search for
+ * @param log_error	whether to log an error or not if item not found
  *
  *****************************************************************************/
 char* 
-XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char *item);
+XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char *item,
+			   bool log_error);
 
 
 /*****************************************************************************
