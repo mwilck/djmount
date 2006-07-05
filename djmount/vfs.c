@@ -285,7 +285,6 @@ VFS_Browse (VFS* const self, const VFS_Query* q)
 				BROWSE_SUB (func (self, BROWSE_PTR, q, 
 						  tmp_ctx));
 			}
-#if DEBUG
 			if (self->show_debug_dir) {
 				DIR_BEGIN(VFS_DEBUG_DIR_BASENAME) {
 					func = OBJECT_METHOD (self, 
@@ -297,7 +296,6 @@ VFS_Browse (VFS* const self, const VFS_Query* q)
 					}
 				} DIR_END;
 			}
-#endif 
 		} DIR_END;
 	} BROWSE_END;
 	
