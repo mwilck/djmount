@@ -28,6 +28,8 @@
 #include "djfs.h"
 #include "vfs_p.h"
 
+#include "ptr_array.h"
+#include <upnp/ithread.h>
 
 
 /******************************************************************************
@@ -38,8 +40,14 @@
 
 OBJECT_DEFINE_STRUCT(DJFS,
 		     
-		     DJFS_Flags flags;
-		     
+		     DJFS_Flags 	flags;
+
+		     // Search History
+		     size_t		search_hist_size;
+		     unsigned   	search_hist_serial;
+		     PtrArray*		search_hist;
+		     ithread_mutex_t	search_hist_mutex;
+
                      );
 
 

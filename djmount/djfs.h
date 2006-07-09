@@ -64,7 +64,8 @@ typedef enum _DJFS_Flags {
  *				"search" sub-directories
  *****************************************************************************/
 DJFS*
-DJFS_Create (void* talloc_context, DJFS_Flags flags);
+DJFS_Create (void* talloc_context, DJFS_Flags flags, 
+	     size_t search_history_size);
 
 
 

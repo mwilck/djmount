@@ -9,7 +9,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(djmount, 0.53, r3mi@users.sourceforge.net)
+AC_INIT(djmount, 0.59, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
@@ -60,6 +60,8 @@ AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
+
+AC_PATH_PROG(PERL,perl)
 
 # for pkg_config
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig

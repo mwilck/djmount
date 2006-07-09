@@ -1,0 +1,302 @@
+
+Searching
+=========
+
+When a "_search" directory is present, it indicates that the UPnP device 
+supports some kind of searching : see "Search capabilities" below.
+
+Searching is done in "_search" by entering a sub-directory name with
+a specific search syntax : see "Search criteria" below.
+For example, to search for all objects where the title contains the string "by"
+(note the single-quote around the criteria necessary for the shell) :
+   $ cd "_search"
+   $ ls 'dc:title contains "by"'
+
+See more examples at the end of this document.
+
+
+Search criteria syntax 
+----------------------
+
+SearchCriteria directory names shall follow the following pseudo-grammar 
+(characters between 'single quote' must appear literally) :
+
+searchCriteria	::= searchExp | '*'
+searchExp    	::= relExp | 
+		    searchExp space+ logicalOp space+ searchExp | 
+		    '(' space* searchExp space* ')' 
+logicalOp	::= 'and' | 'or' 
+relExp	     	::= property space+ binOp space+ quotedString | 
+		    property space+ existsOp space+ boolean 
+binOp	    	::= relOp | stringOp 
+relOp		::= '=' | '!=' | '<' | '<=' | '>' | '>=' 
+stringOp	::= 'contains' | 'doesNotContain' | 'derivedfrom' 
+existsOp	::= 'exists' 
+boolean		::= 'true' | 'false' 
+quotedString	::= '"' string_with_escaped_double_quote '"'
+space		::= ' '
+
+
+This grammar follows the SearchCriteria defined in the UPnP AV standard, 
+as defined in the "ContentDirectory:1 Service Template Version 1.01" document.
+
+
+Notes on search criteria
+------------------------
+
+- Search criteria expressions contain special characters that shall be quoted
+  when used on the shell command line (e.g. '*', '<', '(', '"', ...). The
+  easiest method is to enclose the whole criteria within 'single quote',
+  as in the example in this document.
+
+- double-quote (") shall be escaped within quotedString e.g. represented as \"
+
+- Operator precedence, highest to lowest, is: 
+	double quoting 
+	( ) 
+	binOp, existsOp 
+	'and' 
+	'or' 
+  For example,
+	$ cd 's1 and s2 or s3 or s4 and s5' 
+  is equivalent to
+	$ cd '((s1 and s2) or s3) or (s4 and s5)'
+
+- each search can be refined usingthe sub-directories "_and" and "_or" found 
+  in results. These are equivalent to a single criteria grouping the 
+  previous search and the new search using the 'and' and 'or' logical 
+  operators.
+  For example:
+	$ cd 's1'
+	$ cd _or
+	$ cd 's2'
+	$ cd _and
+	$ cd 's3'
+  is equivalent to
+	$ cd '((s1) or (s2)) and (s3)'
+
+- Return all : the special criteria '*' means "find everything", or 
+  "return all objects that exist beneath the selected starting directory"
+  (beware of performances on large collections). 
+
+- Properties : a property represents a characteristic of an UPnP object. 
+  Standard property names are normally defined, but are not necessarily 
+  implemented by all devices (also, non-standard properties can be added) :
+  see "Search capabilities" below for examples of standard properties.
+
+- Property existence is queried for by using the 'exists' binary operator. 
+  The criteria "actor exists true" is true for every object that has at least 
+  one occurrence of the actor property. It is false for any object that has no
+  actor property. Similarly, the criteria "actor exists false" is false for 
+  every object that has at least one occurrence of the actor property. It is 
+  true for any object that has no actor property. 
+
+- Property omission : any property value query (as distinct from an existence 
+  query) applied to an object that does not have that property, evaluates 
+  to false. 
+
+- Class derivation (see "Class hierarchy" below) : the 'derivedfrom' operator
+  allows to query the existence of objects whose class is derived from some 
+  base class specification. For example 'upnp:class derivedfrom "object.item"'
+  is true for all objects whose class is, or begins with, "object.item".
+
+- Numeric comparisons : when an operator in a criteria is a relOp ('=', '<',
+  '<=', ...), the quotedString can be a decimal integer (sequence of decimal
+  digits with an optional leading sign '+' or '-'). The comparison will be
+  done numerically if the actual property is also a decimal integer. In all 
+  other cases, the comparison is done by treating both values as strings.
+
+- String comparisons : all operators when applied to strings use 
+  case-insensitive comparisons. 
+
+
+Search capabilities
+-------------------
+
+The "search_capabilities" file is a list of property names that can be used 
+in search criteria. A wild-card ('*') indicates that the device supports 
+search queries using all tags present in the device.
+
+Some common properties are (not necessarily supported by all UPnP devices) :
+
+dc:title 	Name of the object
+dc:creator	Primary content creator or owner of the object 
+upnp:artist	Name of an artist
+upnp:genre	Name of the genre to which an object belongs 
+upnp:album	Title of the album to which the object belongs
+dc:date		Date of the object, of the form "YYYY-MM-DD" (ISO 8601 format) 
+upnp:class	Class of the object
+@id		An identifier for the object, unique within the UPnP device.
+
+
+Class hierarchy (advanced)
+--------------------------
+
+A class is used to assign a type to an object in an UPnP device, and identifies
+the set of properties present on that object. Classes are organized in a 
+hierarchy with certain classes being derived from others as in a typical object
+oriented system. At the root of the class hierarchy is the 'object' base class.
+
+Each class is named using a string in "dotted" notation:
+     derivedName ::= ( 'object' | derivedName ) '.' shortName 
+Some example are 'object', 'object.item', 'object.container', 
+'object.item.audioItem.musicTrack' and 'object.container.album.musicAlbum'.
+
+The UPnP AV standard defines a number of class descriptions that are derived 
+from either the 'item' or 'container' classes : see figure below (only 
+shortNames are displayed in the tree).
+Device vendors are free to extend this list with other classes or properties.
+ 
+ 
+  object
+    |___ item
+    |     |___ audioItem
+    |     |      |___ musicTrack
+    |     |      |___ audioBroadcast
+    |     |      \___ audioBook
+    |     |
+    |     |___ videoItem
+    |     |      |___ movie
+    |     |      |___ videoBroadcast
+    |     |      \___ musicVideoClip
+    |     |
+    |     |___ imageItem
+    |     |      \___ photo
+    |     |
+    |     |___ playlistItem
+    |     |
+    |     \___ textItem
+    |
+    \___ container
+          |___ album
+          |      |___ musicAlbum
+          |      \___ photoAlbum
+          |
+          |___ genre
+          |      |___ musicGenre
+          |      \___ movieGenre
+          |
+          |___ playlistContainer
+          |
+          |___ person
+          |      \___ musicArtist
+          |
+          |___ storageSystem
+          |___ storageVolume
+          \___ storageFolder
+ 
+
+
+Notes on these standard classes :
+
+- 'item' : a derived class of 'object' used to represent "atomic" 
+  content objects, i.e. object that don't contain other objects, for example, 
+  a music track on an audio CD
+
+- 'container' : a derived class of 'object' used to represent 
+  containers e.g. a music album. In djmount, each container is mapped to a 
+  directory.
+  
+- 'audioItem' : a piece of content that, when rendered, generates some audio. 
+  Note that movies, TV broadcasts, etc., that also contain an audio track 
+  are excluded from this definition : those objects should be classified 
+  under 'videoItem' (see below).
+  Standard derived classes are 'musicTrack' (audio that should be interpreted  
+  as music e.g. a song), 'audioBroadcast' (a continuous stream of audio that 
+  should be interpreted as an audio broadcast) and 'audioBook' (audio that
+  should be interpreted as a book).
+
+- 'videoItem' : a piece of content that, when rendered, generates some video. 
+  Standard derived classes are 'movie' (video that should be interpreted 
+  as a movie), 'videoBroadcast' (a continuous stream of video that should be 
+  interpreted as a broadcast e.g. a conventional TV channel or a Webcast),
+  and 'musicVideoClip' (video that should be interpreted as a clip supporting 
+  a song).
+
+- 'imageItem' : a piece of content that, when rendered, generates some still 
+  image. A standard derived class is 'photo' (image that should be interpreted 
+  as a photo, as opposed to, for example, an icon).
+
+- 'playlistItem' : a playable sequence of resources. It is different from 
+  'musicAlbum' in the sense that a 'playlistItem' may contain a mix 
+  of audio, video and images and is typically created by a user, while an 
+  'album' is typically a fixed published sequence of songs (e.g. an audio CD).
+  A 'playlistItem' item is typically a reference to a playlist file 
+  (e.g. an external M3U file). 
+
+- 'textItem' : a piece of content that, when rendered, is readable as text.
+
+- 'album' : an ordered collection of 'objects'. 
+  Standard derived classes are 'musicAlbum' (which contains items of class 
+  'musicTrack', or 'sub'-albums of class 'musicAlbum', e.g. an audio-CD) 
+  and 'photoAlbum' (which contains items of class 'photo', or 'sub'-albums 
+  of class 'photoAlbum').
+
+- 'genre' : an unordered collection of 'objects' that "belong" to the genre,
+  in a loose sense. 
+  Standard derived classes are 'musicGenre' (genre which should be interpreted
+  as a "style of music" e.g. "Rock") and 'movieGenre' (genre which should be 
+  interpreted as a "style of movies" e.g. "Western").
+
+- 'playlistContainer' : a collection of 'objects'. It is different from 
+  'musicAlbum' in the sense that a 'playlistContainer' may contain a mix 
+  of audio, video and images and is typically created by a user, while an
+  'album' is typically a fixed published sequence of songs (e.g. an audio CD).
+  
+- 'person' : an unordered collection of 'objects' that "belong" to some people,
+  in a loose sense. A standard derived class is 'musicArtist' (a music artist).
+
+- 'storageSystem' : a potentially heterogeneous collection of storage media. 
+  An example is a CD Jukebox.
+
+- 'storageVolume' : some physical storage unit of a single type. Examples are 
+  a Hard Disk Drive, a CD-Audio disc, or a Flash memory card.
+
+- 'storageFolder' : a collection of objects stored on some storage medium. 
+  Examples are a directory on a Hard Disk Drive, or a directory on CD-Rom.
+
+
+
+Search examples 
+---------------
+
+a) Search for all content by singer Renaud
+   i.e. search for all objects where 'dc:creator' is Renaud
+
+   $ cd _search
+   $ ls 'dc:creator = "Renaud"'
+
+   Note that this is equivalent to 'dc:creator = "renaud"' because comparisons
+   are case-insensitive.
+
+ 
+b) Search for all photos taken during October 2005
+   i.e. search for all photo objects whose 'dc:date' is in October 2005
+
+   $ cd _search
+   $ ls 'upnp:class = "object.item.imageItem.photo" and ( dc:date >= "2005-10-01" and dc:date <= "2005-10-31" )'
+
+   Note that this is equivalent to the following breakdown :
+
+   $ cd _search
+   $ cd 'upnp:class = "object.item.imageItem.photo"'
+   $ cd _and
+   $ ls 'dc:date >= "2005-10-01"/_and/dc:date <= "2005-10-31"'
+
+
+c) Search for all objects in the My Photos folder containing the word Paris
+   i.e. search for all objects where the 'dc:title' contains Paris under the 
+   "My Photos" directory.
+
+   $ cd "My Photos/_search"
+   $ ls 'dc:title contains "Paris"'
+
+
+d) Search for all album objects in the device
+   i.e. search for all objects that are derived from object.container.album. 
+
+   $ cd _search
+   $ ls 'upnp:class derivedfrom "object.container.album"'
+
+
+

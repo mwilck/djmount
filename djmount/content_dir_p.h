@@ -42,8 +42,11 @@ OBJECT_DEFINE_METHODS(ContentDir,
 
 OBJECT_DEFINE_STRUCT(ContentDir,
 		     // Additional fields
-		     struct _Cache*   cache;
-		     ithread_mutex_t  cache_mutex;
+		     
+		     const char*	search_caps;
+		     
+		     struct _Cache*	cache;
+		     ithread_mutex_t  	cache_mutex;
 		     );
 
 

@@ -18,6 +18,8 @@ if INTERNAL_LIBUPNP
 endif
 SUBDIRS 	+= djmount
 
+EXTRA_DIST	= search_help.txt
+
 
 # 
 # Note : 'libupnp' has a complete autoconf/automake system, which also handles

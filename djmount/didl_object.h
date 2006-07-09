@@ -57,11 +57,12 @@ typedef struct _DIDLObject {
 	 * that those fields are never NULL, and make sure that "id" 
 	 * is never empty "".
 	 */
-	char* id;
+	char* 	id;
 	// TBD char* parentId;
-	char* title;	
-	char* cds_class;
+	char* 	title;	
+	char* 	cds_class;
 	// TBD bool  restricted; // TBD Not Yet Implemented
+	bool 	searchable;
 
 	/*
 	 * full <item> or <container> element, to access optional properties

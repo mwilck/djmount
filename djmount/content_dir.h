@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * UPnP Content Directory Service 
@@ -45,7 +46,7 @@ typedef uint_fast32_t ContentDir_Index;
 
 // ContentDirectory ServiceType
 #define CONTENT_DIR_SERVICE_TYPE \
-  "urn:schemas-upnp-org:service:ContentDirectory:1"
+	"urn:schemas-upnp-org:service:ContentDirectory:1"
 
 
 
@@ -64,15 +65,19 @@ OBJECT_DECLARE_CLASS(ContentDir, Service);
 
 
 
+// TBD mutex used ?
+#define CONTENT_DIR_HAVE_CHILDREN_MUTEX		0
+
 /**
  * List of DIDL-object pointers, returned by Browse functions.
  */
 typedef struct _ContentDir_Children {
 
 	PtrArray* 	 objects; // List element type = "DIDLObject*"
-	ithread_mutex_t  mutex;   // to synchronise modifications to the list
-                                  // content
-	// TBD mutex used ?
+#if CONTENT_DIR_HAVE_CHILDREN_MUTEX
+	ithread_mutex_t  mutex;   /* to synchronise modifications to the list
+				     content */
+#endif
 
 } ContentDir_Children;
 
@@ -84,10 +89,21 @@ typedef struct _ContentDir_Children {
  */
 typedef struct _ContentDir_BrowseResult {
 
-  ContentDir*	        cds;
-  ContentDir_Children*  children;
+	ContentDir*		cds;
+	ContentDir_Children*	children;
   
 } ContentDir_BrowseResult;
+
+
+/**
+ * Browse Flag for ContentDirectory "Browse" Action.
+ */
+typedef enum _ContentDir_BrowseFlag {
+	
+	CONTENT_DIR_BROWSE_METADATA,
+	CONTENT_DIR_BROWSE_DIRECT_CHILDREN
+	
+} ContentDir_BrowseFlag;
 
 
 
@@ -107,37 +123,40 @@ ContentDir_Create (void* context,
 		   IXML_Element* serviceDesc, 
 		   const char* base_url);
 
+
 /*****************************************************************************
  * Content Directory Service Actions
  * The following methods define the various ContentDirectory actions :
  * see UPnP documentation : ContentDirectory:1 Service Template Version 1.01
  *****************************************************************************/
 
+
 /**
- * Browse Action, BrowseFlag = BrowseDirectChildren.
+ * "Browse" Action.
  * Return NULL if error, or an object list if ok (can be empty).
  * Result should be freed using "talloc_free" when finished.
  */
 const ContentDir_BrowseResult*
-ContentDir_BrowseChildren (ContentDir* cds,
-			   void* result_context, 
-			   const char* objectId);
+ContentDir_Browse (ContentDir* cds, void* result_context, 
+		   const char* objectId, ContentDir_BrowseFlag browse_flag);
 
 
 /**
- * Browse Action, BrowseFlag = BrowseMetadata.
- * Return NULL if error, or a DIDL-object if ok.
+ * "GetSearchCapabilities" Action.
+ * Result is cached and shall not be modified.
+ */
+const char*
+ContentDir_GetSearchCapabilities (ContentDir* cds, void* unused);
+
+
+/**
+ * "Search" Action 
+ * Return NULL if error, or an object list if ok (can be empty).
  * Result should be freed using "talloc_free" when finished.
  */
-DIDLObject*
-ContentDir_BrowseMetadata (ContentDir* cds,
-			   void* result_context, 
-			   const char* objectId);
-
-/** Search Action */
-// TBD TBD not implemented yet
-int
-ContentDir_Search (const ContentDir* cds, const char* objectId);
+const ContentDir_BrowseResult*
+ContentDir_Search (ContentDir* cds, void* result_context, 
+		   const char* objectId, const char* criteria);
 
 
 

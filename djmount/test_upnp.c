@@ -4,7 +4,7 @@
  * Testing of UPnP classes.
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * Part derived from libupnp example (libupnp/upnp/sample/tvctrlpt/linux/...)
  * Copyright (c) 2000-2003 Intel Corporation
@@ -72,6 +72,8 @@ typedef enum CommandType {
 	CMD_BROWSE, 
 	CMD_METADATA, 
 	CMD_LS,
+	CMD_SEARCHCAP,
+	CMD_SEARCH,
 	CMD_ACTION, 
 	CMD_PRINTDEV, 
 	CMD_LISTDEV, 
@@ -105,6 +107,8 @@ static const struct CommandStruct CMDLIST[] = {
   { "browse", 	CMD_BROWSE, 	3, "<devname> <objectId>"},
   { "metadata", CMD_METADATA, 	3, "<devname> <objectId>"},
   { "ls", 	CMD_LS, 	2, "<path>"},
+  { "searchcap",CMD_SEARCHCAP,  2, "<devname>"},
+  { "search", 	CMD_SEARCH, 	4, "<devname> <objectId> <criteria>"},
   { "action", 	CMD_ACTION, 	4, "<devname> <serviceType> <actionName>"},
   { "exit", 	CMD_EXIT, 	1, ""}
 };
@@ -286,8 +290,9 @@ process_command (const char* cmdline)
 		const ContentDir_BrowseResult* res = NULL;
 		DEVICE_LIST_CALL_SERVICE (res, strarg[1], 
 					  CONTENT_DIR_SERVICE_TYPE,
-					  ContentDir, BrowseChildren, 
-					  tmp_ctx, strarg[2]);
+					  ContentDir, Browse, 
+					  tmp_ctx, strarg[2],
+					  CONTENT_DIR_BROWSE_DIRECT_CHILDREN);
 		if (res) {
 			const DIDLObject* o = NULL;
 			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
@@ -298,20 +303,27 @@ process_command (const char* cmdline)
 	break;
 	
 	case CMD_METADATA: {
-		const DIDLObject* o = NULL;
-		DEVICE_LIST_CALL_SERVICE (o, strarg[1], 
+		const ContentDir_BrowseResult* res = NULL;
+		DEVICE_LIST_CALL_SERVICE (res, strarg[1], 
 					  CONTENT_DIR_SERVICE_TYPE,
-					  ContentDir, BrowseMetadata,
-					  tmp_ctx, strarg[2]);
-		if (o) {
-			Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
+					  ContentDir, Browse,
+					  tmp_ctx, strarg[2],
+					  CONTENT_DIR_BROWSE_METADATA);
+		if (res && res->children) {
+			const DIDLObject* const o = 
+				PtrArray_GetHead (res->children->objects);
+			if (o) {
+				Log_Printf (LOG_MAIN, "metadata = %s",
+					    DIDLObject_GetElementString 
+					    (o, tmp_ctx));
+			}
 		}
 		break;
 	}
 	
 	case CMD_LS: {
 		Log_Printf (LOG_MAIN, "ls '%s' :", strarg[1]);
-		VFS* vfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, 077));
+		VFS* vfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, 077, 100));
 		if (vfs == NULL) {
 			Log_Printf (LOG_MAIN, 
 				    "** Failed to create virtual file system");
@@ -327,7 +339,32 @@ process_command (const char* cmdline)
 		}
 		break;
 	}
-	
+
+	case CMD_SEARCHCAP: {
+		const char* s;
+		DEVICE_LIST_CALL_SERVICE (s, strarg[1],
+					  CONTENT_DIR_SERVICE_TYPE,
+					  ContentDir, GetSearchCapabilities,
+					  NULL);
+		Log_Printf (LOG_MAIN, "SearchCapabilities='%s'", NN(s));
+		break;
+	}
+		
+	case CMD_SEARCH: {
+		const ContentDir_BrowseResult* res = NULL;
+		DEVICE_LIST_CALL_SERVICE (res, strarg[1], 
+					  CONTENT_DIR_SERVICE_TYPE,
+					  ContentDir, Search, 
+					  tmp_ctx, strarg[2], strarg[3]);
+		if (res) {
+			const DIDLObject* o = NULL;
+			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
+				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
+			} PTR_ARRAY_FOR_EACH_PTR_END;
+		}
+		break;
+	}
+		
 	case CMD_ACTION: {
 		rc = DeviceList_SendActionAsync (strarg[1], strarg[2], 
 						 strarg[3], 0, NULL);

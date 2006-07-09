@@ -69,7 +69,13 @@ noinst_HEADERS		= \
 			djfs.h djfs_p.h upnp_util.h \
 		  	string_util.h xml_util.h ptr_array.h talloc_util.h \
 			cache.h \
-		  	charset.h charset_internal.h
+		  	charset.h charset_internal.h \
+			search_help.h
+
+BUILT_SOURCES		= search_help.h
+
+search_help.h : ../search_help.txt txt2h.pl
+	$(PERL) $(srcdir)/txt2h.pl $< > $@
 
 djmount_SOURCES		= $(COMMON_SRCS) fuse_main.c
 
@@ -100,7 +106,7 @@ if INTERNAL_LIBUPNP
 			  $(UPNP_TMPINC)/upnp/ithread.h \
 			  $(UPNP_TMPINC)/upnp/ixml.h
 
-    BUILT_SOURCES	= $(UPNP_TMPHEADERS)
+    BUILT_SOURCES	+= $(UPNP_TMPHEADERS)
 
 $(UPNP_TMPHEADERS) :
 	-rm -fr $(UPNP_TMPINC)
@@ -114,7 +120,9 @@ clean-local:
 endif
 
 
-EXTRA_DIST		= test_vfs.sh
+EXTRA_DIST		= test_vfs.sh txt2h.pl
+
+
 
 
 

@@ -4,7 +4,7 @@
  * DIDL-Lite object
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#	include <config.h>
-#endif
+#include <config.h>
 
 #include "didl_object.h"
 #include "log.h"
@@ -117,6 +115,9 @@ DIDLObject_Create (void* talloc_context,
 		if (o->cds_class == NULL)
 			o->cds_class = "";
 
+		char* s = ixmlElement_getAttribute (o->element, "searchable");
+		o->searchable = String_ToBoolean (s, false);
+
 		Log_Printf (LOG_DEBUG,
 			    "new DIDLObject : %s : id='%s' "
 			    "title='%s' class='%s'",
@@ -131,7 +132,7 @@ DIDLObject_Create (void* talloc_context,
 
 
 /******************************************************************************
- * DIDLObject_Create
+ * DIDLObject_GetElementString
  *****************************************************************************/
 char*
 DIDLObject_GetElementString (const DIDLObject* o, void* result_context)

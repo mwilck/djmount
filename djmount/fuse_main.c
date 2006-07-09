@@ -83,11 +83,15 @@
  * Global djmount settings
  *****************************************************************************/
 
-static const DJFS_Flags DEFAULT_DJFS_FLAGS = DJFS_SHOW_METADATA
+static const DJFS_Flags DEFAULT_DJFS_FLAGS = 
+	DJFS_SHOW_METADATA
 #if DEBUG
 	| DJFS_SHOW_DEBUG
 #endif
 	;
+ 
+// set to 0 to disable "search" sub-directories
+static const size_t DEFAULT_SEARCH_HISTORY_SIZE = 100;
 
 
 static VFS* g_djfs = NULL;
@@ -606,9 +610,9 @@ static const char* const FUSE_ALLOWED_OPTIONS = \
 static void
 usage (FILE* stream, const char* progname)
 {
+  fprintf (stream, "usage: %s [options] mountpoint\n", progname);
   fprintf 
-    (stdout,
-     "usage: %s [options] mountpoint\n"
+    (stream,
      "\n"
      "Options:\n"
      "    -h or --help           print this help, then exit\n"
@@ -622,10 +626,16 @@ usage (FILE* stream, const char* progname)
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
 #endif
      "    playlists              use playlists for AV files, instead of plain files\n"
-     "\n"
-     "See FUSE documentation for the following mount options:\n"
-     "%s\n"
-     "Debug levels are one or more comma separated words :\n"
+     "    search_history=<size>  number of remembered searches (default: %d)\n"
+     "                           (set to 0 to disable search)\n"
+     "\n", DEFAULT_SEARCH_HISTORY_SIZE);
+  fprintf 
+    (stream,
+     "See FUSE documentation for the following mount options:\n%s",
+     FUSE_ALLOWED_OPTIONS);
+  fprintf 
+    (stream,
+     "\nDebug levels are one or more comma separated words :\n"
 #if UPNP_HAVE_DEBUG
      "    upnperr, upnpall : increasing level of UPnP traces\n"
 #endif
@@ -634,8 +644,8 @@ usage (FILE* stream, const char* progname)
      "    leak, leakfull : enable talloc leak reports at exit\n"
      "'-d' alone defaults to '" DEBUG_DEFAULT_LEVELS "' i.e. all traces.\n"
      "\n"
-     "Report bugs to <" PACKAGE_BUGREPORT ">.\n",
-     progname, FUSE_ALLOWED_OPTIONS);
+     "Report bugs to <" PACKAGE_BUGREPORT ">.\n");
+
   exit (EXIT_SUCCESS); // ---------->
 }
 
@@ -704,6 +714,7 @@ main (int argc, char *argv[])
 	 */
 	char* charset = NULL;
 	DJFS_Flags djfs_flags = DEFAULT_DJFS_FLAGS;
+	size_t search_history_size = DEFAULT_SEARCH_HISTORY_SIZE;
 
 	char* fuse_argv[32] = { argv[0] };
 	int fuse_argc = 1;
@@ -745,6 +756,9 @@ main (int argc, char *argv[])
 				} else if (strncmp(s, "iocharset=", 10) == 0) {
 					charset = talloc_strdup(tmp_ctx, s+10);
 #endif
+				} else if (strncmp(s, "search_history=", 15)
+					   == 0) {
+					search_history_size = atoi (s+15);
 				} else if (strncmp(s, "fsname=", 7) == 0 ||
 					   strstr (FUSE_ALLOWED_OPTIONS, s)) {
 					FUSE_ARG ("-o");
@@ -835,7 +849,8 @@ main (int argc, char *argv[])
 	/* 
 	 * Create virtual file system
 	 */
-	g_djfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, djfs_flags));
+	g_djfs = DJFS_ToVFS (DJFS_Create (tmp_ctx, djfs_flags,
+					  search_history_size));
 	if (g_djfs == NULL) {
 		Log_Printf (LOG_ERROR, "Failed to create virtual file system");
 		exit (EXIT_FAILURE); // ---------->
