@@ -1,4 +1,9 @@
 
+
+* tested ok with Nokia N93 phone (reported by Sami Kyöstilä)
+
+============================================================================
+
 What is new in djmount 0.53
 
 * allow the 'mmap' operation to succeed on exported files. This helps some
