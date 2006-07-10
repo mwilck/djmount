@@ -1,12 +1,57 @@
 
 Searching
-=========
++++++++++
 
 When a "_search" directory is present, it indicates that the UPnP device 
-supports some kind of searching : see "Search capabilities" below.
+supports some kind of searching.
+
+Searching is done in "_search" by entering a sub-directory name with
+a specific search syntax : see "Basic search" and "Advanced search" below.
+
+Each search (basic or advanced) can be refined using the sub-directories 
+"_and" and "_or" found in results. These are equivalent to a single search 
+grouping the previous search and the new search using the 'and' and 'or' 
+logical operators.
+For example:
+	$ cd 's1'
+	$ cd _and
+	$ cd 's2'
+is equivalent to searching for both criteria 's1' and 's2'.
+
+
+
+A) Basic search
+===============
+
+Searching is done in "_search" by entering a sub-directory name with only
+*one* word. This word is searched in common properties for the objects 
+(title, creator name, artists names, album name). It is ok to match only 
+a part of these strings, and the match is case-insensitive.
+
+For example, to search for all objects where the title, creator, artist or
+album names contain the string "head" :
+   $ cd "_search"
+   $ cd head
+
+This would match for example any track by group "Motorhead", or a track named 
+"Can't Get You Out Of My Head", or any track from album "Head First".
+
+To further refine the search, it is possible to use the "_and" and "_or"
+sub-directories, as explained above.
+
+Starting from the preceding example, to keep only only the "Motorhead" tracks,
+one could do :
+   $ cd "_and"
+   $ cd mot
+
+
+
+B) Advanced search
+==================
 
 Searching is done in "_search" by entering a sub-directory name with
 a specific search syntax : see "Search criteria" below.
+
 For example, to search for all objects where the title contains the string "by"
 (note the single-quote around the criteria necessary for the shell) :
    $ cd "_search"
@@ -15,11 +60,13 @@ For example, to search for all objects where the title contains the string "by"
 See more examples at the end of this document.
 
 
-Search criteria syntax 
-----------------------
+Advanced search criteria syntax 
+-------------------------------
 
-SearchCriteria directory names shall follow the following pseudo-grammar 
-(characters between 'single quote' must appear literally) :
+SearchCriteria directory names shall follow the following pseudo-grammar
+(this grammar follows the SearchCriteria defined in the UPnP AV standard, 
+as defined in the "ContentDirectory:1 Service Template Version 1.01" document).
+
 
 searchCriteria	::= searchExp | '*'
 searchExp    	::= relExp | 
@@ -33,12 +80,20 @@ relOp		::= '=' | '!=' | '<' | '<=' | '>' | '>='
 stringOp	::= 'contains' | 'doesNotContain' | 'derivedfrom' 
 existsOp	::= 'exists' 
 boolean		::= 'true' | 'false' 
-quotedString	::= '"' string_with_escaped_double_quote '"'
 space		::= ' '
 
 
-This grammar follows the SearchCriteria defined in the UPnP AV standard, 
-as defined in the "ContentDirectory:1 Service Template Version 1.01" document.
+In this grammar :
+
+- characters between 'single quote' must appear literally.
+
+- a "quotedString" is a string enclosed within double-quotes '"'. Inside such
+  strings, double-quote themselves shall be escaped e.g. represented as \" .
+
+- a "property" represents a characteristic of an UPnP object. 
+  Standard property names are normally defined, but are not necessarily 
+  implemented by all devices (also, non-standard properties can be added) :
+  see "Search capabilities" below for examples of standard properties.
 
 
 Notes on search criteria
@@ -62,27 +117,9 @@ Notes on search criteria
   is equivalent to
 	$ cd '((s1 and s2) or s3) or (s4 and s5)'
 
-- each search can be refined usingthe sub-directories "_and" and "_or" found 
-  in results. These are equivalent to a single criteria grouping the 
-  previous search and the new search using the 'and' and 'or' logical 
-  operators.
-  For example:
-	$ cd 's1'
-	$ cd _or
-	$ cd 's2'
-	$ cd _and
-	$ cd 's3'
-  is equivalent to
-	$ cd '((s1) or (s2)) and (s3)'
-
 - Return all : the special criteria '*' means "find everything", or 
   "return all objects that exist beneath the selected starting directory"
   (beware of performances on large collections). 
-
-- Properties : a property represents a characteristic of an UPnP object. 
-  Standard property names are normally defined, but are not necessarily 
-  implemented by all devices (also, non-standard properties can be added) :
-  see "Search capabilities" below for examples of standard properties.
 
 - Property existence is queried for by using the 'exists' binary operator. 
   The criteria "actor exists true" is true for every object that has at least 
@@ -110,8 +147,8 @@ Notes on search criteria
   case-insensitive comparisons. 
 
 
-Search capabilities
--------------------
+Advanced search capabilities
+----------------------------
 
 The "search_capabilities" file is a list of property names that can be used 
 in search criteria. A wild-card ('*') indicates that the device supports 
@@ -129,8 +166,8 @@ upnp:class	Class of the object
 @id		An identifier for the object, unique within the UPnP device.
 
 
-Class hierarchy (advanced)
---------------------------
+Advanced class hierarchy
+------------------------
 
 A class is used to assign a type to an object in an UPnP device, and identifies
 the set of properties present on that object. Classes are organized in a 
@@ -257,8 +294,8 @@ Notes on these standard classes :
 
 
 
-Search examples 
----------------
+Advanced search examples 
+------------------------
 
 a) Search for all content by singer Renaud
    i.e. search for all objects where 'dc:creator' is Renaud
@@ -276,7 +313,8 @@ b) Search for all photos taken during October 2005
    $ cd _search
    $ ls 'upnp:class = "object.item.imageItem.photo" and ( dc:date >= "2005-10-01" and dc:date <= "2005-10-31" )'
 
-   Note that this is equivalent to the following breakdown :
+   Note that this is equivalent to the following breakdown, using "_and"
+   sub-directories :
 
    $ cd _search
    $ cd 'upnp:class = "object.item.imageItem.photo"'

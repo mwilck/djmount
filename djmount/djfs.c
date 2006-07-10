@@ -35,6 +35,7 @@
 
 #include "search_help.h"
 
+#include <ctype.h>
 
 
 /*****************************************************************************
@@ -66,6 +67,7 @@ typedef struct _SearchHistory {
   unsigned int 	serial;
   time_t	time;
   const char*	parent_path; 
+  const char*	basename;
   const char*	criteria;
   
 } SearchHistory;
@@ -121,13 +123,15 @@ BrowseSearchDir (DJFS* const self, const char* const sub_path,
       *pp-- = NUL;
     } while (*pp == '/');
 
-    // List existing Search criterias
+    /*
+     * List existing Search criterias
+     */
     SearchHistory* h;
     ithread_mutex_lock (&self->search_hist_mutex);
     lock = &self->search_hist_mutex;
     PTR_ARRAY_FOR_EACH_PTR (self->search_hist, h) {
       if (strcmp (parent_path, h->parent_path) == 0) {
-	DIR_BEGIN (h->criteria) {
+	DIR_BEGIN (h->basename) {
 	  VFS_SET_TIME (h->time);
 	  const char* const full_criteria = (criteria_start ? talloc_asprintf
 					     (tmp_ctx, "%s%s)",
@@ -148,14 +152,28 @@ BrowseSearchDir (DJFS* const self, const char* const sub_path,
       }
     } PTR_ARRAY_FOR_EACH_PTR_END;
 	  
-    // Parse new Search criteria
-    char* const new_criteria = talloc_strdup (tmp_ctx, BROWSE_PTR);
-    if (new_criteria) {
-      char* const t = strchr (new_criteria, '/');
-      if (t)
-	*t = NUL;
-    }
-    if (new_criteria && *new_criteria) {
+    /*
+     * Create new Search criteria
+     */
+    char* const new_basename = talloc_strdup (tmp_ctx, BROWSE_PTR);
+    if (new_basename && *new_basename) {
+      bool simplified = true;
+      char* t;
+      for (t = new_basename; *t != NUL && *t != '/'; t++) {
+	if (isspace (*t) || *t == '*')
+	  simplified = false;
+      }
+      *t = NUL;
+      
+      char* const new_criteria = 
+	(simplified ? talloc_asprintf (tmp_ctx, 
+				       "(dc:title contains \"%s\") or "
+				       "(dc:creator contains \"%s\") or "
+				       "(upnp:artist contains \"%s\") or "
+				       "(upnp:album contains \"%s\")",
+				       new_basename, new_basename,
+				       new_basename, new_basename)
+	 : new_basename);
       Log_Printf (LOG_DEBUG, "new search criteria '%s' (inside '%s')",
 		  new_criteria, NN(criteria_start));
       const char* const full_criteria = (criteria_start ? talloc_asprintf 
@@ -174,15 +192,18 @@ BrowseSearchDir (DJFS* const self, const char* const sub_path,
 	    .serial      = ++(self->search_hist_serial),
 	    .time        = time (NULL),
 	    .parent_path = talloc_steal (h, parent_path),
-	    .criteria    = talloc_steal (h, new_criteria),
+	    .basename	 = talloc_steal (h, new_basename),
 	  };
+	  h->criteria = ( (new_criteria == new_basename) ? h->basename 
+			  : talloc_steal (h, new_criteria) );
+
 	  PtrArray_Append (self->search_hist, h);
 	  if (PtrArray_GetSize (self->search_hist) > self->search_hist_size) {
 	    SearchHistory* const oldest = 
 	      PtrArray_RemoveAt (self->search_hist, 0);
 	    talloc_free (oldest);
 	  }
-	  DIR_BEGIN (new_criteria) {
+	  DIR_BEGIN (new_basename) {
 	    VFS_SET_TIME (h->time);
 	    BROWSE_SUB (BrowseChildren (self, BROWSE_PTR, query,
 					tmp_ctx, devName, parent,
@@ -440,7 +461,7 @@ BrowseDebug (VFS* const vfs, const char* const sub_path,
 	  sprintf (link_name, "%d", h->serial);
 	  SYMLINK_BEGIN (link_name) {
 	    const char* const str = talloc_asprintf 
-	      (tmp_ctx, "../..%s/%s", h->parent_path, h->criteria);
+	      (tmp_ctx, "../..%s/%s", h->parent_path, h->basename);
 	    SYMLINK_SET_PATH (str);
 	    VFS_SET_TIME (h->time);
 	  } SYMLINK_END;
