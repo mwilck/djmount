@@ -160,6 +160,11 @@ Usage
    through HTTP when the playlist is accessed by your favorite media player.
    This mode was the only mode possible for djmount before version 0.50.
 
+   "-o search_history=<size>" to set the maximum number of remembered searches
+   (see "djmount --help" for the default number). Set to 0 to disable searching
+   completely (no "-search" directory will be displayed, even if supported by 
+   the connected device).
+
 
 Known Compatible Devices
 ------------------------
@@ -231,7 +236,7 @@ Copyright and Licenses
 djmount is free software :
 
 
-* "djmount" is (C) Copyright 2005 Rémi Turboult.
+* "djmount" is (C) Copyright 2005-2006 Rémi Turboult.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
