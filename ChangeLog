@@ -2,8 +2,9 @@
 
 	* implement "search" operations (major evolution)
 
-	* djmount/djfs.c: move 'status' file to '.debug' directory.
-	  Add '.debug/versions' file.
+	* djmount/djfs.c: move 'status' file to ".debug" directory,
+	  and suppress intermediate "browse" directory.
+	  Add ".debug/versions" file.
 
 2006-06-30  Rémi Turboult  <r3mi@users.sourceforge.net>
 
