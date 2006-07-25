@@ -37,6 +37,12 @@ extern "C" {
 #define NUL	'\0'
 
 
+// To allow macros to be stringified
+
+#define _STRINGIFY(s)    #s
+#define STRINGIFY(s)   _STRINGIFY(s)
+
+
 
 /*****************************************************************************
  * StringPair

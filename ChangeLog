@@ -1,3 +1,8 @@
+2006-07-22  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/djfs.c (BrowseSearchDir): do not create directory on empty 
+	  Search result -> "No such file or directory"
+
 2006-07-19  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/vfs.c (BrowseDebug): add 'uname' debug file

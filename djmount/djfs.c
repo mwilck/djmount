@@ -55,7 +55,7 @@
                 |                          |- <search_criteria> -+- ...
                 |                          `- ...
                 |
-                |- <xxxx>
+                |- <devName>
                 |
                 `- .debug/
 
@@ -185,7 +185,9 @@ BrowseSearchDir (DJFS* const self, const char* const sub_path,
 				CONTENT_DIR_SERVICE_TYPE,
 				ContentDir, Search,
 				tmp_ctx, parent->id, full_criteria);
-      if (res) {
+      // Do not create directory on empty result -> "No such file or directory"
+      if (res && res->children && 
+	  PtrArray_GetSize (res->children->objects) > 0) {
 	SearchHistory* h = talloc (self->search_hist, SearchHistory);
 	if (h) {
 	  *h = (SearchHistory) {
@@ -425,16 +427,15 @@ BrowseDebug (VFS* const vfs, const char* const sub_path,
   BROWSE_BEGIN(sub_path, query) {
         
     FILE_BEGIN("versions") {
-      const char* const str = talloc_asprintf 
-	(tmp_ctx, 
-	 PACKAGE " " VERSION "\nlibupnp "
+      static const char* const str = PACKAGE " " VERSION "\nlibupnp "
 #ifdef UPNP_VERSION_STRING
-	 UPNP_VERSION_STRING
+	UPNP_VERSION_STRING
 #else
-	 "bundled"
+	"bundled"
 #endif
-	 "\nFUSE %d.%d\n", FUSE_MAJOR_VERSION, FUSE_MINOR_VERSION);
-      FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
+	"\nFUSE " STRINGIFY (FUSE_MAJOR_VERSION) "." 
+	STRINGIFY (FUSE_MINOR_VERSION) "\n";
+      FILE_SET_STRING (str, FILE_BUFFER_STRING_EXTERN);
     } FILE_END;
 
     // Status of each device
