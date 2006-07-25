@@ -33,7 +33,7 @@ trap "cd / ; fusermount -u $mntpoint 2> /dev/null ; rmdir $mntpoint" EXIT HUP IN
 
 cd $mntpoint || exit 1
 
-diff -u - <(find . -print) <<-EOF || exit 1 
+diff -u - <(find . -print 2>&1) <<-EOF || exit 1 
 	.
 	./atest
 	./atest/test
@@ -105,11 +105,13 @@ diff -u - <(find . -print) <<-EOF || exit 1
 	./zetest/test/a3/b9/toto
 	./zetest/link_to_test
 	./.debug
+	./.debug/uname
 	./.debug/talloc_total
 	./.debug/talloc_report
 	./.debug/talloc_report_full
 EOF
 
+egrep -iq "^linux" ./.debug/uname || exit 1
 
 echo -n "essais" | diff - ./atest/test/a2/b1/f1 || exit 1
 
@@ -118,7 +120,7 @@ export LANG=C
 export LC_ALL=C
 
 
-diff -u - <(/bin/ls -lR) <<-EOF || exit 1 
+diff -u - <(/bin/ls -lR 2>&1) <<-EOF || exit 1 
 .:
 total 2
 dr-xr-xr-x  3 root root 512 Jan  1  2000 atest
@@ -379,7 +381,7 @@ total 0
 EOF
 
 
-diff -u - <(stat --format="%n %A s=%s b=%b l=%h at='%x' mt='%y' ct='%z'" ./test/a3/* ./atest/link_to_test ./test/a2/b1/f1 ) <<-EOF || exit 1 
+diff -u - <(stat --format="%n %A s=%s b=%b l=%h at='%x' mt='%y' ct='%z'" ./test/a3/* ./atest/link_to_test ./test/a2/b1/f1 2>&1) <<-EOF || exit 1 
 ./test/a3/b3 dr-xr-xr-x s=512 b=1 l=2 at='2000-01-01 12:00:00.000000000 +0100' mt='2000-01-01 12:00:00.000000000 +0100' ct='2000-01-01 12:00:00.000000000 +0100'
 ./test/a3/b4 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 04:03:00.000000000 +0200' mt='2004-06-25 04:03:00.000000000 +0200' ct='2004-06-25 04:03:00.000000000 +0200'
 ./test/a3/b5 dr-xr-xr-x s=512 b=1 l=3 at='2004-06-25 05:04:00.000000000 +0200' mt='2004-06-25 05:04:00.000000000 +0200' ct='2004-06-25 05:04:00.000000000 +0200'
@@ -399,7 +401,7 @@ ls b1 > /dev/null || exit 1
 # check there is no "leak" between directories
 for d in a1 a3 b3 b4 b5 b6 b7 b8 b9 toto c1 f1 test atest zetest
 do
-    ls $d >& /dev/null && exit 1
+    ls $d > /dev/null 2>&1 && exit 1
 done
 
 

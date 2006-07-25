@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <sys/utsname.h>
 
 #include "didl_object.h"
 #include "file_buffer.h"
@@ -230,6 +231,17 @@ BrowseDebug (VFS* const self, const char* const sub_path,
 {
 	BROWSE_BEGIN(sub_path, query) {
 	   
+		FILE_BEGIN("uname") {
+			struct utsname ubuf;
+			int rc = uname (&ubuf);
+			const char* const str = talloc_asprintf 
+				(tmp_ctx, "%s %s\nhardware type %s\n",
+				 (rc ? "*unknown kernel*" : ubuf.sysname),
+				 (rc ? "*unknown release*" : ubuf.release),
+				 (rc ? "*unknown machine*" : ubuf.machine) );
+			FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
+		} FILE_END;
+
 		FILE_BEGIN("talloc_total") {
 			const char* const str = talloc_asprintf 
 				(tmp_ctx, "%" PRIdMAX " bytes\n",
