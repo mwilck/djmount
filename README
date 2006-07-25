@@ -21,8 +21,8 @@ License (GNU GPL : see "COPYING" file) : see details in "Copyright and
 Licenses" paragraph below.
 
 
-Example
--------
+Example 1 : browsing
+--------------------
 
 (the actual content listed depends on your AV files collection !)
 
@@ -38,21 +38,15 @@ dr-xr-xr-x  3 root root 512 jan  1  2000 AnotherMediaServerDeviceName/
 $ cd SomeMediaServerDeviceName
 
 $ ls -l 
-dr-xr-xr-x  5 root root  512 jan  1  2000 browse/
--r--r--r--  1 root root 1749 jan  1  2000 status
-
-$ ls -l browse/
 dr-xr-xr-x  14 root root 512 jan  1  2000 Music/
 dr-xr-xr-x   5 root root 512 jan  1  2000 Pictures/
 dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
 
-$ ls -l browse/Music/Artists/Tinariwen/
+$ ls -l Music/Artists/Tinariwen/
 -r--r--r--  1 root root 5407087 jan  1  2000 Chatma.mp3
--r--r--r--  1 root root     722 jan  1  2000 Chatma.xml
 -r--r--r--  1 root root 3751143 jan  1  2000 Chet Boghassa.mp3
--r--r--r--  1 root root     729 jan  1  2000 Chet Boghassa.xml
 
-$ xmms browse/Music/Artists/Tinariwen/
+$ xmms Music/Artists/Tinariwen/
 
 $ fusermount -u /mnt/av
 
@@ -62,22 +56,56 @@ Note: the FUSE  kernel module shall be loaded before running djmount
 "fusermount: fuse device not found, try 'modprobe fuse' first").
 
 
+Example 2 : searching
+---------------------
+
+(again, the actual content listed depends on your AV files collection !)
+
+$ djmount /mnt/av
+
+$ cd /mnt/av
+
+$ ls -l
+dr-xr-xr-x  3 root root 512 jan  1  2000 SomeMediaServerSupportingSearch/
+dr-xr-xr-x  3 root root 512 jan  1  2000 AnotherMediaServerDeviceName/
+-r--r--r--  1 root root 114 jan  1  2000 devices
+
+$ cd SomeMediaServerSupportingSearch
+
+$ ls -l 
+dr-xr-xr-x  14 root root 512 jan  1  2000 Music/
+dr-xr-xr-x   5 root root 512 jan  1  2000 Pictures/
+dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
+dr-xr-xr-x   2 root root 512 Jan  1  2000 _search/
+
+$ ls -l _search
+-r--r--r--  1 root root   126 Jan  1  2000 search_capabilities
+-r--r--r--  1 root root 12640 Jan  1  2000 search_help.txt
+
+$ ls -l _search/brel
+-r--r--r--  1 root root 3151929 jan  1  2000 Amsterdam.mp3
+-r--r--r--  1 root root 3246781 jan  1  2000 Ne me quitte pas.mp3
+dr-xr-xr-x  2 root root     512 Jan  1  2000 _and/
+dr-xr-xr-x  2 root root     512 Jan  1  2000 _or/
+
+$ xmms _search/brel/Amsterdam.mp3
+
+$ fusermount -u /mnt/av
+
+
+Note: full help for searching is available in the "search_help.txt" file,
+included in the djmount package. This file is also available at run-time 
+in the "_search" directory, if the connected UPnP device supports searching.
+
+
 Building and Installation
 -------------------------
 
-djmount has been built and tested on the following configurations:
-
-* MandrakeLinux 10.1 (kernel 2.6.8.1-12mdk, gcc 3.4.1, glibc-2.3.3), 
-  FUSE 2.2.1, 2.4.0, 2.5.0, 2.5.2 or 2.5.3, libupnp internal or 1.3.1
-
-* GeeXboX 0.98.7 (Linux kernel 2.6.14, gcc 3.4.4, uClibc 0.9.28),
-  FUSE 2.4.1
-
-* Debian sid (Linux kernel 2.6.14, gcc 4.0.3 20051023 prerelease)
-
-* Ubuntu 5.10 "Breezy Badger" (Linux kernel 2.6.12-9-386, gcc 4.0.2 20050808 
-  prerelease, libc6 2.3.5-1ubuntu12), FUSE 2.4.2
-
+djmount has been built and tested on various Linux distro (MandrakeLinux 10.1,
+GeeXboX, Debian sarge or sid, Ubuntu 5.10, Mandriva 2006.0 ...), which include
+various Linux kernels (e.g. 2.6.14), gcc (e.g. 3.4.1, 4.0.3) and libc
+(e.g. glibc-2.3.5, uClibc 0.9.28).
+Different versions of FUSE are also supported (e.g. 2.2.1, 2.4, 2.5)
 
 
 A) Basic build instruction:
@@ -125,7 +153,9 @@ Examples:
 
 Note: djmount requires the patches included in the bundled libupnp library :
 version 1.2.1a alone is not sufficient. If using an external libupnp 
-installation, it must be at least version 1.3.1.
+installation, it must be version 1.3.1. Version 1.4 (as available from 
+http://www.libupnp.org/ or http://sf.net/projects/pupnp/ ) has *not* 
+been tested with djmount.
 
 
 Usage 
@@ -200,12 +230,47 @@ UPnP AV compliant devices, help is needed to test on additional devices.
 This page describes how to share A/V content with some of the above servers :
  http://www.geexbox.org/wiki/index.php/Accessing_to_UPnP_Contents
 
-Warning : if your UPnP Media Server is behind a closed firewall, it won't be 
-visible in djmount. Therefore, if there is a firewall on the machine
-where you are running your media server, you have to open the necessary
-ports in this firewall. Some media servers can do it automatically 
-(e.g. Windows Media Connect on Windows XP), most of them don't do it 
-(e.g. AV Media Server in Intel Tools).
+
+Troubleshooting
+---------------
+
+* if djmount refuses to start, make sure that the FUSE kernel module has
+  been loaded before running djmount (try 'modprobe fuse' as root).
+
+* if djmount refuses to start, in particular with UPnP error -208 (socket 
+  error), make sure that there is a multicast route set for the default
+  network interface. This should be done automatically on recent distributions,
+  else issue this command (where 'eth0' is the default interface) :
+	route add -net 239.0.0.0 netmask 255.0.0.0 dev eth0
+
+* if your UPnP Media Server is behind a closed firewall, it won't be 
+  visible in djmount. Therefore, if there is a firewall on the machine
+  where you are running your media server, you have to open the necessary
+  ports in this firewall. Some media servers can do it automatically 
+  (e.g. Windows Media Connect on Windows XP), most of them don't do it 
+  (e.g. AV Media Server in Intel Tools).
+
+* currently, files larger than 2 Gb are not always treated correctly.
+  Try "playlists" mode as a workaround if this is needed.
+
+* in some distributions (e.g. Debian Sarge), djmount (and more generally, 
+  FUSE-based file systems) work fine from the command line, but is unbrowsable
+  by Nautilus (Gnome) or Konqueror (KDE) : clicking on a directory causes 
+  the new browser window to open momentarily, then immediately close, and 
+  the directory then disappears from the GUI altogether. 
+  The problem is caused by the distro using the older "famd" daemon for file 
+  update notification : by default, FUSE doesn't allow root to look at a 
+  mounted filesystem (see FUSE documentation). You'll need to add the line :
+	 user_allow_other
+  to the file "/etc/fuse.conf". Then, you'll need to add the option 
+  "-o allow_root" to your mounts.
+  Recent distributions (Ubuntu, Mandriva, Fedora, ...) normally don't have 
+  this problem : they use the newer "inotify", and doesn't rely on "famd".
+
+* for general problems, try also the FUSE documentation http://fuse.sf.net/ .
+
+* finally, if you still have problems, please report on the djmount forums :
+  http://sourceforge.net/forum/?group_id=142039
 
 
 Implementation
