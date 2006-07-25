@@ -196,191 +196,88 @@ fs_getdir (const char* path, fuse_dirh_t h, fuse_dirfil_t filler)
 static int 
 fs_mknod (const char* path, mode_t mode, dev_t rdev)
 {
-  int rc;
-  
-  // TBD not implemented yet
-  rc = -EIO;
-  
-  return rc;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
 
 
-#if 1
-#  define fs_mkdir 	NULL
-#else
 static int 
 fs_mkdir (const char* path, mode_t mode)
 {
-  int rc;
-  
-  if (path == 0) {
-    res = -EFAULT;
-  } else {
-    // Parse the path :
-    // directory creation only allowed in "/<device>/search/" sub-directories
-    size_t pathlen = strlen (path);
-    void* context  = talloc_new (0); // TBD
-    char* device   = talloc_array (context, char, pathlen);
-    char* criteria = talloc_array (context, char, pathlen);
-    if (sscanf (path, "/%[^/]/search/%[^/]", device, criteria) != 2) {
-      res = -EPERM;
-    } else {
-      
-      // TBD not yet implemented !!
-      res = -EIO;
-    }
-    talloc_free (context);
-  }
-  
-  return rc;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
 static int 
 fs_unlink (const char* path)
 {
-  // File creation / deletion is not allowed in this filesystem
-  return -EPERM;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
 
 
-#if 1
-#  define fs_rmdir 	NULL
-#else
 static int 
 fs_rmdir (const char* path)
 {
-  int res;
-  
-  void* context = talloc_new (0); // TBD
-  StringArray* p = split_path (context, path);
-  if (p == 0) {
-    res = -EFAULT;
-  } else {
-    // directory deletion only allowed in "/<device>/search/" sub-directories
-    if (p->nb != 3 || strcmp (p->str[1], "search") != 0) {
-      res = -EPERM;
-    } else {
-      // TBD not implemented yet
-      res = -EIO;
-    }
-  }
-  talloc_free (context);
-  return res;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_symlink 	NULL
-#else
 static int 
 fs_symlink (const char* from, const char* to)
 {
-  int rc;
-
-  // TBD not implemented yet
-  rc = -EIO;
-
-  return rc;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_rename	NULL
-#else
 static int 
 fs_rename (const char* from, const char* to)
 {
-  int res;
-  
-  res = rename(from, to);
-  if(res == -1)
-    return -errno;
-  
-  return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_link	NULL
-#else
 static int 
 fs_link (const char* from, const char* to)
 {
-  int res;
-  
-  res = link(from, to);
-  if(res == -1)
-    return -errno;
-  
-  return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_chmod  	NULL
-#else
-static int fs_chmod (const char* path, mode_t mode)
+static int 
+fs_chmod (const char* path, mode_t mode)
 {
-  // Permission denied : no chmod can be performed on this filesystem
-  return -EPERM;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_chown	NULL
-#else
 static int 
 fs_chown (const char* path, uid_t uid, gid_t gid)
 {
-    int res;
-
-    res = lchown(path, uid, gid);
-    if(res == -1)
-        return -errno;
-
-    return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_truncate	NULL
-#else
 static int fs_truncate (const char* path, off_t size)
 {
-  int res;
-  
-  res = truncate(path, size);
-  if(res == -1)
-    return -errno;
-  
-  return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
-#if 1
-#  define fs_utime	NULL
-#else
 static int 
 fs_utime (const char *path, struct utimbuf *buf)
 {
-  int res;
-  
-  res = utime(path, buf);
-  if(res == -1)
-    return -errno;
-  
-  return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
 static int 
@@ -432,17 +329,13 @@ fs_read (const char* path, char* buf, size_t size, off_t offset,
 }
 
 
-#if 1
-#  define fs_write	NULL
-#else
 static int 
 fs_write (const char* path, const char* buf, size_t size,
 	  off_t offset, struct fuse_file_info* fi)
 {
-  // Should not happen : no file is writable in this filesystem.
-  return -EIO; 
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
-#endif
 
 
 #if 1
@@ -473,6 +366,9 @@ fs_release (const char* path, struct fuse_file_info* fi)
 }
 
 
+#if 1
+#	define fs_fsync		NULL
+#else
 static int 
 fs_fsync (const char* path, int isdatasync, struct fuse_file_info* fi)
 {
@@ -484,45 +380,59 @@ fs_fsync (const char* path, int isdatasync, struct fuse_file_info* fi)
   (void) fi;
   return 0;
 }
+#endif
 
 
 #ifdef HAVE_SETXATTR
 /*
  * xattr operations are optional and can safely be left unimplemented 
  */
-static int fs_setxattr (const char *path, const char *name, const char *value,
-                        size_t size, int flags)
+
+static int 
+fs_setxattr (const char *path, const char *name, const char *value,
+	     size_t size, int flags)
 {
-    int res = lsetxattr(path, name, value, size, flags);
-    if(res == -1)
-        return -errno;
-    return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
 
-static int fs_getxattr (const char *path, const char *name, char *value,
-			size_t size)
+
+#if 1
+#	define fs_getxattr	NULL
+#else
+static int 
+fs_getxattr (const char *path, const char *name, char *value, size_t size)
 {
     int res = lgetxattr(path, name, value, size);
     if(res == -1)
         return -errno;
     return res;
 }
+#endif
 
-static int fs_listxattr (const char *path, char *list, size_t size)
+
+#if 1
+#	define fs_listxattr	NULL
+#else
+static int 
+fs_listxattr (const char *path, char *list, size_t size)
 {
     int res = llistxattr(path, list, size);
     if(res == -1)
         return -errno;
     return res;
 }
+#endif
 
-static int fs_removexattr (const char *path, const char *name)
+
+static int 
+fs_removexattr (const char *path, const char *name)
 {
-    int res = lremovexattr(path, name);
-    if(res == -1)
-        return -errno;
-    return 0;
+	// Permission denied : not allowed in this filesystem
+	return -EPERM;
 }
+
+
 #endif /* HAVE_SETXATTR */
 
 
