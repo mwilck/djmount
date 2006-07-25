@@ -18,6 +18,10 @@ For example:
 	$ cd 's2'
 is equivalent to searching for both criteria 's1' and 's2'.
 
+When a search returns no result, no sub-directory is created :
+   $ cd _search/non_existant_criteria
+cd: _search/non_existant_criteria: No such file or directory
+
 
 
 A) Basic search
@@ -30,7 +34,7 @@ a part of these strings, and the match is case-insensitive.
 
 For example, to search for all objects where the title, creator, artist or
 album names contain the string "head" :
-   $ cd "_search"
+   $ cd _search
    $ cd head
 
 This would match for example any track by group "Motorhead", or a track named 
@@ -41,7 +45,7 @@ sub-directories, as explained above.
 
 Starting from the preceding example, to keep only only the "Motorhead" tracks,
 one could do :
-   $ cd "_and"
+   $ cd _and
    $ cd mot
 
 
@@ -54,7 +58,7 @@ a specific search syntax : see "Search criteria" below.
 
 For example, to search for all objects where the title contains the string "by"
 (note the single-quote around the criteria necessary for the shell) :
-   $ cd "_search"
+   $ cd _search
    $ ls 'dc:title contains "by"'
 
 See more examples at the end of this document.
@@ -66,6 +70,8 @@ Advanced search criteria syntax
 SearchCriteria directory names shall follow the following pseudo-grammar
 (this grammar follows the SearchCriteria defined in the UPnP AV standard, 
 as defined in the "ContentDirectory:1 Service Template Version 1.01" document).
+
+Characters between 'single quote' must appear literally.
 
 
 searchCriteria	::= searchExp | '*'
@@ -81,19 +87,17 @@ stringOp	::= 'contains' | 'doesNotContain' | 'derivedfrom'
 existsOp	::= 'exists' 
 boolean		::= 'true' | 'false' 
 space		::= ' '
+quotedString	::= (1)
+property	::= (2)
 
 
-In this grammar :
+(1) a "quotedString" is a string enclosed within double-quotes '"'. Inside such
+    strings, double-quote themselves shall be escaped e.g. represented as \" .
 
-- characters between 'single quote' must appear literally.
-
-- a "quotedString" is a string enclosed within double-quotes '"'. Inside such
-  strings, double-quote themselves shall be escaped e.g. represented as \" .
-
-- a "property" represents a characteristic of an UPnP object. 
-  Standard property names are normally defined, but are not necessarily 
-  implemented by all devices (also, non-standard properties can be added) :
-  see "Search capabilities" below for examples of standard properties.
+(2) a "property" represents a characteristic of an UPnP object. 
+    Standard property names are normally defined, but are not necessarily 
+    implemented by all devices (also, non-standard properties can be added) :
+    see "Search capabilities" below for examples of standard properties.
 
 
 Notes on search criteria
