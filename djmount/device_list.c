@@ -853,52 +853,59 @@ CheckSubscriptionsLoop (void* arg)
 int
 DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
 {
-  int rc;
-  unsigned short port = 0;
-  char* ip_address = NULL;
-  
-  gStateUpdateFun = eventCallback;
-
-  ithread_mutex_init (&DeviceListMutex, NULL);
-
-  ListInit (&GlobalDeviceList, 0, 0);
-
-  // Makes the XML parser more tolerant to malformed text
-  ixmlRelaxParser ('?');
-
-  Log_Printf (LOG_DEBUG, "Intializing UPnP with ipaddress=%s port=%d",
-	      NN(ip_address), port);
-  rc = UpnpInit (ip_address, port);
-  if( UPNP_E_SUCCESS != rc ) {
-    Log_Printf (LOG_ERROR, "UpnpInit() Error: %d", rc);
-    UpnpFinish();
-    return rc; // ---------->
-  }
-
-  if ( NULL == ip_address )
-    ip_address = UpnpGetServerIpAddress();
-  if ( 0 == port )
-    port = UpnpGetServerPort();
-  
-  Log_Printf (LOG_INFO, "UPnP Initialized (%s:%d)", NN(ip_address), port);
-
-  Log_Printf (LOG_DEBUG, "Registering Control Point" );
-  rc = UpnpRegisterClient (EventHandlerCallback,
-			   &g_ctrlpt_handle, &g_ctrlpt_handle);
-  if( UPNP_E_SUCCESS != rc ) {
-    Log_Printf (LOG_ERROR, "Error registering CP: %d", rc);
-    UpnpFinish();
-    return rc; // ---------->
-  }
-  
-  Log_Printf (LOG_DEBUG, "Control Point Registered" );
-
-  DeviceList_RefreshAll (target);
-
-  // start a timer thread
-  ithread_create (&g_timer_thread, NULL, CheckSubscriptionsLoop, NULL);
-
-  return rc;
+	int rc;
+	unsigned short port = 0;
+	char* ip_address = NULL;
+	
+	gStateUpdateFun = eventCallback;
+	
+	ithread_mutex_init (&DeviceListMutex, NULL);
+	
+	ListInit (&GlobalDeviceList, 0, 0);
+	
+	// Makes the XML parser more tolerant to malformed text
+	ixmlRelaxParser ('?');
+	
+	Log_Printf (LOG_DEBUG, "Intializing UPnP with ipaddress=%s port=%d",
+		    NN(ip_address), port);
+	rc = UpnpInit (ip_address, port);
+	if( UPNP_E_SUCCESS != rc ) {
+		Log_Printf (LOG_ERROR, "UpnpInit() Error: %d", rc);
+		UpnpFinish();
+		if (rc == UPNP_E_SOCKET_ERROR) {
+			Log_Printf (LOG_ERROR, "Check network configuration, "
+				    "in particular that a multicast route "
+				    "is set for the default network "
+				    "interface");
+		}
+		return rc; // ---------->
+	}
+	
+	if ( NULL == ip_address )
+		ip_address = UpnpGetServerIpAddress();
+	if ( 0 == port )
+		port = UpnpGetServerPort();
+	
+	Log_Printf (LOG_INFO, "UPnP Initialized (%s:%d)", 
+		    NN(ip_address), port);
+	
+	Log_Printf (LOG_DEBUG, "Registering Control Point" );
+	rc = UpnpRegisterClient (EventHandlerCallback,
+				 &g_ctrlpt_handle, &g_ctrlpt_handle);
+	if( UPNP_E_SUCCESS != rc ) {
+		Log_Printf (LOG_ERROR, "Error registering CP: %d", rc);
+		UpnpFinish();
+		return rc; // ---------->
+	}
+	
+	Log_Printf (LOG_DEBUG, "Control Point Registered" );
+	
+	DeviceList_RefreshAll (target);
+	
+	// start a timer thread
+	ithread_create (&g_timer_thread, NULL, CheckSubscriptionsLoop, NULL);
+	
+	return rc;
 }
 
 
