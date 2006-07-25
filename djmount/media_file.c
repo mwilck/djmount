@@ -4,7 +4,7 @@
  * Get file information for the media files representing DIDL-Lite objects.
  * This file is part of djmount.
  *
- * (C) Copyright 2005 Rémi Turboult <r3mi@users.sourceforge.net>
+ * (C) Copyright 2005-2006 Rémi Turboult <r3mi@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,8 @@
  *    is not NULL), or directly as a raw file.
  * 2) the file extension to give to the file (if not present in the DIDL-Lite
  *    object's title). Default if NULL : use the MIME subtype, 
- *    without any "*-" prefix. Example : "audio/x-ac3" -> "ac3".
+ *    without any "*-" prefix. Examples : "audio/x-ac3" -> "ac3"
+ *    and "video/x-ms-wmv" -> "wmv".
  *
  * NOTE : this list is *ordered*, because the search on mimetype is done 
  *        by matching the begining of the string only.
@@ -56,39 +57,69 @@ typedef struct _MimeType {
 } MimeType;
 
 static const MimeType MIMES[] = {
-	{ "application/vnd.rn-realmedia",	"ram",	"ram" 	},
-	{ "audio/vnd.rn-realaudio",	   	"ram",	"ram" 	},
-	{ "audio/x-pn-realaudio", 	   	"ram",	"ram" 	}, 
-	// also "audio/x-pn-realaudio-plugin"
-	{ "audio/x-realaudio", 	        	"ram",	"ram" 	},
-	{ "audio/basic",			"m3u",	"au"  	},
-	{ "audio/mpeg",				"m3u",	"mp3" 	},
-	{ "audio/prs.sid",			"m3u",	"sid" 	},
-	{ "audio/x-scpls",			NULL,	"pls" 	},
+	/*
+	 * Audio files
+	 */
+	{ "audio/mpeg",				"m3u",	"mp3"	},
+	{ "audio/vnd.rn-realaudio",		"ram",	"ram"	},
+	{ "audio/x-pn-realaudio",		"ram",	"ram"	}, 
+	// matches also "audio/x-pn-realaudio-plugin"
+	{ "audio/x-realaudio",			"ram",	"ram"	},
+	{ "audio/basic",			"m3u",	"au"	},
+	{ "audio/prs.sid",			"m3u",	"sid"	},
+	{ "audio/x-scpls",			NULL,	"pls"	},
 	{ "audio/x-mpegurl",			NULL,	"m3u"	},
 	{ "audio/x-matroska",			"m3u",	"mka"	},
-	{ "audio/",				"m3u",	NULL  	},
-	{ "video/vnd.rn-realvideo", 	   	"ram",	"ram" 	},
-	{ "video/x-msvideo",		   	"m3u",	"avi"  	},
-	{ "video/x-motion-jpeg",	   	"m3u",	"mjpg"	},
-	{ "video/quicktime",		   	"m3u",	"mov" 	},
+	// Default for all other audio files : x-aac, x-ac3, x-ogg, wav, ...
+	{ "audio/",				"m3u",	NULL	},
+
+	/*
+	 * Video files
+	 */
+	{ "video/vnd.rn-realvideo",		"ram",	"ram"	},
+	{ "video/x-msvideo",			"m3u",	"avi"	},
+	{ "video/x-motion-jpeg",		"m3u",	"mjpg"	},
+	{ "video/quicktime",			"m3u",	"mov"	},
 	{ "video/x-matroska",			"m3u",	"mkv"	},
-	{ "video/",			   	"m3u",	NULL  	},
-	{ "application/x-matroska",		"m3u",	"mkv"	},
+	{ "video/mpeg",				"m3u",	"mpg"	},
+	{ "video/mp2p",				"m3u",	"vob"	},
+	// Default for all other video files : asf, mpeg2, x-ms-wmv, ...
+	{ "video/",				"m3u",	NULL	},
+
+	/*
+	 * Image files
+	 */
+	{ "image/jpeg",				NULL,	"jpg"	},
+	{ "image/svg+xml",			NULL,	"svg"	},
+	{ "image/x-xwindowdump",		NULL,	"xwd"	},
+	{ "image/x-win-bitmap",			NULL,	"cur"	},
+	{ "image/x-portable-anymap",		NULL,	"pnm"	},
+	{ "image/x-portable-bitmap",		NULL,	"pbm"	},
+	{ "image/x-portable-pixmap",		NULL,	"ppm"	},
+	{ "image/x-portable-graymap",		NULL,	"pgm"	},
+	{ "image/x-xpixmap",			NULL,	"xpm"	},
+	{ "image/x-xbitmap",			NULL,	"xbm"	},
+	{ "image/x-photo-cd",			NULL,	"pcd"	},
+	{ "image/x-quicktime",			NULL,	"qti"	}, 
+	{ "image/x-icon",			NULL,	"ico"	}, 
+	{ "image/tiff",				NULL,	"tif"	},
+	// Default for all other image files : bmp, gif, png, ...
+	{ "image/",				NULL,	NULL	},
+
+	/*
+	 * Multimedia files
+	 */
 	{ "application/ogg",			"m3u",	"ogg"	},
-	{ "image/jpeg",				NULL,	"jpg" 	},
-	{ "image/svg+xml",			NULL,	"svg" 	},
-	{ "image/x-xwindowdump",		NULL,	"xwd" 	},
-	{ "image/x-win-bitmap",			NULL,	"cur" 	},
-	{ "image/x-portable-anymap",		NULL,	"pnm" 	},
-	{ "image/x-portable-bitmap",		NULL,	"pbm" 	},
-	{ "image/x-portable-pixmap",		NULL,	"ppm" 	},
-	{ "image/x-portable-graymap",		NULL,	"pgm" 	},
-	{ "image/x-xpixmap",			NULL,	"xpm" 	},
-	{ "image/x-xbitmap",			NULL,	"xbm" 	},
-	{ "image/x-photo-cd",			NULL,	"pcd" 	},
-	{ "image/",				NULL,	NULL  	},
-	{ NULL,					NULL,	NULL  	}
+	{ "application/vnd.rn-realmedia",	"ram",	"ram"	},
+	{ "application/x-matroska",		"m3u",	"mkv"	},
+
+	/*
+	 * Text files (e.g. subtitles)
+	 */
+	// Default for all text files : txt, sub, idx, ssa, ifo, ...
+	{ "text/",				NULL,	NULL	},
+
+	{ NULL,					NULL,	NULL	}
 };
 
 

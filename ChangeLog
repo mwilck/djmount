@@ -1,3 +1,8 @@
+2006-07-18  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/media_file.c: add some missing MIME types (video/mpeg,
+         video/mp2p, text/* ...) used by GeeXboX
+
 2006-07-17  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/fuse_main.c: suppress dummy implementation for XATTR 
