@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
@@ -213,6 +214,8 @@ process_command (const char* cmdline)
 	strcpy (buffer, cmdline);
 	int validargs = 0;
 	int invalidargs = 0;
+	const char* cmd = NULL;
+	int cmdnum = -1;
 	char* p = buffer;
 	while (*p) {
 		while (isspace (*p))
@@ -243,13 +246,12 @@ process_command (const char* cmdline)
 		}
 	}
 		
-	const char* const cmd = strarg[0];
+	cmd = strarg[0];
 	if (cmd == NULL) {
 		invalidargs++;
 		goto cleanup; // ---------->
 	}
 
-	int cmdnum = -1;
 	int i;
 	for (i = 0; i < CMDNUM; i++) {
 		if (strcasecmp (cmd, CMDLIST[i].str) == 0 ) {
@@ -402,13 +404,17 @@ process_command (const char* cmdline)
 	
 cleanup:
 	
-	if (cmdnum < 0) {
-		Log_Printf (LOG_ERROR, "Command not found: '%s' ; try 'Help'",
+	if (cmd == NULL) {
+		Log_Printf (LOG_ERROR, "Can't parse command; try 'help'");
+		rc = UPNP_E_INVALID_PARAM;
+
+	} else if (cmdnum < 0) {
+		Log_Printf (LOG_ERROR, "Command not found: '%s' ; try 'help'",
 			    cmd);
 		rc = UPNP_E_INVALID_PARAM;
 		
 	} else if (invalidargs) { 
-		Log_Printf (LOG_ERROR, "Invalid args in command; see 'Help'" );
+		Log_Printf (LOG_ERROR, "Invalid args in command; see 'help'" );
 		rc = UPNP_E_INVALID_PARAM;
 		
 	} else if (rc != UPNP_E_SUCCESS) {
