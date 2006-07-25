@@ -37,8 +37,9 @@
  * dump
  *****************************************************************************/
 void
-dump (const unsigned char* ptr)
+dump (const char* str)
 {
+	const unsigned char* ptr = (const unsigned char*) str;
 	int n = 0;
 	while (*ptr) {
 		if (n >= 16) {

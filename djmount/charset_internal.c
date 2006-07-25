@@ -1368,7 +1368,7 @@ utf2ascii (const char** const inbuf, size_t* const inbytesleft,
 		return no_conv (inbuf, inbytesleft, outbuf, outbytesleft);
 	}
 	
-	const unsigned char* src = *inbuf;
+	const unsigned char* src = (const unsigned char*) (*inbuf);
 	char* dest = *outbuf;
 	while (*inbytesleft > 0 && *outbytesleft > 0) {
 		unsigned char const c = (unsigned char) *src;
@@ -1408,7 +1408,7 @@ utf2ascii (const char** const inbuf, size_t* const inbytesleft,
 		}
 	}
 	*outbuf = dest;
-	*inbuf  = src;
+	*inbuf  = (const char*) src;
 	return (*inbytesleft > 0 ? E2BIG : 0);
 }
 
@@ -1452,7 +1452,7 @@ ascii2utf (const char** const inbuf, size_t* const inbytesleft,
 		return no_conv (inbuf, inbytesleft, outbuf, outbytesleft);
 	}
 	
-	const unsigned char* src = *inbuf;
+	const unsigned char* src = (const unsigned char*) (*inbuf);
 	char* dest = *outbuf;
 	while (*inbytesleft > 0 && *outbytesleft > 0) {
 		uint16_t s = c2u_table[*src]; 
@@ -1476,7 +1476,7 @@ ascii2utf (const char** const inbuf, size_t* const inbytesleft,
 		(*inbytesleft)--;
 	}
 	*outbuf = dest;
-	*inbuf  = src;
+	*inbuf  = (const char*) src;
 	return ((*inbytesleft) > 0 ? E2BIG : 0);
 }
 
