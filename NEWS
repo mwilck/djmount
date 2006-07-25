@@ -1,6 +1,22 @@
 
+* implement "search" operations (major evolution) : see examples in README
+  and details in "search_help.txt" (also available at run-time in "_search/"
+  sub-directories).
+
+* reorganise directories to avoid clutter : only multimedia files are directly
+  visible. Other items are moved in hidden directories : all metadata XML 
+  files are now in sub-directories ".metadata", and debug information 
+  (e.g. "status" files) are in "/.debug" directory.
+
+* add some missing MIME types used by GeeXboX
+
+* improve network cache
+
+* improve some error messages
 
 * tested ok with Nokia N93 phone (reported by Sami Kyöstilä)
+
+* code refactoring and miscellaneous code improvements
 
 ============================================================================
 
