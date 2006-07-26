@@ -299,7 +299,9 @@ BrowseOrSearchAll (ContentDir* cds,
 	
 	// Loop if missing entries
 	// (this is not normal : "RequestedCount" == 0 means to request 
-	// all entries according to ContentDirectory specification)
+	// all entries according to ContentDirectory specification).
+	// Note: it is allowed to have nb_matched == 0 if it cannot be
+	// computed by the CDS.
 	int nb_retry = 0;
 	while (PtrArray_GetSize (objects) < nb_matched && nb_retry++ < 2) {
 		Log_Printf (LOG_WARNING, 
