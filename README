@@ -84,6 +84,7 @@ $ ls -l _search
 
 $ ls -l _search/brel
 -r--r--r--  1 root root 3151929 jan  1  2000 Amsterdam.mp3
+dr-xr-xr-x  4 root root     512 jan  1  2000 Jacques Brel/
 -r--r--r--  1 root root 3246781 jan  1  2000 Ne me quitte pas.mp3
 dr-xr-xr-x  2 root root     512 Jan  1  2000 _and/
 dr-xr-xr-x  2 root root     512 Jan  1  2000 _or/
@@ -242,6 +243,7 @@ Troubleshooting
   network interface. This should be done automatically on recent distributions,
   else issue this command (where 'eth0' is the default interface) :
 	route add -net 239.0.0.0 netmask 255.0.0.0 dev eth0
+  or	route add -net 224.0.0.0 netmask 240.0.0.0 dev eth0
 
 * if your UPnP Media Server is behind a closed firewall, it won't be 
   visible in djmount. Therefore, if there is a firewall on the machine
