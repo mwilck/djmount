@@ -24,6 +24,9 @@ Roadmap
 0.60 (done)
    add search operations
 
+0.80
+   add extended attributes
+
 
 To Be Done
 ==========
@@ -33,8 +36,6 @@ To Be Done
 - use charset conversion for strings inside playlists files
 
 - finer thread locking i.e. per service and device
-
-- add extended attributes
 
 - clean cache on update of SystemUpdateID / ContainerUpdateIDs
 

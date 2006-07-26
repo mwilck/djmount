@@ -1,5 +1,7 @@
 2006-07-26  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* version 0.70
+
 	* djmount/djfs.c : make sure the device is really searchable 
 	  (some buggy servers return "searchable" as "true" in metadata, even
 	  though SearchCapabilities are empty)

@@ -1,4 +1,6 @@
 
+What is new in djmount 0.70
+
 * implement "search" operations (major evolution) : see examples in README
   and details in "search_help.txt" (also available at run-time in "_search/"
   sub-directories).
