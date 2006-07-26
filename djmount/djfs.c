@@ -160,7 +160,7 @@ BrowseSearchDir (DJFS* const self, const char* const sub_path,
       bool simplified = true;
       char* t;
       for (t = new_basename; *t != NUL && *t != '/'; t++) {
-	if (isspace (*t) || *t == '*')
+	if (isspace (*t) || *t == '*' || *t == '"')
 	  simplified = false;
       }
       *t = NUL;
@@ -394,10 +394,21 @@ BrowseRoot (VFS* const vfs, const char* const sub_path,
 				      ContentDir, Browse,
 				      tmp_ctx, "0", 
 				      CONTENT_DIR_BROWSE_DIRECT_CHILDREN);
+	    bool searchable = (self->search_hist != NULL);
+	    if (searchable && root->searchable) {
+	      // make sure the device is really searchable (some buggy 
+	      // servers return "searchable" as "true" in metadata, even
+	      // though SearchCapabilities are empty)
+	      const char* caps = NULL;
+	      DEVICE_LIST_CALL_SERVICE (caps, devName, 
+					CONTENT_DIR_SERVICE_TYPE,
+					ContentDir, GetSearchCapabilities, 
+					NULL);
+	      searchable = (searchable && caps && *caps);
+	    }
 	    if (current && current->children) {
 	      BROWSE_SUB (BrowseChildren (self, BROWSE_PTR, query, tmp_ctx, 
-					  devName, root,
-					  (self->search_hist != NULL),
+					  devName, root, searchable,
 					  NULL, current->children));
 	    }
 	  }
