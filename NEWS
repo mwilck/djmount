@@ -10,7 +10,7 @@ What is new in djmount 0.70
   files are now in sub-directories ".metadata", and debug information 
   (e.g. "status" files) are in "/.debug" directory.
 
-* add some missing MIME types used by GeeXboX
+* add some missing MIME types used by GeeXboX uShare
 
 * improve network cache
 

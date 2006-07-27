@@ -193,7 +193,7 @@ Usage
 
    "-o search_history=<size>" to set the maximum number of remembered searches
    (see "djmount --help" for the default number). Set to 0 to disable searching
-   completely (no "-search" directory will be displayed, even if supported by 
+   completely (no "_search" directory will be displayed, even if supported by 
    the connected device).
 
 
