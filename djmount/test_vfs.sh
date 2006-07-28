@@ -31,6 +31,11 @@ trap "cd / ; fusermount -u $mntpoint 2> /dev/null ; rmdir $mntpoint" EXIT HUP IN
 ./test_vfs $mntpoint || exit 1
 
 
+# Make sure "ls -l" display in standard C locale e.g. month names
+export LANG=C
+export LC_ALL=C
+
+
 cd $mntpoint || exit 1
 
 diff -u - <(find . -print 2>&1) <<-EOF || exit 1 
@@ -115,12 +120,9 @@ egrep -iq "^linux" ./.debug/uname || exit 1
 
 echo -n "essais" | diff - ./atest/test/a2/b1/f1 || exit 1
 
-# Make sure "ls -l" display in standard C locale e.g. month names
-export LANG=C
-export LC_ALL=C
 
 
-diff -u - <(/bin/ls -lR 2>&1) <<-EOF || exit 1 
+diff -b -u - <(/bin/ls -lR 2>&1) <<-EOF || exit 1 
 .:
 total 2
 dr-xr-xr-x  3 root root 512 Jan  1  2000 atest

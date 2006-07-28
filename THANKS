@@ -20,7 +20,7 @@ exempt of errors.
 
 
 * Benjamin Zores
-  - uses djmount in GeeXboX UPnP edition ( http://geexbox.org/ )
+  - uses djmount in GeeXboX ( http://geexbox.org/ ) - special thanks
   - bug reports and suggestions
 
 * Amir Shalem
@@ -39,6 +39,8 @@ exempt of errors.
 * Sami Kyöstilä
   - report ok with Nokia N93 phone
 
+* Thomas Sattler
+  - fix
 
 
 
