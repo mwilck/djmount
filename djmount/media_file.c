@@ -37,6 +37,15 @@
  *****************************************************************************/
 
 /*
+ * MIME types below come from :
+ * - base : http://freedesktop.org/wiki/Software_2fshared_2dmime_2dinfo
+ * - ogg : http://www.rfc-editor.org/rfc/rfc3534.txt
+ * - matroska : http://www.matroska.org/technical/specs/notes.html
+ * - additional types (e.g. text/* subtitles) for interoperability 
+ *   with GeeXboX uShare : http://ushare.geexbox.org/ (file src/mime.c)
+ */
+
+/*
  * This list is used to determine :
  *
  * 1) if a given MIME type will be served as a playlist (if .playlist field
