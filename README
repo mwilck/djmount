@@ -24,7 +24,8 @@ Licenses" paragraph below.
 Example 1 : browsing
 --------------------
 
-(the actual content listed depends on your AV files collection !)
+(the actual files listed depend on your AV files collection ! Also, the 
+directory structure is different for each kind of Media Server)
 
 $ djmount /mnt/av
 
@@ -78,18 +79,18 @@ dr-xr-xr-x   5 root root 512 jan  1  2000 Pictures/
 dr-xr-xr-x   4 root root 512 jan  1  2000 Videos/
 dr-xr-xr-x   2 root root 512 Jan  1  2000 _search/
 
-$ ls -l _search
+$ ls -l Music/_search
 -r--r--r--  1 root root   126 Jan  1  2000 search_capabilities
 -r--r--r--  1 root root 12640 Jan  1  2000 search_help.txt
 
-$ ls -l _search/brel
+$ ls -l Music/_search/brel
 -r--r--r--  1 root root 3151929 jan  1  2000 Amsterdam.mp3
 dr-xr-xr-x  4 root root     512 jan  1  2000 Jacques Brel/
 -r--r--r--  1 root root 3246781 jan  1  2000 Ne me quitte pas.mp3
 dr-xr-xr-x  2 root root     512 Jan  1  2000 _and/
 dr-xr-xr-x  2 root root     512 Jan  1  2000 _or/
 
-$ xmms _search/brel/Amsterdam.mp3
+$ xmms Music/_search/brel/Amsterdam.mp3
 
 $ fusermount -u /mnt/av
 
