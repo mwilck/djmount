@@ -41,7 +41,7 @@
  * - base : http://freedesktop.org/wiki/Software_2fshared_2dmime_2dinfo
  * - ogg : http://www.rfc-editor.org/rfc/rfc3534.txt
  * - matroska : http://www.matroska.org/technical/specs/notes.html
- * - additional types (e.g. text/* subtitles) for interoperability 
+ * - additional types (e.g. "text/..." subtitles) for interoperability 
  *   with GeeXboX uShare : http://ushare.geexbox.org/ (file src/mime.c)
  */
 
@@ -125,7 +125,8 @@ static const MimeType MIMES[] = {
 	/*
 	 * Text files (e.g. subtitles)
 	 */
-	// Default for all text files : txt, sub, idx, ssa, ifo, ...
+	{ "text/plain",				NULL,	"txt"	},
+	// Default for all text files : sub, idx, ssa, ifo, ...
 	{ "text/",				NULL,	NULL	},
 
 	{ NULL,					NULL,	NULL	}
