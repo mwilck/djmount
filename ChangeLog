@@ -1,5 +1,7 @@
 2006-08-05  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/test_upnp.c: print DIDL @id in 'browse' result
+
 	* djmount/upnp_util.c (UpnpUtil_ResolveURL): suppress error message
 	  if relative_url is NULL
 

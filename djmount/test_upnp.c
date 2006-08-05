@@ -298,7 +298,8 @@ process_command (const char* cmdline)
 		if (res) {
 			const DIDLObject* o = NULL;
 			PTR_ARRAY_FOR_EACH_PTR (res->children->objects, o) {
-				Log_Printf (LOG_MAIN, "  %s", NN(o->basename));
+				Log_Printf (LOG_MAIN, "%6s \"%s\"", 
+					    NN(o->id), NN(o->basename));
 			} PTR_ARRAY_FOR_EACH_PTR_END;
 		}
 	}
