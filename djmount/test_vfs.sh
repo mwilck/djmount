@@ -407,5 +407,8 @@ do
 done
 
 
+echo ""
+echo "$0 -- OK"
+
 exit 0
 
