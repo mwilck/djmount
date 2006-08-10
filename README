@@ -253,8 +253,8 @@ Troubleshooting
   (e.g. Windows Media Connect on Windows XP), most of them don't do it 
   (e.g. AV Media Server in Intel Tools).
 
-* currently, files larger than 2 Gb are not always treated correctly.
-  Try "playlists" mode as a workaround if this is needed.
+* currently, files larger than 2 Gb can not be displayed correctly : as a 
+  workaround, they are always listed inside "playlists".
 
 * in some distributions (e.g. Debian Sarge), djmount (and more generally, 
   FUSE-based file systems) work fine from the command line, but is unbrowsable
