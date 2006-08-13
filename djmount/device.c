@@ -230,7 +230,7 @@ Device* Device_Create (void* context,
   
 	const char* const base = 
 		( baseURL && baseURL[0] ) ? baseURL : descDocURL;
-	UpnpUtil_ResolveURL (dev, base, relURL, &dev->presURL);
+	dev->presURL = UpnpUtil_ResolveURL (dev, base, relURL);
 	
 	/*
 	 * Find and parse services

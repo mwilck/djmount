@@ -61,19 +61,17 @@ UpnpUtil_GetEventTypeString (IN Upnp_EventType e);
 
 /******************************************************************************
  * Combines a base URL and a relative URL into a single absolute URL.
- * Similar to "UpnpResolveURL" but allocates the memory for the result.
+ * Similar to "UpnpResolveURL" but allocates the memory for the result
+ * (the returned string should be freed using "talloc_free").
  *
  * @param talloc_context  parent context to allocate result, may be NULL
  * @param baseURL	  the base URL to combine
  * @param relURL	  the URL relative to baseURL
- * @param absURL   	  pointer to store the absolute URL. The returned 
- *			  string should be freed using "talloc_free".
- * @return UPNP_E_SUCCESS if everything went well, else a UPNP error code
+ * @param return   	  the absolute URL if ok, or "" if error.
  *****************************************************************************/
-int
-UpnpUtil_ResolveURL (void* talloc_context, 
-		     IN const char* baseURL, IN const char* relURL,
-		     OUT char** absURL);
+char*
+UpnpUtil_ResolveURL (void* talloc_context,
+		     const char* baseURL, const char* relURL);
 
 
 

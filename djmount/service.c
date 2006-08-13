@@ -598,11 +598,11 @@ Service_Create (void* talloc_context,
 	
 	char* relcontrolURL = XMLUtil_GetFirstNodeValue (node, "controlURL", 
 							 true);
-	UpnpUtil_ResolveURL (self, base_url, relcontrolURL, &self->controlURL);
+	self->controlURL = UpnpUtil_ResolveURL (self, base_url, relcontrolURL);
 	
 	char* releventURL = XMLUtil_GetFirstNodeValue (node, "eventSubURL", 
 						       true);
-	UpnpUtil_ResolveURL (self, base_url, releventURL, &self->eventURL);
+	self->eventURL = UpnpUtil_ResolveURL (self, base_url, releventURL);
 	
 	self->sid = NULL;
 	

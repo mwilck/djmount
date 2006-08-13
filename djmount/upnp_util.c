@@ -273,29 +273,28 @@ UpnpUtil_GetEventString (void* talloc_context,
 /******************************************************************************
  * UpnpUtil_ResolveURL
  *****************************************************************************/
-int
+char*
 UpnpUtil_ResolveURL (void* talloc_context, 
-		     IN const char* base, IN const char* rel,
-		     OUT char** resolved)
+		     const char* base, const char* rel)
 {
-	int rc = UPNP_E_SUCCESS;
-	*resolved = (char*) talloc_size
+	char* const resolved = (char*) talloc_size
 		(talloc_context, 
 		 (base ? strlen (base) : 0) + (rel ? strlen (rel) : 0) + 1);
-  
-	if( *resolved == NULL ) {
-		rc = UPNP_E_OUTOF_MEMORY;
-	} else if (rel == NULL) {
-		(*resolved)[0] = '\0';
-	} else {
-		rc = UpnpResolveURL (base, rel, *resolved);
-		if ( rc != UPNP_E_SUCCESS ) {
-			Log_Printf (LOG_ERROR, 
-				    "Error generating URL from '%s' + '%s'",
-				    NN(base), NN(rel));
-			(*resolved)[0] = '\0';
+	
+	if (resolved) {
+		if (rel == NULL) {
+			resolved[0] = '\0';
+		} else {
+			int rc = UpnpResolveURL (base, rel, resolved);
+			if (rc != UPNP_E_SUCCESS) {
+				Log_Printf (LOG_ERROR, 
+					    "Error generating URL from "
+					    "'%s' + '%s'",
+					    NN(base), NN(rel));
+				resolved[0] = '\0';
+			}
 		}
 	}
-	return rc;
+	return resolved;
 }
 
