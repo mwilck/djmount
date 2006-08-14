@@ -443,29 +443,31 @@ static void*
 CommandLoop (void* arg)
 {
 #ifdef HAVE_LIBREADLINE
-  rl_inhibit_completion = true;
-  while (1) {
-    char* line = readline (">> ");
-    char* s = String_StripSpaces (talloc_autofree_context(), line);
-    if (s) {
-      if (*s) {
+	rl_inhibit_completion = true;
+	while (1) {
+		char* line = readline (">> ");
+		char* s = String_StripSpaces (talloc_autofree_context(), line);
+		if (s) {
+			if (*s) {
 #ifdef HAVE_READLINE_HISTORY
-	add_history (s); // Add to history only non blank lines
+				// Add to history only non blank lines
+				add_history (s); 
 #endif
-	process_command (s);
-      }
-      talloc_free (s);
-    }
-    free (line);
-  }
-#else
-  while (1) {
-    char cmdline[100];
-    Log_Printf (LOG_MAIN, "\n>> " );
-    fgets (cmdline, sizeof (cmdline), stdin);
-    if (*cmdline)
-      process_command (cmdline);
-  }
+				process_command (s);
+			}
+			talloc_free (s);
+		}
+		free (line);
+	}
+#else // ! READLINE
+	while (1) {
+		char cmdline[100];
+		printf ("\n>> " ); 
+		fflush (stdout);
+		fgets (cmdline, sizeof (cmdline), stdin);
+		if (*cmdline)
+			process_command (cmdline);
+	}
 #endif
 }
 
