@@ -44,18 +44,20 @@
 
 struct _Device {
 
-  time_t	 creation_time;
+	time_t		creation_time;
+	
+	IXML_Document*	descDoc;
+	const char*	descDocURL;
+	const char*	descDocText;
 
-  IXML_Document* descDoc;
-  char*		 descDocURL;
-
-  char*		 udn;
-  char*		 deviceType;
-  char*		 friendlyName;
-  char*		 presURL;
-  
-  LinkedList	services; // Linked list of Service*
-
+	const char*	udn; 		// <UDN>
+	const char*	deviceType; 	// <deviceType>
+	const char*	friendlyName; 	// <friendlyName>
+	
+	const char*	baseURL;	// <URLBase> if exists, else descDocURL
+	const char*	presURL;	// <presentationURL> resolved with base
+	
+	LinkedList	services; // Linked list of Service*
 };
 
 
@@ -132,6 +134,69 @@ getFirstServiceList (IN IXML_Document* doc)
 }
 
 
+/**************************************************************************
+ * @brief	Download the XML description document.
+ *
+ * 	This function is similar to "UpnpDownloadXmlDoc", but returns the text
+ * 	of the XML file as well (for debugging).
+ * 	Also, it doesn't abort if the MIME type is incorrect (some broken UPnP 
+ * 	device send e.g. application/octet-stream instead of text/xml).
+ *
+ * @param	url		URL of the XML document.
+ * @param	xmlDoc		(output) parsed XML document
+ * @param	xml_text_malloc	(output) text of XML document. Warning :
+ *				malloc'ed, not talloc'ed !
+ * @return      UPNP_E_SUCCESS if successful else sends appropriate error.
+ ***************************************************************************/
+static int
+downloadXmlDoc (const char* const url, 
+		OUT IXML_Document** const xml_doc, 
+		OUT char** const xml_text_malloc)
+{
+	
+	if (url == NULL || xml_doc == NULL || xml_text_malloc == NULL) {
+		return UPNP_E_INVALID_PARAM; // ---------->
+	}
+
+	*xml_text_malloc = NULL;
+	char content_type [LINE_SIZE] = "";
+	int rc = UpnpDownloadUrlItem (url, xml_text_malloc, content_type);
+
+	if (rc != UPNP_E_SUCCESS) {
+		Log_Printf (LOG_ERROR, "Device downloadXmlDoc can't download "
+			    "rc = %d", rc);
+	} else {
+		if (strncasecmp (content_type, "text/xml", 8)) {
+			Log_Printf (LOG_ERROR, "Device description at url '%s'"
+				    " has MIME '%s' instead of XML ! "
+				    "Trying to parse anyway ...", 
+				    NN(content_type), url);
+			// Continue anyway ...
+		}
+		
+		*xml_doc = NULL;
+		int rc2 = ixmlParseBufferEx (*xml_text_malloc, xml_doc);
+		
+		if (rc2 != IXML_SUCCESS) {
+			Log_Printf (LOG_ERROR, "Device downloadXmlDoc "
+				    "can't parse XML document (%d) = %s", 
+				    rc2, NN(*xml_text_malloc));
+			free (*xml_text_malloc);
+			*xml_text_malloc = NULL;
+			rc = ( (rc2 == IXML_INSUFFICIENT_MEMORY) ?
+			       UPNP_E_OUTOF_MEMORY : UPNP_E_INVALID_DESC );
+		}
+	}
+	
+	if (rc == UPNP_E_SUCCESS) {
+		Log_Printf (LOG_DEBUG, "Device downloadXmlDoc success, doc =\n"
+			    "--------------------\n%s\n--------------------",
+			    *xml_text_malloc);
+	}
+	return rc;
+}
+
+
 /******************************************************************************
  * destroy
  *
@@ -178,9 +243,10 @@ Device* Device_Create (void* context,
 		return NULL; // ---------->
 	Log_Print (LOG_DEBUG, "Device_Create : loading description document");
 	IXML_Document* descDoc = NULL;
+	char* descDocTextMalloc = NULL;
 	// Note: this download can take a long time in some error cases
 	// (e.g. timeout if network problems)
-	int rc = UpnpDownloadXmlDoc (descDocURL, &descDoc);
+	int rc = downloadXmlDoc (descDocURL, &descDoc, &descDocTextMalloc);
 	if (rc != UPNP_E_SUCCESS) {
 		Log_Printf (LOG_ERROR,
 			    "Error obtaining device description from url '%s' "
@@ -197,6 +263,7 @@ Device* Device_Create (void* context,
 	Device* dev = talloc (context, Device);
 	if (dev == NULL) {
 		Log_Print (LOG_ERROR, "Device_Create Out of Memory");
+		free (descDocTextMalloc);
 		return NULL; // ---------->
 	}
 	
@@ -204,8 +271,10 @@ Device* Device_Create (void* context,
 		.creation_time = time (NULL),
 		.descDocURL    = talloc_strdup (dev, descDocURL),
 		.descDoc       = descDoc,
+		.descDocText   = talloc_strdup (dev, descDocTextMalloc),
 		// Other fields to empty values
 	};
+	free (descDocTextMalloc);
 	
 	/*
 	 * Read key elements from description document 
@@ -224,13 +293,12 @@ Device* Device_Create (void* context,
 
 	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase",
 							   false);
+	dev->baseURL = ( (baseURL && baseURL[0]) ? baseURL : descDocURL );
+
 	const char* const relURL  = Device_GetDescDocItem (dev, 
 							   "presentationURL",
 							   false);
-  
-	const char* const base = 
-		( baseURL && baseURL[0] ) ? baseURL : descDocURL;
-	dev->presURL = UpnpUtil_ResolveURL (dev, base, relURL);
+	dev->presURL = UpnpUtil_ResolveURL (dev, dev->baseURL, relURL);
 	
 	/*
 	 * Find and parse services
@@ -245,7 +313,8 @@ Device* Device_Create (void* context,
 		IXML_Element* const serviceDesc = 
 			(IXML_Element *) ixmlNodeList_item (serviceList, i);
 		Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
-						      serviceDesc, base);
+						      serviceDesc, 
+						      dev->baseURL);
 		ListAddTail (&dev->services, serv);
 	}
 	
@@ -262,16 +331,6 @@ Device* Device_Create (void* context,
 
 
 /*****************************************************************************
- * Device_GetDescDocURL
- *****************************************************************************/
-const char*
-Device_GetDescDocURL (const Device* dev)
-{
-	return (dev ? dev->descDocURL : NULL);
-}
-
-
-/*****************************************************************************
  * Device_GetDescDocItem
  *****************************************************************************/
 const char*
@@ -282,6 +341,16 @@ Device_GetDescDocItem (const Device* dev, const char* item, bool log_error)
 						  item, log_error);
 	else 
 		return NULL;
+}
+
+
+/*****************************************************************************
+ * Device_GetDescDocTextCopy
+ *****************************************************************************/
+char*
+Device_GetDescDocTextCopy (const Device* dev, void* result_context)
+{
+	return (dev ? talloc_strdup (result_context, dev->descDocText) : NULL);
 }
 
 

@@ -73,24 +73,21 @@ int
 Device_SusbcribeAllEvents (const Device* dev);
 
 
-
 /** 
- * @brief Returns the URL for the Device Description Document.
- * 	The returned string is internal to the Device, and should be copied 
- *	if necessary e.g. if the Device is to be destroyed.	
- */
-const char*
-Device_GetDescDocURL (const Device* dev);
-
-
-/** 
- * @brief Returns the value of a node from the Device Description Document.
+ * @brief Returns the 1st value of a node from the Device Description Document.
  * 	The returned string is internal to the Device, and should be copied 
  *	if necessary e.g. if the Device is to be destroyed.	
  */
 const char*
 Device_GetDescDocItem (const Device* dev, const char* item, bool log_error);
 
+
+/** 
+ * @brief Returns a copy of the text of the XML Device Description Document.
+ * 	  The returned string should be freed using "talloc_free".
+ */
+char*
+Device_GetDescDocTextCopy (const Device* dev, void* result_context);
 
 
 /******************************************************************************

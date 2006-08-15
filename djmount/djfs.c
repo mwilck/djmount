@@ -32,6 +32,7 @@
 #include "content_dir.h"
 #include "device_list.h"
 #include "xml_util.h"
+#include "device.h"
 
 #include "search_help.h"
 
@@ -457,6 +458,17 @@ BrowseDebug (VFS* const vfs, const char* const sub_path,
 	FILE_BEGIN ("status") {
 	  const char* const str = 
 	    DeviceList_GetDeviceStatusString (tmp_ctx, devName, true);
+	  FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
+	} FILE_END;
+
+	FILE_BEGIN ("device_description.xml") {
+	  // Must use FILE_SET_STRING here, instead of FILE_SET_URL with 
+	  // the URL of the description document, because the VFS interface
+	  // would causes a HTTP-RANGE request for the document, which is 
+	  // not allowed for the Device description document (see UPnP Device 
+	  // Architecture 1.0).
+	  const char* str;
+	  DEVICE_LIST_CALL_DEVICE (str, devName, GetDescDocTextCopy, tmp_ctx);
 	  FILE_SET_STRING (str, FILE_BUFFER_STRING_STEAL);
 	} FILE_END;
       } DIR_END;

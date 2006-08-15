@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /* $Id$
  *
  * DeviceList : List of UPnP Devices
@@ -80,6 +81,28 @@ DeviceList_RemoveAll (void);
  *****************************************************************************/
 int 
 DeviceList_RefreshAll (const char* target);
+
+
+/*****************************************************************************
+ * @fn	  DEVICE_LIST_CALL_DEVICE
+ * @brief Finds a Device in the global device list, and calls the specified
+ *	  methods on it (the method shall check for NULL Device).
+ *
+ * Example:
+ *	const char* res;
+ *	DEVICE_LIST_CALL_DEVICE (res, deviceName, Device, GetDescDocItem,
+ *	       		         item, log_error);
+ * will call:
+ *	res = Device_GetDescDocItem (the_device, item, log_error);
+ *
+ *****************************************************************************/
+
+#define DEVICE_LIST_CALL_DEVICE(RET,DEVNAME,METHOD,...)		\
+  do {								\
+    struct _Device* __dev = _DeviceList_LockDevice (DEVNAME);	\
+    RET = Device ## _ ## METHOD (__dev, __VA_ARGS__);		\
+    _DeviceList_UnlockDevice (__dev);				\
+  } while (0)								
 
 
 /*****************************************************************************
@@ -227,6 +250,12 @@ DeviceList_Stop (void);
 /*****************************************************************************
  * Internal methods, do not use directly
  *****************************************************************************/
+struct _Device*
+_DeviceList_LockDevice (const char* deviceName);
+
+void
+_DeviceList_UnlockDevice (struct _Device* dev);
+
 Service*
 _DeviceList_LockService (const char* deviceName, const char* serviceType);
 

@@ -619,6 +619,40 @@ EventHandlerCallback (Upnp_EventType event_type,
 
 
 /*****************************************************************************
+ * _DeviceList_LockDevice
+ *****************************************************************************/
+Device*
+_DeviceList_LockDevice (const char* deviceName)
+{
+	Device* dev = NULL;
+
+	Log_Printf (LOG_DEBUG, "LockDevice : device '%s'", NN(deviceName));
+
+	// XXX coarse implementation : lock the whole device list, 
+	// XXX not only the device.
+	ithread_mutex_lock (&DeviceListMutex);
+	
+	const DeviceNode* devnode = GetDeviceNodeFromName (deviceName, true);
+	if (devnode) 
+		dev = devnode->d;
+	if (dev == NULL)
+		ithread_mutex_unlock (&DeviceListMutex);
+	return dev;
+}
+
+
+/*****************************************************************************
+ * _DeviceList_UnlockDevice
+ *****************************************************************************/
+inline void
+_DeviceList_UnlockDevice (Device* dev)
+{
+	if (dev)
+		ithread_mutex_unlock (&DeviceListMutex);
+}
+
+
+/*****************************************************************************
  * _DeviceList_LockService
  *****************************************************************************/
 Service*
@@ -629,19 +663,16 @@ _DeviceList_LockService (const char* deviceName, const char* serviceType)
 	Log_Printf (LOG_DEBUG, "LockService : device '%s' service '%s'",
 		    NN(deviceName), NN(serviceType));
 
-	// coarse implementation : lock the whole device list, 
-	// not only the service
+	// XXX coarse implementation : lock the whole device list, 
+	// XXX not only the service.
 	ithread_mutex_lock (&DeviceListMutex);
 	
-	const DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, 
-								 true);
+	const DeviceNode* devnode = GetDeviceNodeFromName (deviceName, true);
 	if (devnode) 
 		serv = Device_GetServiceFrom (devnode->d, serviceType, 
 					      FROM_SERVICE_TYPE, true);
-	
 	if (serv == NULL)
 		ithread_mutex_unlock (&DeviceListMutex);
-
 	return serv;
 }
 
@@ -652,8 +683,8 @@ _DeviceList_LockService (const char* deviceName, const char* serviceType)
 inline void
 _DeviceList_UnlockService (Service* serv)
 {
-  if (serv)
-    ithread_mutex_unlock (&DeviceListMutex);
+	if (serv)
+		ithread_mutex_unlock (&DeviceListMutex);
 }
 
 
