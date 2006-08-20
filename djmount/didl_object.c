@@ -38,11 +38,9 @@
  *
  *****************************************************************************/
 static int
-DestroyObject (void* ptr)
+DestroyObject (DIDLObject* const o)
 {
-	if (ptr) {
-		DIDLObject* const o = (DIDLObject*) ptr;
-		
+	if (o) {
 		ixmlElement_free (o->element);
 		
 		// The "talloc'ed" strings will be deleted automatically 

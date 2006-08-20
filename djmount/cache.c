@@ -366,10 +366,8 @@ Cache_GetStatusString (const Cache* const cache,
  *
  *****************************************************************************/
 static int
-cache_destroy (void* ptr)
+cache_destroy (Cache* const cache)
 {
-	Cache* const cache = (Cache*) ptr;
-
 	if (cache) {
 #if !CACHE_FIXED_SIZE
 		hash_free (cache->table);

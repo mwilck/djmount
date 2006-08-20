@@ -160,7 +160,7 @@ main(int argc, char * argv[])
 	test_string_to_int();
 	test_string_stream();
 
-	int bytes = talloc_total_size (NULL);
+	size_t bytes = talloc_total_size (NULL);
 	assert (bytes == 0);
 	
 	exit (0);

@@ -58,13 +58,12 @@ static pthread_mutex_t g_class_mutex;
  *
  *****************************************************************************/
 static int
-destroy (void* ptr)
+destroy (Object* const obj)
 {
-	if (ptr) {
+	if (obj) {
 		/*
 		 * Chain all 'finalize' functions
 		 */
-		Object* const obj = (Object*) ptr;
 		const Object_Class* const objclass = OBJECT_GET_CLASS(obj);
 		const Object_Class* c = objclass;
 		while (c) {

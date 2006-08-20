@@ -181,10 +181,9 @@ struct _StringStream {
 
 
 static int
-StringStream_destructor (void* ptr) 
+StringStream_destructor (StringStream* const ss)
 {
-	if (ptr) {
-		StringStream* const ss = (StringStream*) ptr;
+	if (ss) {
 		if (ss->file) {
 			(void) fclose (ss->file);
 			ss->file = NULL;

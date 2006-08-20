@@ -40,6 +40,34 @@ typedef void TALLOC_CTX;
 #define TALLOC_DEPRECATED 0
 #endif
 
+#ifndef PRINTF_ATTRIBUTE
+#if (__GNUC__ >= 3)
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
+
+/* try to make talloc_set_destructor() and talloc_steal() type safe,
+   if we have a recent gcc */
+#if (__GNUC__ >= 3)
+#define _TALLOC_TYPEOF(ptr) __typeof__(ptr)
+#define talloc_set_destructor(ptr, function)				      \
+	do {								      \
+		int (*_talloc_destructor_fn)(typeof(ptr)) = (function);	      \
+		_talloc_set_destructor((ptr), (void *)_talloc_destructor_fn); \
+	} while(0)
+#define _TALLOC_CHECK_TYPE(type,val) 
+#else
+#define talloc_set_destructor(ptr, function) \
+	_talloc_set_destructor((ptr), (int (*)(void *))(function))
+#define _TALLOC_TYPEOF(ptr) void *
+#endif
+
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
@@ -58,19 +86,11 @@ typedef void TALLOC_CTX;
 
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
-#define malloc_p(type) (type *)malloc(sizeof(type))
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-
-#define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
-#define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
-#define data_blob_dup_talloc(ctx, blob) data_blob_talloc_named(ctx, (blob)->data, (blob)->length, "DATA_BLOB: "__location__)
-
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
 #define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
-
+#define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
 
 #if TALLOC_DEPRECATED
 #define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
@@ -80,26 +100,13 @@ typedef void TALLOC_CTX;
 #define talloc_destroy(ctx) talloc_free(ctx)
 #endif
 
-#ifndef PRINTF_ATTRIBUTE
-#if (__GNUC__ >= 3)
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument. Note that some gcc 2.x versions don't handle this
- * properly **/
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
-#else
-#define PRINTF_ATTRIBUTE(a1, a2)
-#endif
-#endif
-
-
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
-void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
+void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 void talloc_increase_ref_count(const void *ptr);
 void *talloc_reference(const void *context, const void *ptr);
 int talloc_unlink(const void *context, void *ptr);
-void talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void talloc_set_name_const(const void *ptr, const char *name);
 void *talloc_named(const void *context, size_t size, 
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
@@ -110,10 +117,11 @@ void talloc_report_depth(const void *ptr, FILE *f, int depth);
 void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
+void talloc_free_children(void *ptr);
 void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
-void *talloc_steal(const void *new_ctx, const void *ptr);
-off_t talloc_total_size(const void *ptr);
-off_t talloc_total_blocks(const void *ptr);
+void *_talloc_steal(const void *new_ctx, const void *ptr);
+size_t talloc_total_size(const void *ptr);
+size_t talloc_total_blocks(const void *ptr);
 void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
 void talloc_enable_null_tracking(void);
@@ -137,6 +145,7 @@ void *talloc_autofree_context(void);
 size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
+int talloc_is_parent(const void *context, const char *ptr);
 
 #endif
 

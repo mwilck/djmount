@@ -121,7 +121,7 @@ main (int argc, char* argv[])
 	// Delete all storage
 	talloc_free (ctx);
 	
-	int bytes = talloc_total_size (NULL);
+	size_t bytes = talloc_total_size (NULL);
 	assert (bytes == 0);
 	
 	exit (EXIT_SUCCESS);

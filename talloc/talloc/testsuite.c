@@ -95,6 +95,19 @@ static double timeval_elapsed(struct timeval *tv)
 	} \
 } while (0)
 
+#define CHECK_PARENT(ptr, parent) do { \
+	if (talloc_parent(ptr) != (parent)) { \
+		printf(__location__ " failed: '%s' has wrong parent: got %p  expected %p\n", \
+		       #ptr, \
+		       talloc_parent(ptr), \
+		       (parent)); \
+		talloc_report_full(ptr, stdout); \
+		talloc_report_full(parent, stdout); \
+		talloc_report_full(NULL, stdout); \
+		return False; \
+	} \
+} while (0)
+
 
 /*
   test references 
@@ -351,6 +364,7 @@ static BOOL test_misc(void)
 	void *root, *p1;
 	char *p2;
 	double *d;
+	const char *name;
 
 	printf("TESTING MISCELLANEOUS\n");
 
@@ -387,9 +401,10 @@ static BOOL test_misc(void)
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
 
-	talloc_set_name(p1, "my name is %s", "foo");
+	name = talloc_set_name(p1, "my name is %s", "foo");
 	if (strcmp(talloc_get_name(p1), "my name is foo") != 0) {
-		printf("failed: wrong name after talloc_set_name\n");
+		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'=>'%s'\n",
+			(name?name:"NULL"), talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
@@ -397,7 +412,8 @@ static BOOL test_misc(void)
 
 	talloc_set_name_const(p1, NULL);
 	if (strcmp(talloc_get_name(p1), "UNNAMED") != 0) {
-		printf("failed: wrong name after talloc_set_name(NULL)\n");
+		printf("failed: wrong name after talloc_set_name(NULL) - '%s'\n",
+			talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
@@ -768,7 +784,12 @@ static BOOL test_unref_reparent(void)
 	c1 = talloc_named_const(p1, 1, "child");
 	talloc_reference(p2, c1);
 
+	CHECK_PARENT(c1, p1);
+
 	talloc_free(p1);
+
+	CHECK_PARENT(c1, p2);
+
 	talloc_unlink(p2, c1);
 
 	CHECK_SIZE(root, 1);
@@ -824,7 +845,7 @@ static BOOL test_speed(void)
 }
 
 
-BOOL test_lifeless(void)
+static BOOL test_lifeless(void)
 {
 	char *top = talloc_new(NULL);
 	char *parent, *child; 
@@ -836,17 +857,83 @@ BOOL test_lifeless(void)
 	child = talloc_strdup(parent, "child");  
 	talloc_reference(child, parent);
 	talloc_reference(child_owner, child); 
+	talloc_report_full(top, stdout);
 	talloc_unlink(top, parent);
 	talloc_free(child);
 	talloc_report_full(top, stdout);
 	talloc_free(top);
+	talloc_free(child_owner);
+	talloc_free(child);
+
 	return True;
 }
 
+static int loop_destructor_count;
+
+static int test_loop_destructor(char *ptr)
+{
+	printf("loop destructor\n");
+	loop_destructor_count++;
+	return 0;
+}
+
+static BOOL test_loop(void)
+{
+	char *top = talloc_new(NULL);
+	char *parent;
+	struct req1 {
+		char *req2, *req3;
+	} *req1;
+
+	printf("TESTING TALLOC LOOP DESTRUCTION\n");
+	parent = talloc_strdup(top, "parent");
+	req1 = talloc(parent, struct req1);
+	req1->req2 = talloc_strdup(req1, "req2");  
+	talloc_set_destructor(req1->req2, test_loop_destructor);
+	req1->req3 = talloc_strdup(req1, "req3");
+	talloc_reference(req1->req3, req1);
+	talloc_report_full(top, stdout);
+	talloc_free(parent);
+	talloc_report_full(top, stdout);
+	talloc_report_full(NULL, stdout);
+	talloc_free(top);
+
+	if (loop_destructor_count != 1) {
+		printf("FAILED TO FIRE LOOP DESTRUCTOR\n");
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_free_parent_deny_child(void)
+{
+	char *top = talloc_new(NULL);
+	char *level1;
+	char *level2;
+	char *level3;
+
+	printf("TESTING TALLOC FREE PARENT DENY CHILD\n");
+	level1 = talloc_strdup(top, "level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc_strdup(level2, "level3");
+
+	talloc_set_destructor(level3, fail_destructor);
+	talloc_free(level1);
+	talloc_set_destructor(level3, NULL);
+
+	CHECK_PARENT(level3, top);
+
+	talloc_free(top);
+
+	return True;
+}
 
 BOOL torture_local_talloc(struct torture_context *torture) 
 {
 	BOOL ret = True;
+
+	talloc_enable_null_tracking();
 
 	ret &= test_ref1();
 	ret &= test_ref2();
@@ -861,6 +948,8 @@ BOOL torture_local_talloc(struct torture_context *torture)
 	ret &= test_realloc_fn();
 	ret &= test_type();
 	ret &= test_lifeless();
+	ret &= test_loop();
+	ret &= test_free_parent_deny_child();
 	if (ret) {
 		ret &= test_speed();
 	}

@@ -85,12 +85,10 @@ static inline bool is_browse (const char* const criteria)
  *
  *****************************************************************************/
 static int
-DestroyChildren (void* ptr)
+DestroyChildren (ContentDir_Children* const children)
 {
-	if (ptr) {
+	if (children) {
 #if CONTENT_DIR_HAVE_CHILDREN_MUTEX
-		ContentDir_Children* children = (ContentDir_Children*) ptr;
-		
 		ithread_mutex_destroy (&children->mutex);
 #endif	
 		// Other "talloc'ed" fields will be deleted automatically :
@@ -356,10 +354,8 @@ cache_free_expired_data (const char* key, void* data)
  * DestroyResult
  *****************************************************************************/
 static int 
-DestroyResult (void* ptr)
+DestroyResult (BrowseResult* const br)
 {
-	BrowseResult* br = ptr;
-	
 	if (br) {
 		if (br->cds && br->cds->cache)
 			ithread_mutex_lock (&br->cds->cache_mutex);
@@ -528,7 +524,7 @@ get_status_string (const Service* serv,
 		spacer = "";
 	
 	// Create a working context for temporary strings
-	void* const tmp_ctx = talloc_new (p);
+	void* const tmp_ctx = talloc_new (NULL);
 	
 	tpr (&p, "%s+- Browse Cache\n", spacer);
 	tpr (&p, "%s", Cache_GetStatusString 

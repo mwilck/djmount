@@ -131,7 +131,7 @@ main(int argc, char * argv[])
 	talloc_free (array3);
 	array1 = array2 = array3 = NULL;
 	
-	int bytes = talloc_total_size (NULL);
+	size_t bytes = talloc_total_size (NULL);
 	assert (bytes == 0);
 	
 	exit (0);

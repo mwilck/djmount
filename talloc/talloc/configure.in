@@ -1,5 +1,6 @@
 AC_PREREQ(2.50)
 AC_INIT(talloc.h)
+AC_SUBST(datarootdir)
 AC_PROG_CC
 if test "x$GCC" = "xyes"; then
 	CFLAGS="$CFLAGS -Wall -W"
@@ -12,5 +13,6 @@ if test -n "$XSLTPROC"; then
 fi
 AC_SUBST(DOC_TARGET)
 AC_CONFIG_HEADER(config.h)
+AC_SYS_LARGEFILE
 sinclude(config.m4)
 AC_OUTPUT(Makefile talloc.pc)
