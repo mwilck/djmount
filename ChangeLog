@@ -1,5 +1,8 @@
 2006-08-20  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/upnp_util.c (UpnpUtil_ResolveURL): fix memory corruption
+	  + minimize size of allocated string
+
 	* talloc: upgraded to svn r17578 (dated 2006-08-17 03:49:42 +0200)
 
 2006-08-15  Rémi Turboult  <r3mi@users.sourceforge.net>

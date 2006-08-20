@@ -87,7 +87,7 @@ UpnpUtil_GetEventString (void* talloc_context,
 	char* p = talloc_strdup (talloc_context, "");
 	
 	// Create a working context for temporary strings
-	void* const tmp_ctx = talloc_new (p);
+	void* const tmp_ctx = talloc_new (NULL);
 
 	tpr (&p, "\n\n======================================================================\n");
 	
@@ -277,24 +277,21 @@ char*
 UpnpUtil_ResolveURL (void* talloc_context, 
 		     const char* base, const char* rel)
 {
-	char* const resolved = (char*) talloc_size
-		(talloc_context, 
-		 (base ? strlen (base) : 0) + (rel ? strlen (rel) : 0) + 1);
-	
-	if (resolved) {
-		if (rel == NULL) {
+	// Warning : must add +2 (and not +1) to have a large enough buffer,
+	// to be consistent with resolve_rel_url() in 
+	// libupnp/upnp/src/genlib/net/uri/uri.c !
+	char resolved [(base ? strlen(base):0) + (rel ? strlen(rel):0) + 2];
+
+	resolved[0] = '\0';
+	if (rel && *rel) {
+		int rc = UpnpResolveURL (base, rel, resolved);
+		if (rc != UPNP_E_SUCCESS) {
+			Log_Printf (LOG_ERROR, 
+				    "Error generating URL from '%s' + '%s'",
+				    NN(base), NN(rel));
 			resolved[0] = '\0';
-		} else {
-			int rc = UpnpResolveURL (base, rel, resolved);
-			if (rc != UPNP_E_SUCCESS) {
-				Log_Printf (LOG_ERROR, 
-					    "Error generating URL from "
-					    "'%s' + '%s'",
-					    NN(base), NN(rel));
-				resolved[0] = '\0';
-			}
 		}
 	}
-	return resolved;
+	return talloc_strdup (talloc_context, resolved);
 }
 
