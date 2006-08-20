@@ -364,20 +364,56 @@ AddDevice (const char* deviceId,
 		// Else create a new device
 		Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", 
 			    NN(deviceId));
-		void* context = NULL; // TBD should be parent talloc TBD XXX
 		
-		devnode = talloc (context, DeviceNode);
-		// Initialize fields to empty values
-		*devnode = (struct _DeviceNode) { }; 
-		
-		// Unlock before creating device : the Device_Create method 
-		// tries to download the device description document, 
-		// which can take a long time in some error cases
+		// *unlock* before trying to download the Device Description 
+		// Document, which can take a long time in some error cases 
 		// (e.g. timeout if network problems)
 		ithread_mutex_unlock (&DeviceListMutex);
 
+		if (descLocation == NULL) {
+			Log_Printf (LOG_ERROR, 
+				    "NULL description doc. URL device Id=%s", 
+				    NN(deviceId));
+			return; // ---------->
+		}
+
+		char* descDocText = NULL;
+		char content_type [LINE_SIZE] = "";
+		int rc = UpnpDownloadUrlItem (descLocation, &descDocText, 
+					      content_type);
+		if (rc != UPNP_E_SUCCESS) {
+			Log_Printf (LOG_ERROR,
+				    "Error obtaining device description from "
+				    "url '%s' : %d (%s)", descLocation, rc, 
+				    UpnpGetErrorMessage (rc));
+			if (rc/100 == UPNP_E_NETWORK_ERROR/100) {
+				Log_Printf (LOG_ERROR, "Check device network "
+					    "configuration (firewall ?)");
+			}
+			return; // ---------->
+		} 
+		if (strncasecmp (content_type, "text/xml", 8)) {
+			// "text/xml" is specified in UPnP Device Architecture
+			// v1.0 -- however don't abort if incorrect because
+			// some broken UPnP device send other MIME types 
+			// (e.g. application/octet-stream).
+			Log_Printf (LOG_ERROR, "Device description at url '%s'"
+				    " has MIME '%s' instead of XML ! "
+				    "Trying to parse anyway ...", 
+				    descLocation, content_type);
+		}
+		
+		void* context = NULL; // TBD should be parent talloc TBD XXX
+
+		devnode = talloc (context, DeviceNode);
+		// Initialize fields to empty values
+		*devnode = (struct _DeviceNode) { }; 
+
 		devnode->d = Device_Create (devnode, g_ctrlpt_handle, 
-					    descLocation);
+					    descLocation, descDocText);
+		free (descDocText);
+		descDocText = NULL;
+
 		if (devnode->d == NULL) {
 			Log_Printf (LOG_ERROR, "Can't create Device Id=%s", 
 				    NN(deviceId));

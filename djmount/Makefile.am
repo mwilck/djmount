@@ -42,10 +42,11 @@ endif
 bin_PROGRAMS 		= djmount
 noinst_PROGRAMS		= test_upnp
 
-check_PROGRAMS 		= test_charset test_ptr_array test_string test_cache \
-			  test_vfs
+check_PROGRAMS 		= test_cache test_charset test_device test_ptr_array \
+			  test_string test_vfs
 # auto run some tests
-TESTS			= test_ptr_array test_string test_cache test_vfs.sh
+TESTS			= test_ptr_array test_string test_cache \
+			  test_device.sh test_vfs.sh
 
 
 COMMON_SRCS 		= log.c object.c service.c \
@@ -82,13 +83,15 @@ djmount_SOURCES		= $(COMMON_SRCS) fuse_main.c
 test_upnp_SOURCES	= $(COMMON_SRCS) test_upnp.c
 test_upnp_LDADD		= $(LDADD) $(READLINE_LIBS)
 
+test_cache_SOURCES	= $(COMMON_SRCS) test_cache.c
+
 test_charset_SOURCES	= $(COMMON_SRCS) test_charset.c
+
+test_device_SOURCES	= $(COMMON_SRCS) test_device.c
 
 test_ptr_array_SOURCES	= $(COMMON_SRCS) test_ptr_array.c
 
 test_string_SOURCES	= $(COMMON_SRCS) test_string.c
-
-test_cache_SOURCES	= $(COMMON_SRCS) test_cache.c
 
 test_vfs_SOURCES	= $(COMMON_SRCS) test_vfs.c
 
@@ -120,7 +123,7 @@ clean-local:
 endif
 
 
-EXTRA_DIST		= test_vfs.sh txt2h.pl
+EXTRA_DIST		= test_device.sh test_vfs.sh txt2h.pl
 
 
 

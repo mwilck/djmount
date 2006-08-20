@@ -92,6 +92,9 @@ ServiceFactory (Device* dev,
 		serv = Service_Create (dev, ctrlpt_handle,
 				       serviceDesc, base_url);
 	}
+	if (serv == NULL)
+		Log_Printf (LOG_ERROR, "Error creating service type %s",
+			    NN(serviceType));
 	return serv;
 }
 
@@ -134,69 +137,6 @@ getFirstServiceList (IN IXML_Document* doc)
 }
 
 
-/**************************************************************************
- * @brief	Download the XML description document.
- *
- * 	This function is similar to "UpnpDownloadXmlDoc", but returns the text
- * 	of the XML file as well (for debugging).
- * 	Also, it doesn't abort if the MIME type is incorrect (some broken UPnP 
- * 	device send e.g. application/octet-stream instead of text/xml).
- *
- * @param	url		URL of the XML document.
- * @param	xmlDoc		(output) parsed XML document
- * @param	xml_text_malloc	(output) text of XML document. Warning :
- *				malloc'ed, not talloc'ed !
- * @return      UPNP_E_SUCCESS if successful else sends appropriate error.
- ***************************************************************************/
-static int
-downloadXmlDoc (const char* const url, 
-		OUT IXML_Document** const xml_doc, 
-		OUT char** const xml_text_malloc)
-{
-	
-	if (url == NULL || xml_doc == NULL || xml_text_malloc == NULL) {
-		return UPNP_E_INVALID_PARAM; // ---------->
-	}
-
-	*xml_text_malloc = NULL;
-	char content_type [LINE_SIZE] = "";
-	int rc = UpnpDownloadUrlItem (url, xml_text_malloc, content_type);
-
-	if (rc != UPNP_E_SUCCESS) {
-		Log_Printf (LOG_ERROR, "Device downloadXmlDoc can't download "
-			    "rc = %d", rc);
-	} else {
-		if (strncasecmp (content_type, "text/xml", 8)) {
-			Log_Printf (LOG_ERROR, "Device description at url '%s'"
-				    " has MIME '%s' instead of XML ! "
-				    "Trying to parse anyway ...", 
-				    NN(content_type), url);
-			// Continue anyway ...
-		}
-		
-		*xml_doc = NULL;
-		int rc2 = ixmlParseBufferEx (*xml_text_malloc, xml_doc);
-		
-		if (rc2 != IXML_SUCCESS) {
-			Log_Printf (LOG_ERROR, "Device downloadXmlDoc "
-				    "can't parse XML document (%d) = %s", 
-				    rc2, NN(*xml_text_malloc));
-			free (*xml_text_malloc);
-			*xml_text_malloc = NULL;
-			rc = ( (rc2 == IXML_INSUFFICIENT_MEMORY) ?
-			       UPNP_E_OUTOF_MEMORY : UPNP_E_INVALID_DESC );
-		}
-	}
-	
-	if (rc == UPNP_E_SUCCESS) {
-		Log_Printf (LOG_DEBUG, "Device downloadXmlDoc success, doc =\n"
-			    "--------------------\n%s\n--------------------",
-			    *xml_text_malloc);
-	}
-	return rc;
-}
-
-
 /******************************************************************************
  * destroy
  *
@@ -205,29 +145,28 @@ downloadXmlDoc (const char* const url,
  *
  *****************************************************************************/
 static int
-destroy (void* ptr)
+destroy (Device* const dev)
 {
-  if (ptr) {
-    Device* const dev = (Device*) ptr;
+	if (dev) {
+		/* Delete list.
+		 * Note that items are not destroyed : Service* are 
+		 * automatically deallocated by "talloc" when parent Device 
+		 * is detroyed.
+		 */
+		ListDestroy (&dev->services, /*freeItem=>*/ 0); 
 
-    /* Delete list.
-     * Note that items are not destroyed : Service* are automatically
-     * deallocated by "talloc" when parent Device is detroyed.
-     */
-    ListDestroy (&dev->services, 0); 
+		// Delete description document
+		if (dev->descDoc) {
+			ixmlDocument_free (dev->descDoc);
+			dev->descDoc = NULL;
+		}  
 
-    // Delete description document
-    if (dev->descDoc) {
-      ixmlDocument_free (dev->descDoc);
-      dev->descDoc = NULL;
-    }  
-
-    // Reset all pointers to NULL 
-    memset (dev, 0, sizeof(Device));
+		// Reset all pointers to NULL 
+		*dev = (struct _Device) { };
     
-    // The "talloc'ed" strings will be deleted automatically 
-  }
-  return 0; // ok -> deallocate memory
+		// The "talloc'ed" strings will be deleted automatically 
+	}
+	return 0; // ok -> deallocate memory
 }
 
 
@@ -235,35 +174,46 @@ destroy (void* ptr)
  * Device_Create
  *****************************************************************************/
 
-Device* Device_Create (void* context, 
-		       UpnpClient_Handle ctrlpt_handle, 
-		       const char* descDocURL)
+Device* 
+Device_Create (void* parent_context, 
+	       UpnpClient_Handle ctrlpt_handle, 
+	       const char* const descDocURL, 
+	       const char* const descDocText)
 {
-	if (descDocURL == NULL)
-		return NULL; // ---------->
-	Log_Print (LOG_DEBUG, "Device_Create : loading description document");
-	IXML_Document* descDoc = NULL;
-	char* descDocTextMalloc = NULL;
-	// Note: this download can take a long time in some error cases
-	// (e.g. timeout if network problems)
-	int rc = downloadXmlDoc (descDocURL, &descDoc, &descDocTextMalloc);
-	if (rc != UPNP_E_SUCCESS) {
-		Log_Printf (LOG_ERROR,
-			    "Error obtaining device description from url '%s' "
-			    ": %d (%s)", descDocURL, rc, 
-			    UpnpGetErrorMessage (rc));
-		if (rc/100 == UPNP_E_NETWORK_ERROR/100) {
-			Log_Printf (LOG_ERROR,
-				    "Check device network configuration "
-				    "(firewall ?)");
-		}
+	if (descDocURL == NULL || *descDocURL == NUL) {
+		Log_Printf (LOG_ERROR, 
+			    "NULL or empty description document URL");
 		return NULL; // ---------->
 	}
-	
-	Device* dev = talloc (context, Device);
+	if (descDocText == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "NULL description document XML text");
+		return NULL; // ---------->
+	}
+
+	Log_Printf (LOG_DEBUG, "Device_Create : description document = "
+		    "--------------------\n%s\n--------------------",
+		    descDocText);
+
+	IXML_Document* descDoc = NULL;
+	int rc = ixmlParseBufferEx ((char*) descDocText, &descDoc);
+	if (rc != IXML_SUCCESS) {
+		Log_Printf (LOG_ERROR, "Device_Create can't parse XML "
+			    "document (%d) = '%s'", rc, descDocText);
+		return NULL; // ---------->
+	}
+	if (ixmlDocument_getElementById (descDoc, "device") == 0) {
+		Log_Printf (LOG_ERROR, 
+			    "Device_Create no <device> in XML document = '%s'",
+			    descDocText);
+		ixmlDocument_free (descDoc);
+		return NULL; // ---------->
+	}
+
+	Device* const dev = talloc (parent_context, Device);
 	if (dev == NULL) {
 		Log_Print (LOG_ERROR, "Device_Create Out of Memory");
-		free (descDocTextMalloc);
+		ixmlDocument_free (descDoc);
 		return NULL; // ---------->
 	}
 	
@@ -271,10 +221,9 @@ Device* Device_Create (void* context,
 		.creation_time = time (NULL),
 		.descDocURL    = talloc_strdup (dev, descDocURL),
 		.descDoc       = descDoc,
-		.descDocText   = talloc_strdup (dev, descDocTextMalloc),
+		.descDocText   = talloc_strdup (dev, descDocText),
 		// Other fields to empty values
 	};
-	free (descDocTextMalloc);
 	
 	/*
 	 * Read key elements from description document 
@@ -293,8 +242,8 @@ Device* Device_Create (void* context,
 
 	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase",
 							   false);
-	dev->baseURL = ( (baseURL && baseURL[0]) ? baseURL : descDocURL );
-
+	dev->baseURL = ( (baseURL && baseURL[0]) ? baseURL : dev->descDocURL );
+	
 	const char* const relURL  = Device_GetDescDocItem (dev, 
 							   "presentationURL",
 							   false);
@@ -303,7 +252,7 @@ Device* Device_Create (void* context,
 	/*
 	 * Find and parse services
 	 */
-	ListInit (&dev->services, 0, 0);
+	ListInit (&dev->services, NULL, NULL);
 	
 	IXML_NodeList* serviceList = getFirstServiceList (dev->descDoc);
 	const int length = ixmlNodeList_length (serviceList);
@@ -315,7 +264,8 @@ Device* Device_Create (void* context,
 		Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
 						      serviceDesc, 
 						      dev->baseURL);
-		ListAddTail (&dev->services, serv);
+		if (serv)
+			ListAddTail (&dev->services, serv);
 	}
 	
 	if (serviceList) {
@@ -430,7 +380,7 @@ Device_GetStatusString (const Device* dev, void* result_context, bool debug)
 	char* p = talloc_strdup (result_context, "");
 	
 	// Create a working context for temporary strings
-	void* const tmp_ctx = talloc_new (p);
+	void* const tmp_ctx = talloc_new (NULL);
 	
 	tpr (&p, "  | \n");
 	time_t const now = time (NULL);
