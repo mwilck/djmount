@@ -122,7 +122,7 @@ echo -n "essais" | diff - ./atest/test/a2/b1/f1 || exit 1
 
 
 
-diff -b -u - <(/bin/ls -lR 2>&1) <<-EOF || exit 1 
+diff -u -b -B - <(/bin/ls -lR 2>&1) <<-EOF || exit 1 
 .:
 total 2
 dr-xr-xr-x  3 root root 512 Jan  1  2000 atest
