@@ -130,8 +130,7 @@ finalize (Object* obj)
 
 	if (serv) {
 		// If we have a valid control SID, then unsubscribe 
-		if (serv->ctrlpt_handle)
-			Service_UnsubscribeEventURL (serv);
+		(void) Service_UnsubscribeEventURL (serv);
     
 		/* Delete variable list.
 		 * Note that items are not destroyed : they are talloc'ed and
