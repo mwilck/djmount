@@ -1,5 +1,5 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
-/* $Id: test_ptr_array.c 197 2006-06-20 20:31:38Z r3mi $
+/* $Id$
  *
  * Testing Device object.
  * This file is part of djmount.

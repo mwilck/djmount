@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: test_vfs.sh 249 2006-08-10 20:43:26Z r3mi $
+# $Id$
 # 
 # Test Device object.
 # This file is part of djmount.
