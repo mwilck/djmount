@@ -77,36 +77,71 @@ extern "C" {
 
 
 /*****************************************************************************
- * @brief	Get XML Element value
+ * @brief	Get XML Element text value
  *
  *       Given a DOM node such as <Channel>11</Channel>, this routine
- *       extracts the value (e.g., 11) from the node and returns it as 
+ *       extracts the text value (e.g., 11) from the node and returns it as 
  *       a string. 
  *	 The C string should be copied if necessary e.g. if the IXML_Element
  *	 is to be destroyed. 
  *
- * @param element	the DOM Elemente from which to extract the value
+ * @param element	the DOM Element from which to extract the value
  *****************************************************************************/
-char* 
-XMLUtil_GetElementValue (IN IXML_Element *element);
+const char* 
+XMLUtil_GetElementValue (IN const IXML_Element* element);
 
 
 /*****************************************************************************
- * @brief	Get value of first matching element.
+ * @brief	Get first XML Element matching tagName.
  *
- *      Given a XML node, this routine searches for the first element
- *      named by the input string item, and returns its value as a string.
- *	The C string should be copied if necessary e.g. if the IXML_Node
- *	is to be destroyed.
+ *      Given a XML node, returns the first Element with a given tagName,
+ *	in a preorder traversal of this node tree.
+ *	If 'deep' if false, search only direct children of the node, else
+ *	search the whole tree.
+ *	The resulting element is a pointer inside the tree and should be
+ *	copied if necessary e.g. if the IXML_Node is to be destroyed.
  *
- * @param node 		the XML node from which to extract the value
- * @param item 		the item to search for
+ * @param node 		the XML node from which to search the element
+ * @param tagname 	the tagName to search for
+ * @param deep		search whole tree or only direct children
  * @param log_error	whether to log an error or not if item not found
  *
  *****************************************************************************/
-char* 
-XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char *item,
-			   bool log_error);
+IXML_Element*
+XMLUtil_FindFirstElement (const IXML_Node* const node,
+			  const char* const tagname,
+			  bool const deep, bool const log_error);
+
+
+/*****************************************************************************
+ * @brief	Get value of first XML Element matching tagName.
+ *
+ *      Given a XML node, searches the first Element with a given tagName,
+ *	in a preorder traversal of this node tree, and returns its value 
+ *	as a string.
+ *	If 'deep' if false, search only direct children of the node, else
+ *	recursively search the whole tree.
+ *	The C string should be copied if necessary e.g. if the IXML_Node
+ *	is to be destroyed.
+ *
+ * @param node 		the XML node from which to search the element
+ * @param tagname	the tagName to search for
+ * @param deep		search whole tree or only direct children
+ * @param log_error	whether to log an error or not if item not found
+ *
+ *****************************************************************************/
+const char* 
+XMLUtil_FindFirstElementValue (const IXML_Node* const node,
+			       const char* const tagname,
+			       bool const deep, bool const log_error);
+
+// XXX TBD deprecated, use XMLUtil_GetFirstElementByTagName above !! XXX TBD
+static inline const char* 
+XMLUtil_GetFirstNodeValue (const IXML_Node* const node, 
+			   const char* const tagname, bool log_error)
+{
+	return XMLUtil_FindFirstElementValue (node, tagname, true, log_error);
+}
 
 
 /*****************************************************************************
@@ -114,7 +149,7 @@ XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char *item,
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/
 char*
-XMLUtil_GetDocumentString (void* talloc_context, IN IXML_Document* doc);
+XMLUtil_GetDocumentString (void* talloc_context, IN const IXML_Document* doc);
 
 
 /*****************************************************************************
@@ -122,7 +157,7 @@ XMLUtil_GetDocumentString (void* talloc_context, IN IXML_Document* doc);
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/
 char*
-XMLUtil_GetNodeString (void* talloc_context, IN IXML_Node* node);
+XMLUtil_GetNodeString (void* talloc_context, IN const IXML_Node* node);
 
 
 

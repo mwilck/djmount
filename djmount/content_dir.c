@@ -160,18 +160,19 @@ BrowseOrSearchAction (ContentDir* cds,
 		goto cleanup; // ---------->
 	}
 	
-	const char* s = XMLUtil_GetFirstNodeValue (XML_D2N (doc), 
-						   "TotalMatches", true);
+	const char* s = XMLUtil_FindFirstElementValue 
+		(XML_D2N (doc), "TotalMatches", true, true);
 	STRING_TO_INT (s, *nb_matched, 0);
 	
-	s = XMLUtil_GetFirstNodeValue (XML_D2N (doc), "NumberReturned", true);
+	s = XMLUtil_FindFirstElementValue 
+		(XML_D2N (doc), "NumberReturned", true, true);
 	STRING_TO_INT (s, *nb_returned, 0);
 	
 	Log_Printf (LOG_DEBUG, "+++BROWSE RESULT+++\n%s\n", 
 		    XMLUtil_GetDocumentString (tmp_ctx, doc));
 	
-	char* const resstr = XMLUtil_GetFirstNodeValue (XML_D2N (doc),
-							"Result", true);
+	const char* const resstr = XMLUtil_FindFirstElementValue
+		(XML_D2N (doc), "Result", true, true);
 	if (resstr == NULL) {
 		Log_Printf (LOG_ERROR, "BrowseOrSearchAction ObjectId=%s : "
 			    "can't get 'Result' in doc=%s",
@@ -181,7 +182,8 @@ BrowseOrSearchAction (ContentDir* cds,
 		goto cleanup; // ---------->
 	}
 
-	IXML_Document* subdoc = ixmlParseBuffer (resstr);
+	IXML_Document* const subdoc = 
+		ixmlParseBuffer (discard_const_p (char, resstr));
 	if (subdoc == NULL) {
 		Log_Printf (LOG_ERROR, "BrowseOrSearchAction ObjectId=%s : "
 			    "can't parse 'Result'=%s", objectId, resstr);
@@ -477,8 +479,8 @@ ContentDir_GetSearchCapabilities (ContentDir* self, void* unused)
 			 NULL, NULL);
 		if (rc == UPNP_E_SUCCESS && doc != NULL) {
 			self->search_caps = talloc_strdup 
-				(self, XMLUtil_GetFirstNodeValue 
-				 (XML_D2N (doc), "SearchCaps", true));
+				(self, XMLUtil_FindFirstElementValue
+				 (XML_D2N (doc), "SearchCaps", true, true));
 			
 			Log_Printf (LOG_DEBUG, 
 				    "ContentDir_GetSearchCapabilities = '%s'",

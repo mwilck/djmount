@@ -43,64 +43,75 @@
  * XMLUtil_GetElementValue
  *****************************************************************************/
 
-char*
-XMLUtil_GetElementValue (IN IXML_Element* element)
+const char*
+XMLUtil_GetElementValue (IN const IXML_Element* element)
 {
-	IXML_Node* child = ixmlNode_getFirstChild ((IXML_Node *) element );
-
 	char* res = NULL;
-	
-	if ( child && ixmlNode_getNodeType (child) == eTEXT_NODE ) {
-		// The resulting string should be copied if necessary
-		res = ixmlNode_getNodeValue (child);
+	IXML_Node* child = ixmlNode_getFirstChild 
+		(discard_const_p (IXML_Node, XML_E2N (element)));
+	while (child && !res) {
+		if (ixmlNode_getNodeType (child) == eTEXT_NODE) {
+		    // The resulting string should be copied if necessary
+		    res = ixmlNode_getNodeValue (child);
+		}
+		child = ixmlNode_getNextSibling (child);
 	}
-	
 	return res;
 }
 
 
-
-/*****************************************************************************
- * XMLUtil_GetFirstNodeValue
+/******************************************************************************
+ * XMLUtil_FindFirstElement
  *****************************************************************************/
-char*
-XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char* item,
-			   bool log_error)
+
+static IXML_Element*
+findFirstElementRecursive (const IXML_Node* const node, 
+			   const char* const tagname,
+			   bool const deep)
 {
-	char* res = NULL;
-	
-	if (node == NULL || item == NULL) {
-		Log_Printf (LOG_ERROR, 
-			    "GetFirstNodeItem invalid NULL parameter");
-	} else {
-		//// TBD hack
-		//// TBD ixmlNode_getElementsByTagName isn't exported !!!
-		//// TBD to clean !!
-		IXML_NodeList* const nodeList = 
-			ixmlDocument_getElementsByTagName 
-			((IXML_Document*) node, (char *) item);
-		if (nodeList == NULL) {
-			Log_Printf ((log_error ? LOG_ERROR : LOG_DEBUG), 
-				    "Can't find '%s' item in XML Node",
-				    item);
-		} else {
-			IXML_Node* tmpNode = ixmlNodeList_item (nodeList, 0);
-			if (tmpNode == NULL) {
-				Log_Printf ((log_error ? LOG_ERROR: LOG_DEBUG),
-					    "Can't find '%s' item in XML Node",
-					    item );
-			} else {
-				IXML_Node* textNode = 
-					ixmlNode_getFirstChild (tmpNode);
-				
-				/* Get the node value. This string will be 
-				 * preserved when the NodeList is freed, 
-				 * but should be copied if the IXML_Element 
-				 * is to be destroyed.
-				 */
-				res = ixmlNode_getNodeValue (textNode);
+	IXML_Element* res = NULL;
+	IXML_Node* n = ixmlNode_getFirstChild (discard_const_p (IXML_Node, 
+								node));
+	while (n && !res) {
+		if (ixmlNode_getNodeType (n) == eELEMENT_NODE) {
+			const char* const name = ixmlNode_getNodeName (n);
+			if (name && strcmp (tagname, name) == 0) {
+				res = (IXML_Element*) n;
 			}
-			ixmlNodeList_free (nodeList);
+		}
+		if (deep && !res) {
+			res = findFirstElementRecursive (n, tagname, deep);
+		}
+		n = ixmlNode_getNextSibling (n);
+	}
+	return res;
+}
+
+IXML_Element*
+XMLUtil_FindFirstElement (const IXML_Node* const node,
+			  const char* const tagname,
+			  bool const deep, bool const log_error)
+{
+	IXML_Element* res = NULL;
+
+	if (node == NULL || tagname == NULL) {
+		Log_Printf (LOG_ERROR, 
+			    "GetFirstElementByTagName invalid NULL parameter");
+	} else {
+		IXML_Node* const n = discard_const_p (IXML_Node, node);
+		if (ixmlNode_getNodeType (n) == eELEMENT_NODE) {
+			const char* const name = ixmlNode_getNodeName (n);
+			if (name && strcmp (tagname, name) == 0) {
+				res = (IXML_Element*) n;
+			}
+		}
+		if (res == NULL) {
+			res = findFirstElementRecursive (n, tagname, deep);
+		}
+		if (res == NULL) {
+			Log_Printf ((log_error ? LOG_ERROR : LOG_DEBUG), 
+				    "Can't find '%s' element in XML Node"
+				    " (deep search=%d)", tagname, (int) deep);
 		}
 	}
 	return res;
@@ -108,10 +119,24 @@ XMLUtil_GetFirstNodeValue (IN const IXML_Node* node, IN const char* item,
 
 
 /******************************************************************************
+ * XMLUtil_FindFirstElementValue
+ *****************************************************************************/
+const char* 
+XMLUtil_FindFirstElementValue (const IXML_Node* const node,
+			       const char* const tagname,
+			       bool const deep, bool const log_error)
+{
+	IXML_Element* element = XMLUtil_FindFirstElement (node, tagname,
+							  deep, log_error);
+	return (element ? XMLUtil_GetElementValue (element) : NULL);
+}
+
+
+/******************************************************************************
  * XMLUtil_GetDocumentString
  *****************************************************************************/
 char*
-XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
+XMLUtil_GetDocumentString (void* context, const IXML_Document* doc)
 {
 	// TBD XXX
 	// TBD prepend <?xml version="1.0"?> if not already done ???
@@ -137,11 +162,11 @@ XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
  * XMLUtil_GetNodeString
  *****************************************************************************/
 char*
-XMLUtil_GetNodeString (void* context, IXML_Node* node)
+XMLUtil_GetNodeString (void* context, const IXML_Node* node)
 {
 	char* ret = NULL;
 	if (node) {
-		DOMString s = ixmlPrintNode (node);
+		DOMString s = ixmlPrintNode (discard_const_p (IXML_Node,node));
 		if (s) {
 			ret = talloc_strdup (context, s);
 			ixmlFreeDOMString (s);

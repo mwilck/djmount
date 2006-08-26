@@ -327,12 +327,13 @@ ActionError (Service* serv, const char* actionName,
 			ixmlFreeDOMString (s);
 			// rc > 0 : SOAP-protocol error
 			serv->la_error_code = talloc_strdup 
-				(serv, XMLUtil_GetFirstNodeValue 
-				 (XML_D2N (*response), "errorCode", true));
+				(serv, XMLUtil_FindFirstElementValue
+				 (XML_D2N (*response), "errorCode", 
+				  true, true));
 			serv->la_error_desc = talloc_strdup 
-				(serv, XMLUtil_GetFirstNodeValue 
+				(serv, XMLUtil_FindFirstElementValue
 				 (XML_D2N (*response), "errorDescription", 
-				  true));
+				  true, true));
 			Log_Printf (LOG_ERROR, 
 				    "Error SOAP in UpnpSendAction -- %s (%s)",
 				    serv->la_error_code, 
@@ -591,20 +592,20 @@ Service_Create (void* talloc_context,
 	
 	const IXML_Node* const node = XML_E2N (serviceDesc);
 
-	self->serviceType = talloc_strdup (self, XMLUtil_GetFirstNodeValue
-					   (node, "serviceType", true));
+	self->serviceType = talloc_strdup (self, XMLUtil_FindFirstElementValue
+					   (node, "serviceType", false, true));
 	Log_Printf (LOG_INFO, "Service_Create: %s", NN(self->serviceType));
 	
-	self->serviceId = talloc_strdup (self, XMLUtil_GetFirstNodeValue
-					 (node, "serviceId", true));
+	self->serviceId = talloc_strdup (self, XMLUtil_FindFirstElementValue
+					 (node, "serviceId", false, true));
 	Log_Printf (LOG_DEBUG, "serviceId: %s", NN(self->serviceId));
 	
-	char* relcontrolURL = XMLUtil_GetFirstNodeValue (node, "controlURL", 
-							 true);
+	const char* relcontrolURL = XMLUtil_FindFirstElementValue
+		(node, "controlURL", false, true);
 	self->controlURL = UpnpUtil_ResolveURL (self, base_url, relcontrolURL);
 	
-	char* releventURL = XMLUtil_GetFirstNodeValue (node, "eventSubURL", 
-						       true);
+	const char* releventURL = XMLUtil_FindFirstElementValue
+		(node, "eventSubURL", false, true);
 	self->eventURL = UpnpUtil_ResolveURL (self, base_url, releventURL);
 	
 	self->sid = NULL;

@@ -90,7 +90,8 @@ DIDLObject_Create (void* talloc_context,
 			return NULL; // ---------->
 		}
 
-		o->title = XMLUtil_GetFirstNodeValue (node, "dc:title", true);
+		o->title = XMLUtil_FindFirstElementValue (node, "dc:title", 
+							  false, true);
 		if (o->title == NULL)
 			o->title = "";
 
@@ -107,8 +108,9 @@ DIDLObject_Create (void* talloc_context,
 			o->basename[0] = '-';
 		}
 		
-		o->cds_class = String_StripSpaces (o, XMLUtil_GetFirstNodeValue
-						   (node, "upnp:class", true));
+		o->cds_class = String_StripSpaces 
+			(o, XMLUtil_FindFirstElementValue (node, "upnp:class",
+							   false, true));
 		if (o->cds_class == NULL)
 			o->cds_class = "";
 

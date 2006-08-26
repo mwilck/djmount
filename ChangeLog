@@ -1,7 +1,12 @@
 2006-08-26  Rémi Turboult  <r3mi@users.sourceforge.net>
 
-	* djmount/xml_util.h: add type-casting macros for XML Node types
-	  and discard_const
+	* djmount/xml_util: 
+	  - new XMLUtil_FindFirstElement to avoid recursive search in XML 
+	    documents when it is not necessary
+	  - (XMLUtil_GetElementValue): properly ignores non-text childs 
+	    e.g. comments
+	  - add missing consts
+	  - add type-casting macros for XML Node types and discard_const
 
 2006-08-21  Rémi Turboult  <r3mi@users.sourceforge.net>
 

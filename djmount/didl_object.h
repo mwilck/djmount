@@ -49,7 +49,7 @@ extern "C" {
 
 typedef struct _DIDLObject {
 
-	bool  is_container; // else is_item
+	bool  		is_container; // else is_item
 
 	/*
 	 * The following members are required properties of every 
@@ -57,18 +57,18 @@ typedef struct _DIDLObject {
 	 * that those fields are never NULL, and make sure that "id" 
 	 * is never empty "".
 	 */
-	char* 	id;
+	char* 		id;
 	// TBD char* parentId;
-	char* 	title;	
-	char* 	cds_class;
+	const char* 	title;	
+	char* 		cds_class;
 	// TBD bool  restricted; // TBD Not Yet Implemented
-	bool 	searchable;
+	bool 		searchable;
 
 	/*
 	 * full <item> or <container> element, to access optional properties
 	 * e.g. "res"
 	 */
-	IXML_Element* element;
+	IXML_Element* 	element;
 
 
 	/*
@@ -78,7 +78,7 @@ typedef struct _DIDLObject {
 
 	// Similar to "title", but suitable for filename generation : 
 	// never empty "", or reserved name (e.g. starting with "." or "_")
-	char* basename;
+	char* 	basename;
 
 } DIDLObject;
 
