@@ -160,18 +160,17 @@ BrowseOrSearchAction (ContentDir* cds,
 		goto cleanup; // ---------->
 	}
 	
-	const char* s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, 
+	const char* s = XMLUtil_GetFirstNodeValue (XML_D2N (doc), 
 						   "TotalMatches", true);
 	STRING_TO_INT (s, *nb_matched, 0);
 	
-	s = XMLUtil_GetFirstNodeValue ((IXML_Node*) doc, "NumberReturned",
-				       true);
+	s = XMLUtil_GetFirstNodeValue (XML_D2N (doc), "NumberReturned", true);
 	STRING_TO_INT (s, *nb_returned, 0);
 	
 	Log_Printf (LOG_DEBUG, "+++BROWSE RESULT+++\n%s\n", 
 		    XMLUtil_GetDocumentString (tmp_ctx, doc));
 	
-	char* const resstr = XMLUtil_GetFirstNodeValue ((IXML_Node*)doc,
+	char* const resstr = XMLUtil_GetFirstNodeValue (XML_D2N (doc),
 							"Result", true);
 	if (resstr == NULL) {
 		Log_Printf (LOG_ERROR, "BrowseOrSearchAction ObjectId=%s : "
@@ -479,7 +478,7 @@ ContentDir_GetSearchCapabilities (ContentDir* self, void* unused)
 		if (rc == UPNP_E_SUCCESS && doc != NULL) {
 			self->search_caps = talloc_strdup 
 				(self, XMLUtil_GetFirstNodeValue 
-				 ((IXML_Node*) doc, "SearchCaps", true));
+				 (XML_D2N (doc), "SearchCaps", true));
 			
 			Log_Printf (LOG_DEBUG, 
 				    "ContentDir_GetSearchCapabilities = '%s'",

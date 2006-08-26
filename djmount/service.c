@@ -169,17 +169,19 @@ Service_SetSid (Service* serv, Upnp_SID sid)
 static ListNode*
 GetVariable (const Service* serv, const char* name)
 {
-  if (serv && name) {
-    ListNode* node;
-    for (node = ListHead ((LinkedList*) &serv->variables);
-	 node != NULL;
-	 node = ListNext ((LinkedList*) &serv->variables, node)) {
-      StringPair* const var = node->item;
-      if (var && var->name && strcmp (var->name, name) == 0) 
-	return node; // ---------->
-    }
-  }
-  return NULL;
+	if (serv && name) {
+		ListNode* node;
+		LinkedList* const variables = 
+			discard_const_p (LinkedList, &serv->variables);
+		for (node = ListHead (variables);
+		     node != NULL;
+		     node = ListNext (variables, node)) {
+			StringPair* const var = node->item;
+			if (var && var->name && strcmp (var->name, name) == 0) 
+				return node; // ---------->
+		}
+	}
+	return NULL;
 }
 
 /*****************************************************************************
@@ -326,10 +328,10 @@ ActionError (Service* serv, const char* actionName,
 			// rc > 0 : SOAP-protocol error
 			serv->la_error_code = talloc_strdup 
 				(serv, XMLUtil_GetFirstNodeValue 
-				 ((IXML_Node*) *response, "errorCode", true));
+				 (XML_D2N (*response), "errorCode", true));
 			serv->la_error_desc = talloc_strdup 
 				(serv, XMLUtil_GetFirstNodeValue 
-				 ((IXML_Node*) *response, "errorDescription",
+				 (XML_D2N (*response), "errorDescription", 
 				  true));
 			Log_Printf (LOG_ERROR, 
 				    "Error SOAP in UpnpSendAction -- %s (%s)",
@@ -491,9 +493,11 @@ get_status_string (const Service* serv,
 	// Print variables
 	tpr (&p, "%s+- ServiceStateTable\n", spacer);
 	ListNode* node;
-	for (node = ListHead ((LinkedList*) &serv->variables);
+	LinkedList* const variables = discard_const_p (LinkedList,
+						       &serv->variables);
+	for (node = ListHead (variables);
 	     node != NULL;
-	     node = ListNext ((LinkedList*) &serv->variables, node)) {
+	     node = ListNext (variables, node)) {
 		StringPair* const var = node->item;
 		tpr (&p, "%s|    +- %-10s = %.150s%s\n", spacer, 
 		     NN(var->name), NN(var->value), 
@@ -585,7 +589,7 @@ Service_Create (void* talloc_context,
 	
 	self->ctrlpt_handle = ctrlpt_handle;
 	
-	const IXML_Node* const node = (IXML_Node*) serviceDesc;
+	const IXML_Node* const node = XML_E2N (serviceDesc);
 
 	self->serviceType = talloc_strdup (self, XMLUtil_GetFirstNodeValue
 					   (node, "serviceType", true));

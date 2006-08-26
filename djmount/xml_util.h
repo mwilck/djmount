@@ -27,6 +27,8 @@
 #ifndef XML_UTIL_H_INCLUDED
 #define XML_UTIL_H_INCLUDED
 
+#include <config.h>
+
 #include <stdbool.h>
 #include <inttypes.h>
 #include <upnp/ixml.h>
@@ -36,6 +38,41 @@
 extern "C" {
 #endif
 
+
+/*****************************************************************************
+ * @brief       type-safe XML Node casting.
+ *
+ *      These macros are safer than direct casting (e.g.
+ *      IXML_Node* n = (IXML_Node*) element) and respect constness.
+ *
+ *****************************************************************************/
+
+// type-casting to Node can be checked at compile-time
+#define XML_E2N(ELEM_PTR)       (&((ELEM_PTR)->n))
+#define XML_D2N(DOC_PTR)        (&((DOC_PTR)->n))
+
+
+
+/*****************************************************************************
+ * @brief       discard constness on pointer
+ *
+ *      This macro should be used in all the places where 'const' are missing
+ *	e.g. the ixml API.
+ *
+ *****************************************************************************/
+
+#ifndef discard_const_p
+#   ifdef __GNUC__
+#	define discard_const_p(type,ptr) __builtin_choose_expr	\
+	(__builtin_types_compatible_p(const type*,typeof(ptr)), \
+	 ((type *)(ptr)),(ptr))
+// non-gcc default implementation copied from talloc.c :
+#   elif defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+#	define discard_const_p(type,ptr) ((type *)((intptr_t)(ptr)))
+#   else
+#	define discard_const_p(type,ptr) ((type *)(ptr))
+#   endif
+#endif
 
 
 

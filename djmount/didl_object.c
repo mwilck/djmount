@@ -73,9 +73,8 @@ DIDLObject_Create (void* talloc_context,
 		/* Steal the node from its parent (instead of copying it, given
 		 * that the parent document is going to be deallocated anyway)
 		 */
-		ixmlNode_removeChild 
-			(ixmlNode_getParentNode ((IXML_Node*) elem), 
-			 (IXML_Node*) elem, &node);
+		ixmlNode_removeChild (ixmlNode_getParentNode (XML_E2N (elem)), 
+				      XML_E2N (elem), &node);
 		o->element = (IXML_Element*) node;
 
 		// TBD need to copy ??
@@ -138,7 +137,7 @@ DIDLObject_GetElementString (const DIDLObject* o, void* result_context)
 	char* s = NULL;
 	if (o) {
 		s = XMLUtil_GetNodeString (result_context, 
-					   (IXML_Node*) o->element);
+					   XML_E2N (o->element));
 	}
 	return s;
 }

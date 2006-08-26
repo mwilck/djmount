@@ -1,3 +1,8 @@
+2006-08-26  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/xml_util.h: add type-casting macros for XML Node types
+	  and discard_const
+
 2006-08-21  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/service.c (finalize): suppress bogus check on ctrlpt_handle
