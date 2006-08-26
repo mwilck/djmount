@@ -135,14 +135,6 @@ XMLUtil_FindFirstElementValue (const IXML_Node* const node,
 			       const char* const tagname,
 			       bool const deep, bool const log_error);
 
-// XXX TBD deprecated, use XMLUtil_GetFirstElementByTagName above !! XXX TBD
-static inline const char* 
-XMLUtil_GetFirstNodeValue (const IXML_Node* const node, 
-			   const char* const tagname, bool log_error)
-{
-	return XMLUtil_FindFirstElementValue (node, tagname, true, log_error);
-}
-
 
 /*****************************************************************************
  * @brief Returns a string printing the content of an XML Document.
