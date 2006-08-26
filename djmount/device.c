@@ -45,19 +45,25 @@
 struct _Device {
 
 	time_t		creation_time;
-	
+
+	/*
+	 * <root> elements
+	 */
 	IXML_Document*	descDoc;
 	const char*	descDocURL;
 	const char*	descDocText;
+	const char*	baseURL;	// <URLBase> if exists, else descDocURL
 
-	const char*	udn; 		// <UDN>
+	/*
+	 * <device> elements
+	 */
+	const IXML_Node*  descDocNode;	// pointer to this <device> in descDoc
+	const char*	udn; 		// <UDN> == deviceId
 	const char*	deviceType; 	// <deviceType>
 	const char*	friendlyName; 	// <friendlyName>
-	
-	const char*	baseURL;	// <URLBase> if exists, else descDocURL
 	const char*	presURL;	// <presentationURL> resolved with base
 	
-	LinkedList	services; // Linked list of Service*
+	LinkedList	services; 	// Linked list of Service*
 };
 
 
@@ -80,8 +86,8 @@ ServiceFactory (Device* dev,
 	/*
 	 * Simple implementation, hardcoding the 2 possible classes of Service.
 	 */
-	const char* const serviceType = XMLUtil_GetFirstNodeValue
-		((IXML_Node*) serviceDesc, "serviceType", true);
+	const char* const serviceType = XMLUtil_FindFirstElementValue
+		(XML_E2N (serviceDesc), "serviceType", false, true);
 
 	if ( serviceType && strcmp (serviceType, 
 				    CONTENT_DIR_SERVICE_TYPE) == 0 ) {
@@ -99,41 +105,48 @@ ServiceFactory (Device* dev,
 }
 
 
-/*****************************************************************************
- * @brief	Get serviceList from XML UPnP Device Description Document.
- *
- *       Given a DOM node representing a UPnP Device Description Document,
- *       this routine parses the document and finds the first service list
- *       (i.e., the service list for the root device).  The service list
- *       is returned as a DOM node list. The NodeList must be freed using
- *       NodeList_free.
- *
- * @param doc	The DOM document from which to extract the service list
- *
+/******************************************************************************
+ * Find the correct <device> XML Node, defaulting to root device if not found,
+ * or if deviceId not specified.
  *****************************************************************************/
-static IXML_NodeList*
-getFirstServiceList (IN IXML_Document* doc)
+static const IXML_Node*
+findDeviceNode (const char* const deviceId, IXML_Document* const descDoc)
 {
-  IXML_NodeList* result = NULL;
-  
-  IXML_NodeList* servlistnodelist =
-    ixmlDocument_getElementsByTagName (doc, "serviceList");
-  if ( servlistnodelist && ixmlNodeList_length (servlistnodelist) ) {
-    
-    /*
-     * we only care about the first service list, from the root device 
-     */
-    IXML_Node* servlistnode = ixmlNodeList_item (servlistnodelist, 0);
-    
-    // Create as list of DOM nodes 
-    result = ixmlElement_getElementsByTagName ((IXML_Element*) servlistnode, 
-					       "service");
-  }
-  
-  if (servlistnodelist)
-    ixmlNodeList_free (servlistnodelist);
-  
-  return result;
+	// Get all <device>'s : the root device, and any embedded device
+	// in <deviceList>'s
+	IXML_NodeList* devicesList = 
+		ixmlDocument_getElementsByTagName (descDoc, "device");
+	if (ixmlNodeList_length (devicesList) < 1) {
+		ixmlNodeList_free (devicesList);
+		return NULL; // ---------->
+	}
+	
+	// Find the correct <device>, defaulting to root device if not found,
+	// or if deviceId not specified.
+	const IXML_Node* descDocNode = NULL;
+	if (deviceId) {
+		int i;
+		for (i = 0; i < ixmlNodeList_length (devicesList); i++) {
+			IXML_Node* node = ixmlNodeList_item (devicesList, i);
+			const char* udn = XMLUtil_FindFirstElementValue
+				(node, "UDN", false, true);
+			if (udn && strcmp (udn, deviceId) == 0) {
+				descDocNode = node;
+				break; // ---------->
+			}
+		}
+		if (descDocNode == NULL) {
+			Log_Printf (LOG_WARNING,
+				    "Device_Create can't find UDN='%s' in XML "
+				    "document, defaulting to root device",
+				    deviceId);
+		}
+	}
+	if (descDocNode == NULL) 
+		descDocNode = ixmlNodeList_item (devicesList, 0);
+	ixmlNodeList_free (devicesList);
+	
+	return descDocNode;
 }
 
 
@@ -178,6 +191,7 @@ Device*
 Device_Create (void* parent_context, 
 	       UpnpClient_Handle ctrlpt_handle, 
 	       const char* const descDocURL, 
+	       const char* const deviceId,
 	       const char* const descDocText)
 {
 	if (descDocURL == NULL || *descDocURL == NUL) {
@@ -191,18 +205,26 @@ Device_Create (void* parent_context,
 		return NULL; // ---------->
 	}
 
-	Log_Printf (LOG_DEBUG, "Device_Create : description document = "
+	Log_Printf (LOG_DEBUG, "Device_Create : Id = '%s', "
+		    "description document = "
 		    "--------------------\n%s\n--------------------",
-		    descDocText);
+		    NN(deviceId), descDocText);
 
 	IXML_Document* descDoc = NULL;
-	int rc = ixmlParseBufferEx ((char*) descDocText, &descDoc);
+	int rc = ixmlParseBufferEx (discard_const_p (char, descDocText), 
+				    &descDoc);
 	if (rc != IXML_SUCCESS) {
 		Log_Printf (LOG_ERROR, "Device_Create can't parse XML "
 			    "document (%d) = '%s'", rc, descDocText);
 		return NULL; // ---------->
 	}
-	if (ixmlDocument_getElementById (descDoc, "device") == 0) {
+	
+	/*
+	 * Find the correct <device>, defaulting to root device if not found,
+	 * or if deviceId not specified.
+	 */
+	const IXML_Node* const descDocNode = findDeviceNode(deviceId, descDoc);
+	if (descDocNode == NULL) {
 		Log_Printf (LOG_ERROR, 
 			    "Device_Create no <device> in XML document = '%s'",
 			    descDocText);
@@ -210,6 +232,9 @@ Device_Create (void* parent_context,
 		return NULL; // ---------->
 	}
 
+	/*
+	 * Create the Device object
+	 */
 	Device* const dev = talloc (parent_context, Device);
 	if (dev == NULL) {
 		Log_Print (LOG_ERROR, "Device_Create Out of Memory");
@@ -222,13 +247,18 @@ Device_Create (void* parent_context,
 		.descDocURL    = talloc_strdup (dev, descDocURL),
 		.descDoc       = descDoc,
 		.descDocText   = talloc_strdup (dev, descDocText),
+		.descDocNode   = descDocNode,
 		// Other fields to empty values
 	};
+
+	const char* const baseURL = XMLUtil_FindFirstElementValue
+		(XML_D2N(dev->descDoc), "URLBase", true, false);
+	dev->baseURL = ( (baseURL && baseURL[0]) ? baseURL : dev->descDocURL );
+	
 	
 	/*
-	 * Read key elements from description document 
+	 * Read key elements from <device> description document 
 	 */
-	
 	dev->udn = talloc_strdup (dev, Device_GetDescDocItem (dev, "UDN", 
 							      true));
 	Log_Printf (LOG_DEBUG, "Device_Create : UDN = %s", dev->udn);
@@ -240,10 +270,6 @@ Device_Create (void* parent_context,
 	dev->friendlyName = talloc_strdup (dev, Device_GetDescDocItem 
 					   (dev, "friendlyName", true));
 
-	const char* const baseURL = Device_GetDescDocItem (dev, "URLBase",
-							   false);
-	dev->baseURL = ( (baseURL && baseURL[0]) ? baseURL : dev->descDocURL );
-	
 	const char* const relURL  = Device_GetDescDocItem (dev, 
 							   "presentationURL",
 							   false);
@@ -254,13 +280,14 @@ Device_Create (void* parent_context,
 	 */
 	ListInit (&dev->services, NULL, NULL);
 	
-	IXML_NodeList* serviceList = getFirstServiceList (dev->descDoc);
-	const int length = ixmlNodeList_length (serviceList);
-
+	IXML_Element* const serviceList = XMLUtil_FindFirstElement
+		(dev->descDocNode, "serviceList", false, false);
+	IXML_NodeList* services = ixmlElement_getElementsByTagName
+		(serviceList, "service");
 	int i;
-	for (i = 0; i < length; i++ ) {
+	for (i = 0; i < ixmlNodeList_length (services); i++ ) {
 		IXML_Element* const serviceDesc = 
-			(IXML_Element *) ixmlNodeList_item (serviceList, i);
+			(IXML_Element *) ixmlNodeList_item (services, i);
 		Service* const serv = ServiceFactory (dev, ctrlpt_handle, 
 						      serviceDesc, 
 						      dev->baseURL);
@@ -269,8 +296,8 @@ Device_Create (void* parent_context,
 	}
 	
 	if (serviceList) {
-		ixmlNodeList_free (serviceList);
-		serviceList = NULL;
+		ixmlNodeList_free (services);
+		services = NULL;
 	}  
 
 	// Register destructor
@@ -284,11 +311,11 @@ Device_Create (void* parent_context,
  * Device_GetDescDocItem
  *****************************************************************************/
 const char*
-Device_GetDescDocItem (const Device* dev, const char* item, bool log_error)
+Device_GetDescDocItem (const Device* dev, const char* tagname, bool log_error)
 {
 	if (dev)
-		return XMLUtil_GetFirstNodeValue ((IXML_Node*) dev->descDoc, 
-						  item, log_error);
+		return XMLUtil_FindFirstElementValue 
+			(dev->descDocNode, tagname, false, log_error);
 	else 
 		return NULL;
 }
@@ -319,9 +346,11 @@ Device_SusbcribeAllEvents (const Device* dev)
 
 	int rc = UPNP_E_SUCCESS;
 	ListNode* node;
-	for (node = ListHead ((LinkedList*) &dev->services); 
+	LinkedList* const services = discard_const_p (LinkedList, 
+						      &dev->services);
+	for (node = ListHead (services);
 	     node != NULL;
-	     node = ListNext ((LinkedList*) &dev->services, node)) {
+	     node = ListNext (services, node)) {
 		int rc2 = Service_SubscribeEventURL (node->item); 
 		if (rc2 != UPNP_E_SUCCESS)
 			rc = rc2;
@@ -341,9 +370,11 @@ Device_GetServiceFrom (const Device* dev,
 {  
 	if (servname) {
 		ListNode* node;
-		for (node = ListHead ((LinkedList*) &dev->services); 
+		LinkedList* const services = discard_const_p (LinkedList, 
+							      &dev->services);
+		for (node = ListHead (services);
 		     node != NULL;
-		     node = ListNext ((LinkedList*) &dev->services, node)) {
+		     node = ListNext (services, node)) {
 			const char* s = NULL;
 			switch (from) {
 			case FROM_SID:		
@@ -399,11 +430,13 @@ Device_GetStatusString (const Device* dev, void* result_context, bool debug)
 	}
 	
 	ListNode* node;
-	for (node = ListHead ((LinkedList*) &dev->services); 
+	LinkedList* const services = discard_const_p (LinkedList, 
+						      &dev->services);
+	for (node = ListHead (services);
 	     node != NULL;
-	     node = ListNext ((LinkedList*) &dev->services, node)) {
+	     node = ListNext (services, node)) {
 		const Service* const serv = node->item;
-		bool last = (node == ListTail ((LinkedList*) &dev->services));
+		bool const last = (node == ListTail (services));
 		
 		tpr (&p, "  | \n");
 		if (serv == NULL) {

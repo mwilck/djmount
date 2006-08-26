@@ -1,5 +1,8 @@
 2006-08-26  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* djmount/device: handle UPnP devices embedded in the description 
+	  document (and not only root devices as previously).
+
 	* djmount/xml_util: 
 	  - new XMLUtil_FindFirstElement to avoid recursive search in XML 
 	    documents when it is not necessary

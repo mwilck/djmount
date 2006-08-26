@@ -410,7 +410,8 @@ AddDevice (const char* deviceId,
 		*devnode = (struct _DeviceNode) { }; 
 
 		devnode->d = Device_Create (devnode, g_ctrlpt_handle, 
-					    descLocation, descDocText);
+					    descLocation, deviceId,
+					    descDocText);
 		free (descDocText);
 		descDocText = NULL;
 

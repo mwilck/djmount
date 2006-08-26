@@ -38,18 +38,22 @@ static void
 stdout_print (Log_Level level, const char* const msg)
 {
 	Log_BeginColor (level, stdout);
-	if (level == LOG_ERROR)
-		printf ("[E] ");
-	else 
+	switch (level) {
+	case LOG_ERROR:    printf ("[E] "); break;
+	case LOG_WARNING:  printf ("[W] "); break;
+	case LOG_INFO:     printf ("[I] "); break;
+	case LOG_DEBUG:    printf ("[D] "); break;
+	default:
 		printf ("[%d] ", (int) level);
-	
+		break;
+	}
 	puts (msg);
 	Log_EndColor (level, stdout);
 }
 
 
 int 
-main (int argc, char * argv[])
+main (int argc, char* argv[])
 {
 	talloc_enable_leak_report();
 
@@ -69,7 +73,7 @@ main (int argc, char * argv[])
 
 	// Test Device creation
 	Device* dev = Device_Create (NULL, (UpnpClient_Handle) -1, 
-				     "http://test.url", descDocText);
+				     "http://test.url", argv[1], descDocText);
 	assert (dev != NULL);
 
 	char* s = Device_GetStatusString (dev, dev, true);

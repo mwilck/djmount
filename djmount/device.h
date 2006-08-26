@@ -52,12 +52,14 @@ typedef struct _Device Device;
 
 /******************************************************************************
  * @brief Creates a new device.
- *	This routine parse the DOM representation document for the device.
+ *	This routine parse the DOM description document for the device
+ *	(which can be the root device, or any embedded device in the document).
  *	The returned Device* can be destroyed with "talloc_free".
  *
  * @param context        the talloc parent context
  * @param ctrlpt_handle  the UPnP client handle
  * @param descDocURL 	 the URL of the description document 
+ * @param deviceId	 device UDN, or NULL to default to root device
  * @param descDocText 	 the XML text of the description document
  *
  *****************************************************************************/
@@ -65,6 +67,7 @@ Device*
 Device_Create (void* context, 
 	       UpnpClient_Handle ctrlpt_handle, 
 	       const char* const descDocURL, 
+	       const char* const deviceId,
 	       const char* const descDocText);
 
 
@@ -76,12 +79,15 @@ Device_SusbcribeAllEvents (const Device* dev);
 
 
 /** 
- * @brief Returns the 1st value of a node from the Device Description Document.
+ * @brief Returns the value of an element from the Device Description.
+ *	The searched element shall be a direct child of the <device> element
+ *	(no recursive seach is done), and only the 1st element found is 
+ *	returned for a multi-valued element.
  * 	The returned string is internal to the Device, and should be copied 
  *	if necessary e.g. if the Device is to be destroyed.	
  */
 const char*
-Device_GetDescDocItem (const Device* dev, const char* item, bool log_error);
+Device_GetDescDocItem (const Device* dev, const char* tagname, bool log_error);
 
 
 /** 
