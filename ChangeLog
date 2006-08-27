@@ -1,8 +1,11 @@
 2006-08-27  Rémi Turboult  <r3mi@users.sourceforge.net>
 
+	* version 0.71
+
 	* djmount/device_list.c : check that newly created device matches the 
 	  initial SSDP target, to avoid listing in djmount UPnP devices that
-	  are not MediaServers e.g. Routers.
+	  are not MediaServers e.g. Routers (problem reported by Martin
+	  Vallevand).
 
 	* djmount/test_upnp.c: add 'wcat' command to download URLs
 

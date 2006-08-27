@@ -42,5 +42,8 @@ exempt of errors.
 * Thomas Sattler
   - fix
 
+* Martin Vallevand
+  - use djmount in MediaMVP Media Center (mvpmc)
+  - problem report
 
 

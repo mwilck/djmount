@@ -1,4 +1,29 @@
 
+What is new in djmount 0.71
+
+* fix: filter UPnP devices so that only MediaServers are listed e.g. UPnP 
+  Routers are no longer visible (problem reported by Martin Vallevand). 
+
+* fix: correctly handle UPnP devices with embedded sub-devices
+
+* fix: memory corruption when discovering some UPnP devices
+
+* fix: suppress error messages for missing optional elements in device 
+  description (URLBase, presentationURL).
+
+* fix: "make check" failures e.g. on Gentoo (fix by Thomas Sattler).
+
+* try to accommodate broken UPnP devices who do not report the MIME type 
+  of the Device description document as XML.
+
+* add "text/plain" MIME type to be able to display .txt files
+
+* minor optimisations when analysing XML documents
+
+* some code improvements and more unitary tests
+
+============================================================================
+
 What is new in djmount 0.70
 
 * implement "search" operations (major evolution) : see examples in README
