@@ -18,6 +18,8 @@ What is new in djmount 0.71
 
 * add "text/plain" MIME type to be able to display .txt files
 
+* minor documentation updates
+
 * minor optimisations when analysing XML documents
 
 * some code improvements and more unitary tests

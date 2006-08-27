@@ -16,7 +16,7 @@ libtalloc_a_SOURCES	= talloc/talloc.c
 
 # distribute only talloc files necessary to djmount build or developments
 EXTRA_DIST 		= talloc/config.m4 talloc/talloc_guide.txt \
-			  talloc/talloc.3 talloc/talloc.3.xml 
+			  talloc/talloc.3.xml 
 
 check_PROGRAMS		= testsuite
 TESTS			= testsuite
