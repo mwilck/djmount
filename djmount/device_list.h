@@ -66,21 +66,16 @@ typedef void (*DeviceList_EventCallback) (DeviceList_EventType type,
 
 
 
-  // TBD
-int	
-DeviceList_RemoveAll (void);
-
-
 /*****************************************************************************
  * @fn 	  DeviceList_RefreshAll
- * @brief Clear the current global device list and issue new search
- *	  requests to build it up again from scratch.
+ * @brief Issue new SSDP search requests to rediscover the device list.
+ *	  Optionally, clear the current known list before issuing the requests,
+ *	  in order to build it up again from scratch.
  *
- * @param target    the search target as defined in the UPnP Device 
- *                  Architecture v1.0 specification e.g. "ssdp:all" for all.
+ * @param remove_all	if true, clear the current known list of devices
  *****************************************************************************/
 int 
-DeviceList_RefreshAll (const char* target);
+DeviceList_RefreshAll (bool remove_all);
 
 
 /*****************************************************************************
@@ -233,7 +228,7 @@ DeviceList_GetDeviceStatusString (void* talloc_context,
  * @return UPNP_E_SUCCESS if everything went well, else a UPNP error code
  *****************************************************************************/
 int 
-DeviceList_Start (const char* target,
+DeviceList_Start (const char* ssdp_target,
 		  DeviceList_EventCallback eventCallback);
 
 

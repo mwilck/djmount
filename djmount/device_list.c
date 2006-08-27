@@ -53,6 +53,8 @@ static UpnpClient_Handle g_ctrlpt_handle = -1;
 
 static ithread_t g_timer_thread;
 
+static char* g_ssdp_target = NULL;
+
 
 /*
  * Mutex for protecting the global device list
@@ -217,28 +219,29 @@ make_device_name (void* talloc_context, const char* base)
 int
 DeviceList_RemoveDevice (const char* deviceId)
 {
-  int rc = UPNP_E_SUCCESS;
+	int rc = UPNP_E_SUCCESS;
 
-  ithread_mutex_lock (&DeviceListMutex);
-
-  ListNode* node = GetDeviceListNodeFromId (deviceId);
-  if (node) {
-    DeviceNode* devnode = node->item;
-    node->item = 0;
-    ListDelNode (&GlobalDeviceList, node, /*freeItem=>*/ 0);
-    // Do the notification while the global list is still locked
-    NotifyUpdate (E_DEVICE_REMOVED, devnode);
-    talloc_free (devnode);
-  } else {
-    Log_Printf (LOG_WARNING, "WARNING: Can't RemoveDevice Id=%s", 
-		NN(deviceId));
-    rc = UPNP_E_INVALID_DEVICE;
-  }
-  
-  ithread_mutex_unlock( &DeviceListMutex );
-
-  return rc;
+	ithread_mutex_lock (&DeviceListMutex);
+	
+	ListNode* const node = GetDeviceListNodeFromId (deviceId);
+	if (node) {
+		DeviceNode* devnode = node->item;
+		node->item = 0;
+		ListDelNode (&GlobalDeviceList, node, /*freeItem=>*/ 0);
+		// Do the notification while the global list is still locked
+		NotifyUpdate (E_DEVICE_REMOVED, devnode);
+		talloc_free (devnode);
+	} else {
+		Log_Printf (LOG_WARNING, "RemoveDevice can't find Id=%s", 
+			    NN(deviceId));
+		rc = UPNP_E_INVALID_DEVICE;
+	}
+	
+	ithread_mutex_unlock (&DeviceListMutex);
+	
+	return rc;
 }
+
 
 /*****************************************************************************
  * DeviceList_RemoveAll
@@ -250,7 +253,7 @@ DeviceList_RemoveDevice (const char* deviceId)
  *   None
  *
  *****************************************************************************/
-int
+static int
 DeviceList_RemoveAll (void)
 {
   ithread_mutex_lock( &DeviceListMutex );
@@ -279,23 +282,23 @@ DeviceList_RemoveAll (void)
  * DeviceList_RefreshAll
  *****************************************************************************/
 int
-DeviceList_RefreshAll (const char* target)
+DeviceList_RefreshAll (bool remove_all)
 {
-  int rc = DeviceList_RemoveAll();
+	if (remove_all)
+		(void) DeviceList_RemoveAll();
   
-  /*
-   * Search for all 'target' providers,
-   * waiting for up to 5 seconds for the response 
-   */
-  Log_Printf (LOG_DEBUG, "RefreshAll target=%s", NN(target));
-  rc = UpnpSearchAsync (g_ctrlpt_handle, 5 /* seconds */, target, NULL);
-  if ( UPNP_E_SUCCESS != rc ) {
-    Log_Printf (LOG_ERROR, "Error sending search request %d", rc);
-  }
-  
-  return rc;
+	/*
+	 * Search for all 'target' providers,
+	 * waiting for up to 5 seconds for the response 
+	 */
+	Log_Printf (LOG_DEBUG, "RefreshAll target=%s", NN(g_ssdp_target));
+	int rc = UpnpSearchAsync (g_ctrlpt_handle, 5 /* seconds */, 
+				  g_ssdp_target, NULL);
+	if (UPNP_E_SUCCESS != rc) 
+		Log_Printf (LOG_ERROR, "Error sending search request %d", rc);
+	
+	return rc;
 }
-
 
 
 /*****************************************************************************
@@ -362,7 +365,7 @@ AddDevice (const char* deviceId,
 		devnode->expires = expires;
 	} else {
 		// Else create a new device
-		Log_Printf (LOG_DEBUG, "AddDevice create new device Id=%s", 
+		Log_Printf (LOG_DEBUG, "AddDevice try new device Id=%s", 
 			    NN(deviceId));
 		
 		// *unlock* before trying to download the Device Description 
@@ -421,6 +424,23 @@ AddDevice (const char* deviceId,
 			talloc_free (devnode);
 			return; // ---------->
 		} else {
+			// If SSDP target specified, check that the device
+			// matches it.
+			if (strstr (g_ssdp_target, ":service:")) {
+				const Service* serv = Device_GetServiceFrom 
+					(devnode->d, g_ssdp_target, 
+					 FROM_SERVICE_TYPE, false);
+				if (serv == NULL) {
+					Log_Printf (LOG_DEBUG,
+						    "Discovered device Id=%s "
+						    "has no '%s' service : "
+						    "forgetting", NN(deviceId),
+						    g_ssdp_target);
+					talloc_free (devnode);
+					return; // ---------->
+				}
+			}
+
 			// Relock the device list (and check that the same
 			// device has not already been added by another thread
 			// while the list was unlocked)
@@ -435,12 +455,10 @@ AddDevice (const char* deviceId,
 				// the Service destructors will not unsubscribe
 				talloc_free (devnode);
 			} else {
-				Device_SusbcribeAllEvents (devnode->d);
-
 				devnode->deviceId = talloc_strdup (devnode, 
 								   deviceId);
 				devnode->expires = expires;
-			
+				
 				// Generate a unique, friendly, name 
 				// for this device
 				const char* base = Device_GetDescDocItem 
@@ -449,8 +467,16 @@ AddDevice (const char* deviceId,
 				talloc_set_name (devnode->d, "%s", name);
 				talloc_free (name);
 				
+				Log_Printf (LOG_INFO, 
+					    "Add new device : Name='%s' "
+					    "Id='%s' descURL='%s'", 
+					    NN(talloc_get_name (devnode->d)), 
+					    NN(deviceId), descLocation);
+
 				// Insert the new device node in the list
 				ListAddTail (&GlobalDeviceList, devnode);
+
+				Device_SusbcribeAllEvents (devnode->d);
 				
 				// Notify New Device Added, while the global 
 				// list is still locked
@@ -505,12 +531,10 @@ EventHandlerCallback (Upnp_EventType event_type,
 		// TBD else ??
       
 		if (e->DeviceId && e->DeviceId[0]) { 
-			Log_Printf (LOG_INFO, 
-				    "Discovery : device type '%s' at url %s", 
-				    NN(e->DeviceType), NN(e->Location));
-			
 			Log_Printf (LOG_DEBUG, 
-				    "Discovery : before AddDevice\n");
+				    "Discovery : device type '%s' "
+				    "OS '%s' at URL '%s'", NN(e->DeviceType), 
+				    NN(e->Os), NN(e->Location));
 			AddDevice (e->DeviceId, e->Location, e->Expires);
 			Log_Printf (LOG_DEBUG, "Discovery: "
 				    "DeviceList after AddDevice = \n%s",
@@ -919,8 +943,18 @@ CheckSubscriptionsLoop (void* arg)
  * DeviceList_Start
  *****************************************************************************/
 int
-DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
+DeviceList_Start (const char* ssdp_target, 
+		  DeviceList_EventCallback eventCallback)
 {
+	// Cf. AddDevice : only some SSDP target are implemented 
+	if (ssdp_target == NULL || 
+	    (strcmp (ssdp_target, "ssdp:all") != 0 &&
+	     strstr (ssdp_target, ":service:") == NULL)) {
+		Log_Printf (LOG_ERROR, "DeviceList : invalid or not "
+			    "implemented SSDP target '%s", NN(ssdp_target));
+		return UPNP_E_INVALID_PARAM; // ---------->
+	}
+
 	int rc;
 	unsigned short port = 0;
 	char* ip_address = NULL;
@@ -968,7 +1002,8 @@ DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
 	
 	Log_Printf (LOG_DEBUG, "Control Point Registered" );
 	
-	DeviceList_RefreshAll (target);
+	g_ssdp_target = talloc_strdup (NULL, ssdp_target);
+	DeviceList_RefreshAll (true);
 	
 	// start a timer thread
 	ithread_create (&g_timer_thread, NULL, CheckSubscriptionsLoop, NULL);
@@ -983,25 +1018,27 @@ DeviceList_Start (const char* target, DeviceList_EventCallback eventCallback)
 int
 DeviceList_Stop (void)
 {
-  int rc;
+	int rc;
+	
+	/*
+	 * Reverse all "Start" operations
+	 */
+	
+	ithread_cancel (g_timer_thread);
+	
+	DeviceList_RemoveAll();
+	talloc_free (g_ssdp_target);
+	g_ssdp_target = NULL;
 
-  /*
-   * Reverse all "Start" operations
-   */
-
-  ithread_cancel (g_timer_thread);
-
-  DeviceList_RemoveAll();
-
-  UpnpUnRegisterClient (g_ctrlpt_handle);
-  rc = UpnpFinish();
-
-  ListDestroy (&GlobalDeviceList, /*freeItem=>*/ 0);
-
-  ithread_mutex_destroy (&DeviceListMutex);
- 
-  gStateUpdateFun = 0;
-
-  return rc;
+	UpnpUnRegisterClient (g_ctrlpt_handle);
+	rc = UpnpFinish();
+	
+	ListDestroy (&GlobalDeviceList, /*freeItem=>*/ 0);
+	
+	ithread_mutex_destroy (&DeviceListMutex);
+	
+	gStateUpdateFun = 0;
+	
+	return rc;
 }
 

@@ -100,7 +100,7 @@ struct CommandStruct {
  */
 static const struct CommandStruct CMDLIST[] = {
   { "help", 	CMD_HELP, 	1, ""},
-  { "loglevel", CMD_LOGLEVEL, 	2, "<max log level (0-3)>"},
+  { "loglevel", CMD_LOGLEVEL, 	2, "<max log level: 0 (error) to 3 (debug))>"},
   { "leak", 	CMD_LEAK, 	1, ""},
   { "leakfull", CMD_LEAK_FULL, 	1, ""},
   { "listdev", 	CMD_LISTDEV, 	1, ""},
@@ -392,7 +392,7 @@ process_command (const char* cmdline)
 	break;
 	
 	case CMD_REFRESH:
-		rc = DeviceList_RefreshAll (UPNP_TARGET);
+		rc = DeviceList_RefreshAll (true);
 		break;
 		
 	case CMD_WCAT:

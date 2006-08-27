@@ -594,7 +594,7 @@ Service_Create (void* talloc_context,
 
 	self->serviceType = talloc_strdup (self, XMLUtil_FindFirstElementValue
 					   (node, "serviceType", false, true));
-	Log_Printf (LOG_INFO, "Service_Create: %s", NN(self->serviceType));
+	Log_Printf (LOG_DEBUG, "Service_Create: %s", NN(self->serviceType));
 	
 	self->serviceId = talloc_strdup (self, XMLUtil_FindFirstElementValue
 					 (node, "serviceId", false, true));
