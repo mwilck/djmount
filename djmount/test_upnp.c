@@ -79,6 +79,7 @@ typedef enum CommandType {
 	CMD_PRINTDEV, 
 	CMD_LISTDEV, 
 	CMD_REFRESH, 
+	CMD_WCAT,
 	CMD_EXIT
 } CommandType;
 
@@ -111,6 +112,7 @@ static const struct CommandStruct CMDLIST[] = {
   { "searchcap",CMD_SEARCHCAP,  2, "<devname>"},
   { "search", 	CMD_SEARCH, 	4, "<devname> <objectId> <criteria>"},
   { "action", 	CMD_ACTION, 	4, "<devname> <serviceType> <actionName>"},
+  { "wcat",	CMD_WCAT,	2, "<URL>"},
   { "exit", 	CMD_EXIT, 	1, ""}
 };
 
@@ -278,7 +280,7 @@ process_command (const char* cmdline)
 			invalidargs++;
 	}
 	break;
-	
+
 	case CMD_LEAK:
 		talloc_report (NULL, stdout);
 		break;
@@ -393,6 +395,20 @@ process_command (const char* cmdline)
 		rc = DeviceList_RefreshAll (UPNP_TARGET);
 		break;
 		
+	case CMD_WCAT:
+	{
+		char* outbuf = NULL;
+		char contentType [LINE_SIZE] = "";
+		rc = UpnpDownloadUrlItem (strarg[1], &outbuf, contentType);
+		if (rc == UPNP_E_SUCCESS) {
+			Log_Printf (LOG_MAIN, "URL '%s' MIME='%s' :",
+				    strarg[1], contentType);
+			Log_Printf (LOG_MAIN, "%s", NN(outbuf));
+			free (outbuf);
+		}
+	}
+	break;
+
 	case CMD_EXIT:
 		rc = DeviceList_Stop();
 		exit (rc); // ---------->
