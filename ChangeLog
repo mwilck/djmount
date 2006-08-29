@@ -1,3 +1,10 @@
+2006-08-29  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/test_cache.c: use simulated time in test instead of real 
+	  time, to ensure test is repeatable across environments. This 
+	  should fix random "make check" failures e.g. on Gentoo (problem 
+	  reported by Thomas Sattler).
+
 2006-08-27  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* version 0.71
@@ -68,7 +75,7 @@
 2006-07-28  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/test_vfs.sh : ignore white spaces in "ls -l" test (else
-	  "make check" can fail e.g. on gentoo). Fix by Thomas Sattler.
+	  "make check" can fail e.g. on Gentoo). Fix by Thomas Sattler.
 
 2006-07-26  Rémi Turboult  <r3mi@users.sourceforge.net>
 

@@ -34,7 +34,35 @@
 #include <assert.h>
 
 
-#define AGE  2
+#define AGE  20
+
+
+// ----------------------------------------------------------------------
+// Simulated time : overload standard library functions.
+// Needed to keep the test repeatable across environments (and to make 
+// running the test short !).
+
+#include <time.h>
+#include <unistd.h>
+
+static double g_time = 946724400.0;
+
+time_t time (time_t* t)
+{
+	g_time += 0.1;
+	if (t)
+		*t = g_time;
+	return g_time;
+}
+
+unsigned int sleep (unsigned int seconds)
+{
+	g_time += seconds;
+	return 0;
+}
+
+// ----------------------------------------------------------------------
+
 
 
 static void free_expired_data (const char* key, void* data)
