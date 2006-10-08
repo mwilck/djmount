@@ -1,3 +1,10 @@
+2006-10-08  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/file_buffer.c (FileBuffer_Read): correct HTTP RANGE request
+	  to avoid requesting 1 more byte than necessary, which prevented
+	  reading the last block of a file from some media servers (fix by
+	  Rama Harihara @ Intel).
+	
 2006-08-29  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/test_cache.c: use simulated time in test instead of real 

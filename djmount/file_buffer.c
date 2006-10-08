@@ -199,7 +199,7 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		int rc = UpnpOpenHttpGetEx (file->url, &handle,
 					    &contentType, &contentLength,
 					    &httpStatus,
-					    offset, offset + size,
+					    offset, offset + size - 1,
 					    HTTP_DEFAULT_TIMEOUT
 					    );
 		if (rc != UPNP_E_SUCCESS) 
