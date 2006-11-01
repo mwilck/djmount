@@ -46,7 +46,7 @@ check_PROGRAMS 		= test_cache test_charset test_device test_ptr_array \
 			  test_string test_vfs
 # auto run some tests
 TESTS			= test_ptr_array test_string test_cache \
-			  test_device.sh test_vfs.sh
+			  test_charset.sh test_device.sh test_vfs.sh
 
 
 COMMON_SRCS 		= log.c object.c service.c \
@@ -123,7 +123,7 @@ clean-local:
 endif
 
 
-EXTRA_DIST		= test_device.sh test_vfs.sh txt2h.pl
+EXTRA_DIST		= test_charset.sh test_device.sh test_vfs.sh txt2h.pl
 
 
 

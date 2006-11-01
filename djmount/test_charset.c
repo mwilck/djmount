@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 #include "talloc_util.h"
 
 
@@ -75,6 +76,19 @@ main (int argc, char** argv)
 	if ( argc > 2 || (argc == 2 && strcmp (argv[1], "-help") == 0) ) {
 		Usage (argv[0]);
 	}
+
+	printf ("--> charset conversion code : %s\n", 
+#if HAVE_CHARSET
+#	ifdef HAVE_ICONV
+		"ICONV"
+#	else
+		"INTERNAL"
+#	endif
+#else
+		"DISABLED"
+#endif
+		);
+
 	const char* const charset = (argc > 1 ? argv[1] : NULL);
 	int rc = Charset_Initialize (charset);
 	if (rc) {
@@ -83,9 +97,11 @@ main (int argc, char** argv)
 		Usage (argv[0]);
 	}
 
-	while (1) {
+	int fatal = 0;
+	while (! fatal) {
 		char cmdline [BUFSIZ];
-		printf ("\n>> " );
+		if (isatty (fileno (stdin)))
+		    printf ("\n>> " );
 		if (fgets (cmdline, sizeof (cmdline), stdin) == NULL)
 			break; // ---------->
 		if (*cmdline) {  
@@ -114,14 +130,18 @@ main (int argc, char** argv)
 					printf ("allocated by talloc\n");
 			} else {
 				printf (" ** NULL ! **\n");
+				fatal++;
 			}
 
 
 			printf ("\n2) PrintString UTF8 \n");
 			rc = Charset_PrintString (CHARSET_FROM_UTF8, result1, 
 						  stdout);
-			if (rc < 0) 
-				printf (" *** error printing string ***\n");
+			if (rc < 0) {
+				printf (" *** error printing string *** "
+					"rc = %d\n", rc);
+				fatal++;
+			}
 			printf ("\n");
 
 
@@ -140,15 +160,17 @@ main (int argc, char** argv)
 					printf ("allocated by talloc\n");
 			} else {
 				printf (" ** NULL ! **\n");
+				fatal++;
 			}	
 
 
 			printf ("\n4) Compare strings \n");
 			if (result2 && strcmp (cmdline, result2) == 0)
 				printf (" ok\n");
-			else
+			else {
 				printf (" *** error, differ ! *** \n");
-
+				fatal++;
+			}
 
 			// Delete all temporary storage
 			talloc_free (tmp_ctx);
@@ -157,6 +179,6 @@ main (int argc, char** argv)
 	}
 
 	Charset_Finish();
-	exit (0);
+	exit (fatal);
 }
  
