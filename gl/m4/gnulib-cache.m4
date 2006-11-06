@@ -1,4 +1,5 @@
-# Copyright (C) 2004 Free Software Foundation, Inc.
+# Copyright (C) 2004-2006 Free Software Foundation, Inc.
+#
 # This file is free software, distributed under the terms of the GNU
 # General Public License.  As a special exception to the GNU General
 # Public License, this file may be distributed as part of a program
@@ -14,14 +15,17 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --dir=. --lib=libgnu --source-base=gl --m4-base=gl/m4 --aux-dir=libupnp/config.aux --libtool --macro-prefix=gl hash minmax
+#   gnulib-tool --import --dir=. --lib=libgnu --source-base=gl --m4-base=gl/m4 --doc-base=doc --aux-dir=libupnp/config.aux --libtool --macro-prefix=gl hash minmax
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
+gl_LOCAL_DIR([])
 gl_MODULES([hash minmax])
 gl_AVOID([])
 gl_SOURCE_BASE([gl])
 gl_M4_BASE([gl/m4])
+gl_DOC_BASE([doc])
 gl_TESTS_BASE([tests])
 gl_LIB([libgnu])
+gl_MAKEFILE_NAME([])
 gl_LIBTOOL
 gl_MACRO_PREFIX([gl])
