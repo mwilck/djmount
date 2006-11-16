@@ -104,9 +104,9 @@ Building and Installation
 -------------------------
 
 djmount has been built and tested on various Linux distro (MandrakeLinux 10.1,
-GeeXboX, Debian sarge or sid, Ubuntu 5.10, Mandriva 2006.0 ...), which include
-various Linux kernels (e.g. 2.6.14), gcc (e.g. 3.4.1, 4.0.3) and libc
-(e.g. glibc-2.3.5, uClibc 0.9.28).
+GeeXboX, Debian sarge or sid, Ubuntu 5.10, Mandriva 2006.0 and 2007.0 ...), 
+which include various Linux kernels (e.g. 2.6.14), gcc (e.g. 3.4.1, 4.0.3, 
+4.1.1) and libc (e.g. glibc-2.3.5, uClibc 0.9.28).
 Different versions of FUSE are also supported (e.g. 2.2.1, 2.4, 2.5)
 
 
