@@ -1,3 +1,11 @@
+2006-11-19  Rémi Turboult  <r3mi@users.sourceforge.net>
+
+	* djmount/device_list.c (VerifyTimeouts): add a work around in case
+	  a device advertisement refresh has been missed (e.g. network problem
+	  or misbehaving device) : do not remove a device immediately from the 
+	  list when it expires, but first tries a new search request 
+	  (problem reported by Chris Furlough).
+
 2006-11-04  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* gl/ : synchronise with CVS gnulib

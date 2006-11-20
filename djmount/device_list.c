@@ -44,7 +44,7 @@
 
 
 // How often to check advertisement and subscription timeouts for devices
-static const unsigned int CHECK_SUBSCRIPTIONS_TIMEOUT = 30; // in seconds
+static const unsigned int CHECK_SUBSCRIPTIONS_TIMEOUT = 10; // in seconds
 
 
 
@@ -360,8 +360,9 @@ AddDevice (const char* deviceId,
 		// The device is already there, so just update 
 		// the advertisement timeout field
 		Log_Printf (LOG_DEBUG, 
-			    "AddDevice Id=%s already exists, update only",
-			    NN(deviceId));
+			    "AddDevice Id=%s already exists, "
+			    "only update expiration = %d seconds",
+			    NN(deviceId), expires);
 		devnode->expires = expires;
 	} else {
 		// Else create a new device
@@ -855,66 +856,87 @@ char*
 DeviceList_GetDeviceStatusString (void* context, const char* deviceName,
 				  bool debug) 
 {
-  char* ret = NULL;
+	char* p = NULL;
   
-  ithread_mutex_lock (&DeviceListMutex);
-  
-  DeviceNode* devnode = GetDeviceNodeFromName (deviceName, true);
-  if (devnode) { 
-	  char* s = Device_GetStatusString (devnode->d, NULL, debug);
-    ret = talloc_asprintf (context, 
-			   "Device \"%s\" (expires in %d seconds)\n%s",
-			   deviceName, devnode->expires, s);
-    talloc_free (s);
-  } 
-  
-  ithread_mutex_unlock (&DeviceListMutex);
-  
-  return ret;
+	ithread_mutex_lock (&DeviceListMutex);
+	
+	DeviceNode* const devnode = GetDeviceNodeFromName (deviceName, true);
+	if (devnode) { 
+		p = talloc_asprintf (context, "Device \"%s\" (", deviceName);
+		if (devnode->expires >= 0) 
+			tpr (&p, "expires in %d seconds", devnode->expires);
+		else
+			tpr (&p, "expired %d seconds ago", -devnode->expires);
+		char* tmp = Device_GetStatusString (devnode->d, p, debug);
+		tpr (&p, ")\n%s", tmp);
+		talloc_free (tmp);
+	} 
+	
+	ithread_mutex_unlock (&DeviceListMutex);
+	
+	return p;
 }
 
 
 /*****************************************************************************
- * VerifyTimeouts
+ * @fn	VerifyTimeouts
  *
- * Description: 
- *       Checks the advertisement  each device
- *        in the global device list.  If an advertisement expires,
- *       the device is removed from the list.  If an advertisement is about to
- *       expire, a search request is sent for that device.  
+ * @brief Checks the advertisement for each device in the global device list.  
+ *	If an advertisement expires, the device should be removed from 
+ *	the list (because normally a device should refresh its advertisement 
+ *	prior to expiration, according to the UPnP device architecture).
+ *	However, in case the new advertisement has been missed 
+ *	(e.g. network problem or misbehaving device), we first send a new
+ *	search request for that device.
  *
- * Parameters:
- *    incr -- The increment to subtract from the timeouts each time the
- *            function is called.
+ * @param incr	the increment to subtract from the timeouts each time the
+ *            	function is called.
  *
  *****************************************************************************/
 static void
 VerifyTimeouts (int incr)
 {
-  ithread_mutex_lock (&DeviceListMutex);
+	ithread_mutex_lock (&DeviceListMutex);
   
-  // During this traversal we pre-compute the next node in case 
-  // the current node is deleted
-  ListNode* node, *nextnode = 0;
-  for (node = ListHead (&GlobalDeviceList); node != 0; node = nextnode) {
-    nextnode = ListNext (&GlobalDeviceList, node);
+	// During this traversal we pre-compute the next node in case 
+	// the current node is deleted
+	ListNode* node, *nextnode = NULL;
+	for (node = ListHead (&GlobalDeviceList); 
+	     node != NULL; 
+	     node = nextnode) {
+		nextnode = ListNext (&GlobalDeviceList, node);
+		
+		DeviceNode* const devnode = node->item;
+		devnode->expires -= incr;
+		
+		if (devnode->expires <= -incr) {
+			// Too late : really remove the device from the list 
+			Log_Printf (LOG_DEBUG, "Remove expired device Id=%s", 
+				    devnode->deviceId);
+			node->item = NULL;
+			ListDelNode (&GlobalDeviceList, node, /*freeItem=>*/0);
+			// Do the notification while the global list is locked
+			NotifyUpdate (E_DEVICE_REMOVED, devnode);
+			talloc_free (devnode);
 
-    DeviceNode* devnode = node->item;
-    devnode->expires -= incr;
-    if (devnode->expires <= 0) {
-      /*
-       * This advertisement has expired, so we should remove the device
-       * from the list 
-       */
-      Log_Printf (LOG_DEBUG, "Remove expired device Id=%s", devnode->deviceId);
-      node->item = 0;
-      ListDelNode (&GlobalDeviceList, node, /*freeItem=>*/ 0);
-      // Do the notification while the global list is locked
-      NotifyUpdate (E_DEVICE_REMOVED, devnode);
-      talloc_free (devnode);
-    }
-  }
-  ithread_mutex_unlock (&DeviceListMutex);
+		} else if (devnode->expires <= 0) {
+			// This advertisement has expired, so we should 
+			// normally remove the device from the list.
+			// First, send out a search request for this device 
+			// UDN to try to renew.
+			Log_Printf (LOG_DEBUG, 
+				    "Trying to renew expired device Id=%s", 
+				    devnode->deviceId);
+			int rc = UpnpSearchAsync (g_ctrlpt_handle, incr,
+						  devnode->deviceId, NULL);
+			if (rc != UPNP_E_SUCCESS)
+				Log_Printf (LOG_ERROR, 
+					    "Error sending search request "
+					    "for Device UDN=%s : err = %d",
+					    devnode->deviceId, rc);
+		}
+	}
+	ithread_mutex_unlock (&DeviceListMutex);
 }
 
 
