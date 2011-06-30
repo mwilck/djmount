@@ -26349,7 +26349,7 @@ fi
 
 	if test x"$rt_package_find_fuse_pkg_config_ok" != xyes; then
 		  FUSE_CFLAGS="-D_FILE_OFFSET_BITS=64"
-		  FUSE_LIBS="-lfuse"
+		  FUSE_LIBS="-lfuse -liconv"
 	fi
 fi
 
