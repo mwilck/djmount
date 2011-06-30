@@ -26279,7 +26279,7 @@ fi;
 
 if test x"$with_fuse_prefix" != x ; then
 	FUSE_CFLAGS="$FUSE_CFLAGS -I$with_fuse_prefix/include -D_FILE_OFFSET_BITS=64"
-	FUSE_LIBS="$FUSE_LIBS -L$with_fuse_prefix/lib -lfuse"
+	FUSE_LIBS="$FUSE_LIBS -L$with_fuse_prefix/lib -lfuse -liconv"
 fi
 
 #
