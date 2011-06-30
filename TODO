@@ -1,0 +1,70 @@
+
+Roadmap
+=======
+
+0.10 (done)
+   implement read operations
+	status
+	browse
+   no write, no search
+
+0.20 (done)
+   add cache for network browse requests
+
+0.30 (done)
+   i18n / unicode file names handling
+
+0.40 (done)
+   add embedded / uClibc support 
+   (with automake + autoconf support)
+
+0.50 (done)
+   share image files
+
+0.60 (done)
+   add search operations
+
+0.80
+   add extended attributes
+
+
+To Be Done
+==========
+
+- handle duplicate filenames (titles) inside a directory
+
+- use charset conversion for strings inside playlists files
+
+- finer thread locking i.e. per service and device
+
+- clean cache on update of SystemUpdateID / ContainerUpdateIDs
+
+- provide access to DeviceDescription.xml file
+
+- make 'df' returns meaningful values
+
+- provide distro packages or autopackage
+
+
+To Be Decided
+=============
+
+- IPV6 support ?
+
+- iTunes support ?
+
+- FreeBSD version using FUSE and libupnp ports ?
+  ( http://fuse4bsd.creo.hu/
+    http://sf.net/tracker/index.php?func=detail&aid=1332618&group_id=7189&atid=307189 )
+
+- library version (libupnpav) ?
+
+- redirect errors to syslog if daemonized ?
+
+- gnome vfs or KIO native interface ?
+
+- use GLib ?
+
+
+
+

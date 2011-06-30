@@ -1,0 +1,19 @@
+
+talloc library
+==============
+
+http://talloc.samba.org/
+
+
+copied from Samba4 sources :
+
+	rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
+
+current version :
+	svn r17578 (dated 2006-08-17 03:49:42 +0200)
+
+
+See also freshmeat release notes for talloc 1.0 :
+	http://freshmeat.net/projects/talloc/?branch_id=55792&release_id=194518 
+
+

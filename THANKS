@@ -1,0 +1,49 @@
+
+
+djmount has originally been written by Rémi Turboult.
+
+
+This has been initialy possible by using software components written
+by the following people :
+
+* Miklos Szeredi
+  - author of the FUSE package ( http://fuse.sourceforge.net/ )
+
+* Andrew Tridgell <talloc AT tridgell.net>
+  - author of the "talloc" library ( http://talloc.samba.org/ )
+
+
+Many people further contributed to djmount by reporting problems,
+suggesting various improvements or submitting actual code.
+Here is a list of these people. Help me keep it complete and
+exempt of errors.
+
+
+* Benjamin Zores
+  - uses djmount in GeeXboX ( http://geexbox.org/ ) - special thanks
+  - bug reports and suggestions
+
+* Amir Shalem
+  - GeeXboX integration
+  - bug reports and suggestions
+
+* Andre Landwehr
+  - bug reports
+
+* Christian Fredrik Kalager Schaller 
+  - bug reports
+
+* Frank Scholz
+  - problem report
+
+* Sami Kyöstilä
+  - report ok with Nokia N93 phone
+
+* Thomas Sattler
+  - fix
+
+* Martin Vallevand
+  - use djmount in MediaMVP Media Center (mvpmc)
+  - problem report
+
+

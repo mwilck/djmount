@@ -1,0 +1,214 @@
+
+What is new in djmount 0.71
+
+* fix: filter UPnP devices so that only MediaServers are listed e.g. UPnP 
+  Routers are no longer visible (problem reported by Martin Vallevand). 
+
+* fix: correctly handle UPnP devices with embedded sub-devices
+
+* fix: memory corruption when discovering some UPnP devices
+
+* fix: suppress error messages for missing optional elements in device 
+  description (URLBase, presentationURL).
+
+* fix: "make check" failures e.g. on Gentoo (fix by Thomas Sattler).
+
+* try to accommodate broken UPnP devices who do not report the MIME type 
+  of the Device description document as XML.
+
+* add "text/plain" MIME type to be able to display .txt files
+
+* minor documentation updates
+
+* minor optimisations when analysing XML documents
+
+* some code improvements and more unitary tests
+
+============================================================================
+
+What is new in djmount 0.70
+
+* implement "search" operations (major evolution) : see examples in README
+  and details in "search_help.txt" (also available at run-time in "_search/"
+  sub-directories).
+
+* reorganise directories to avoid clutter : only multimedia files are directly
+  visible. Other items are moved in hidden directories : all metadata XML 
+  files are now in sub-directories ".metadata", and debug information 
+  (e.g. "status" files) are in "/.debug" directory.
+
+* add some missing MIME types used by GeeXboX uShare
+
+* improve network cache
+
+* improve some error messages
+
+* tested ok with Nokia N93 phone (reported by Sami Kyöstilä)
+
+* code refactoring and miscellaneous code improvements
+
+============================================================================
+
+What is new in djmount 0.53
+
+* allow the 'mmap' operation to succeed on exported files. This helps some
+  media players to work with djmount e.g. mpg321 (problem reported by 
+  Frank Scholz).
+  Note: this works only if using FUSE >= 2.4. Also, this doesn't work with
+  some (very rare) media servers who do not tell the size of exported files 
+  (i.e. AV Media Server in Intel Tools).
+
+============================================================================
+
+What is new in djmount 0.52
+
+* allow some extra FUSE-related mount options. Mainly : fsname, allow_other, 
+  allow_root, nonempty
+
+* adds backward compatibility with FUSE 2.2 (djmount 0.50 initially required 
+  FUSE >= 2.4). This is to allow install on Debian Sarge with FUSE stable.
+
+* if using external libupnp, requires at least version 1.3.1
+
+============================================================================
+
+What is new in 0.51
+
+* fix major bug causing empty "browse" on some type of UPnP AV servers,
+  for example AV Media Server in Intel Tools for UPnP Technologies
+  (reported by Christian Fredrik Kalager Schaller)
+
+* improve djmount freezing when trying to access unreachable Media Servers 
+  e.g. behind a closed firewall.
+
+  Note : if your UPnP Media Server is behind a closed firewall, it won't be 
+  visible in djmount. Therefore, if there is a firewall on the machine
+  where you are running your media server, you have to open the necessary
+  ports in this firewall. Some media servers can do it automatically 
+  (e.g. Windows Media Connect on Windows XP), most of them don't do it 
+  (e.g. AV Media Server in Intel Tools).
+
+* djmount now works ok with AV Media Server in Intel Tools for UPnP 
+  Technologies (.NET) (Build 1768)
+
+* tested ok with latest releases of the following Media Servers :
+  TwonkyVision UPnP Music Server 3.0, GMediaServer 0.9.0, GeeXboX uShare 0.9.5
+
+* fix configure problem when building with FUSE 2.5.0
+
+* fix warnings when building with gcc4 (tested ok on Ubuntu 5.10, gcc 4.0.2)
+
+* force playlist mode for AV files of unknown sizes (streams, or size 
+  not provided by server).
+
+* add matroska and ogg MIME types
+
+* miscellaneous bug fixes
+
+============================================================================
+
+What is new in 0.50
+
+* major change : the content of all files is now directly shared by djmount,
+  instead of playlists e.g. MP3 files are directly visible, instead of M3U 
+  files. This allow : 
+    - seeking A/V files in media players not supporting seeks in HTTP streams,
+    - accessing files without playlist formats e.g. images.
+  Known limitation : files larger than 2 Gb are not always treated correctly.
+
+  The old djmount behaviour (sharing of playlists) can still be obtained using
+  the "-o playlists" mount option (only for A/V files though).
+
+  Note: this change requires using FUSE >= 2.4
+
+* configure: add new --disable-charset option to suppress all character 
+  conversion code (i.e. assume everything is in UTF-8)
+
+* fix crash when browsing GeeXboX uShare 0.9.3 (empty directory name)
+
+* fix potential corruption of filenames with international characters
+
+* fix: relative paths to mount points are now working in daemon mode 
+  (reported by Andre Landwehr)
+
+* code refactoring and miscellaneous code improvements.
+
+============================================================================
+
+What is new in 0.40
+
+* new build system : standard autoconf + automake support for all packages,
+  including bundled libupnp.
+
+* tested ok with GeeXboX uShare ( http://ushare.geexbox.org/ )
+
+* fix: additional checks and logs for devices with incorrect ServiceType 
+  or ServiceId values
+
+============================================================================
+
+What is new in 0.31
+
+* fix small memory leak when reading '/devices' file
+
+* include additional debugging information in 'status' files, 
+  to help diagnostic in case of failure
+
+* updated README to indicate that djmount has been tested ok with 
+  FUSE 2.4.0, Windows Media Connect, Nero MediaHome
+
+============================================================================
+
+What is new in 0.30
+
+* full i18n charset support, either with iconv (when available), or internally
+  (limited to utf8 and 8bits charsets cpxxx and iso-8859-xxx).
+
+* fix running in daemon mode (default if not -f or -d flag)
+  (bug reported by Benjamin Zores)
+
+* fix discovery of new device when DeviceType is empty
+
+* fix printing of UPnP port number after initialisation 
+  (bug reported by Benjamin Zores)
+
+* add colorization of debug log output, depending on severity
+
+============================================================================
+
+What is new in 0.26
+
+* makes the XML parser more tolerant to malformed text, 
+  in order to improve interoperability with non strictly compliant devices.
+
+============================================================================
+
+What is new in 0.25
+
+* preliminary i18n charset support 
+  (supports 8bits charsets iso-8859-x and CPxxx)
+
+* tested on Linux with TwonkyVision UPnP Music Server and GMediaServer 
+
+============================================================================
+
+What is new in 0.20
+
+* Network caching has been implemented for basic browsing,
+  so performances for large media collections are a lot better.
+
+* Internal code improvments
+
+* Still only tested with TwonkyVision UPnP Music Server.
+
+============================================================================
+
+What is new in 0.10
+
+* first (alpha) release
+
+* Basic browsing is implemented, but there is no network caching yet, 
+  so browsing large media collections can be quite slow.
+
+* Only tested with TwonkyVision UPnP Music Server.
+

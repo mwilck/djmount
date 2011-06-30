@@ -1,0 +1,36 @@
+
+Authors
+=======
+
+* Rémi Turboult <r3mi@users.sourceforge.net>
+  - core "djmount" developper
+  - patchs for "libupnp"
+
+
+* Andrew Tridgell <talloc AT tridgell.net>
+  - "talloc" library ( see http://talloc.samba.org/ )
+
+
+* Intel Corporation
+  - "libupnp" library ( see http://upnp.sourceforge.net/ )
+  - a few "djmount" files are derived from the libupnp example files 
+    (see libupnp/upnp/sample)
+
+
+* Free Software Foundation
+  - "gl" files are part of Gnulib - The GNU Portability Library
+    ( http://www.gnu.org/software/gnulib/ ).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
