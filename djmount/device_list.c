@@ -427,7 +427,7 @@ AddDevice (const char* deviceId,
 		} else {
 			// If SSDP target specified, check that the device
 			// matches it.
-			if (strstr (g_ssdp_target, ":service:")) {
+			if (g_ssdp_target && strstr (g_ssdp_target, ":service:")) {
 				const Service* serv = Device_GetServiceFrom 
 					(devnode->d, g_ssdp_target, 
 					 FROM_SERVICE_TYPE, false);
