@@ -92,6 +92,7 @@ static const MimeType MIMES[] = {
 	{ "video/x-matroska",			NULL,	"mkv"	},
 	{ "video/mpeg",				NULL,	"mpg"	},
 	{ "video/mp2p",				NULL,	"vob"	},
+	{ "video/MP4V-ES",			NULL,   "m4v"   },
 	// Default for all other video files : asf, mpeg2, x-ms-wmv, ...
 	{ "video/",				NULL,	NULL	},
 
@@ -162,7 +163,7 @@ MediaFile_GetPreferred (const DIDLObject* const o, MediaFile* file)
 		if (uri == NULL || protocol == NULL || 
 		    sscanf (protocol, "http-get:*:%63[^:;]", mimetype) != 1) 
 			continue; // ---------->
-			
+
 		const MimeType* format = MIMES;
 		while (format->mimetype != NULL && !found) {
 			if (strncmp (mimetype, format->mimetype, 
