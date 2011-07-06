@@ -69,31 +69,31 @@ static const MimeType MIMES[] = {
 	/*
 	 * Audio files
 	 */
-	{ "audio/mpeg",				"m3u",	"mp3"	},
-	{ "audio/vnd.rn-realaudio",		"ram",	"ram"	},
-	{ "audio/x-pn-realaudio",		"ram",	"ram"	}, 
+	{ "audio/mpeg",				NULL,	"mp3"	},
+	{ "audio/vnd.rn-realaudio",		NULL,	"ram"	},
+	{ "audio/x-pn-realaudio",		NULL,	"ram"	}, 
 	// matches also "audio/x-pn-realaudio-plugin"
-	{ "audio/x-realaudio",			"ram",	"ram"	},
-	{ "audio/basic",			"m3u",	"au"	},
-	{ "audio/prs.sid",			"m3u",	"sid"	},
+	{ "audio/x-realaudio",			NULL,	"ram"	},
+	{ "audio/basic",			NULL,	"au"	},
+	{ "audio/prs.sid",			NULL,	"sid"	},
 	{ "audio/x-scpls",			NULL,	"pls"	},
 	{ "audio/x-mpegurl",			NULL,	"m3u"	},
-	{ "audio/x-matroska",			"m3u",	"mka"	},
+	{ "audio/x-matroska",			NULL,	"mka"	},
 	// Default for all other audio files : x-aac, x-ac3, x-ogg, wav, ...
-	{ "audio/",				"m3u",	NULL	},
+	{ "audio/",				NULL,	NULL	},
 
 	/*
 	 * Video files
 	 */
-	{ "video/vnd.rn-realvideo",		"ram",	"ram"	},
-	{ "video/x-msvideo",			"m3u",	"avi"	},
-	{ "video/x-motion-jpeg",		"m3u",	"mjpg"	},
-	{ "video/quicktime",			"m3u",	"mov"	},
-	{ "video/x-matroska",			"m3u",	"mkv"	},
-	{ "video/mpeg",				"m3u",	"mpg"	},
-	{ "video/mp2p",				"m3u",	"vob"	},
+	{ "video/vnd.rn-realvideo",		NULL,	"ram"	},
+	{ "video/x-msvideo",			NULL,	"avi"	},
+	{ "video/x-motion-jpeg",		NULL,	"mjpg"	},
+	{ "video/quicktime",			NULL,	"mov"	},
+	{ "video/x-matroska",			NULL,	"mkv"	},
+	{ "video/mpeg",				NULL,	"mpg"	},
+	{ "video/mp2p",				NULL,	"vob"	},
 	// Default for all other video files : asf, mpeg2, x-ms-wmv, ...
-	{ "video/",				"m3u",	NULL	},
+	{ "video/",				NULL,	NULL	},
 
 	/*
 	 * Image files
@@ -118,9 +118,9 @@ static const MimeType MIMES[] = {
 	/*
 	 * Multimedia files
 	 */
-	{ "application/ogg",			"m3u",	"ogg"	},
-	{ "application/vnd.rn-realmedia",	"ram",	"ram"	},
-	{ "application/x-matroska",		"m3u",	"mkv"	},
+	{ "application/ogg",			NULL,	"ogg"	},
+	{ "application/vnd.rn-realmedia",	NULL,	"ram"	},
+	{ "application/x-matroska",		NULL,	"mkv"	},
 
 	/*
 	 * Text files (e.g. subtitles)
