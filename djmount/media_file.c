@@ -125,6 +125,7 @@ static const MimeType MIMES[] = {
 	/*
 	 * Text files (e.g. subtitles)
 	 */
+	{ "text/plain",                         NULL,  "nfo"   },
 	{ "text/plain",				NULL,	"txt"	},
 	// Default for all text files : sub, idx, ssa, ifo, ...
 	{ "text/",				NULL,	NULL	},
