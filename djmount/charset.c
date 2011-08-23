@@ -491,7 +491,7 @@ Charset_Finish()
 	for (i = 0; i < NB_CONVERTERS; i++) {
 		Converter* const cvt = g_converters + i;
 		ithread_mutex_destroy (&cvt->mutex);
-		if (iconv_close (cvt->cd))
+		if (cvt->cd != (iconv_t)-1 && iconv_close (cvt->cd))
 			rc = errno;
 		cvt->cd = (iconv_t) -1;
 	}
