@@ -2262,9 +2262,9 @@ int UpnpOpenHttpGetEx(
 	IN OUT int *httpStatus,	    /** The status returned on receiving a 
 				        response message from the remote 
 					server. */
-	IN int lowRange,            /** An integer value representing the low 
+	IN unsigned long long lowRange,            /** An integer value representing the low 
 				        end of a range to retrieve. */
-	IN int highRange,           /** An integer value representing the high 
+	IN unsigned long long highRange,           /** An integer value representing the high 
 				        end of a range to retrieve. */
 	IN int timeout	            /** A time out value sent with the request 
 				      	during which a response is expected 

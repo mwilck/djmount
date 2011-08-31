@@ -284,7 +284,7 @@ MediaFile_GetResSize (const MediaFile* const file)
 {
 	const char* const str = ixmlElement_getAttribute (file->res, "size");
 	off_t res;
-	STRING_TO_INT (str, res, -1);
+	STRING_TO_INT (str, res, 8ULL * 1024 * 1024 * 1024);
 	return res;
 }
 

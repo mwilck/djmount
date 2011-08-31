@@ -2072,8 +2072,8 @@ http_OpenHttpGetEx( IN const char *url_str,
                     IN OUT char **contentType,
                     OUT int *contentLength,
                     OUT int *httpStatus,
-                    IN int lowRange,
-                    IN int highRange,
+                    IN unsigned long long lowRange,
+                    IN unsigned long long highRange,
                     IN int timeout )
 {
     int http_error_code;
@@ -2107,7 +2107,7 @@ http_OpenHttpGetEx( IN const char *url_str,
         }
 
         memset( &rangeBuf, 0, sizeof( rangeBuf ) );
-        sprintf( rangeBuf.RangeHeader, "Range: bytes=%d-%d\r\n",
+	sprintf( rangeBuf.RangeHeader, "Range: bytes=%llu-%llu\r\n",
                  lowRange, highRange );
 
         membuffer_init( &request );

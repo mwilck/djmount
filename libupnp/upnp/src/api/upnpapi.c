@@ -3117,8 +3117,8 @@ UpnpOpenHttpGetEx( IN const char *url_str,
                    IN OUT char **contentType,
                    OUT int *contentLength,
                    OUT int *httpStatus,
-                   IN int lowRange,
-                   IN int highRange,
+                   IN unsigned long long lowRange,
+                   IN unsigned long long highRange,
                    IN int timeout )
 {
     return http_OpenHttpGetEx( url_str,

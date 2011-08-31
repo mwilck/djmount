@@ -60,7 +60,7 @@ typedef struct _FileBuffer FileBuffer;
  *
  *****************************************************************************/
 
-#define FILE_BUFFER_MAX_CONTENT_LENGTH		((uintmax_t) INT_MAX)
+#define FILE_BUFFER_MAX_CONTENT_LENGTH		((uintmax_t) ~0ULL)
 
 
 /*****************************************************************************
