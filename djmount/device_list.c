@@ -230,7 +230,9 @@ DeviceList_RemoveDevice (const char* deviceId)
 		ListDelNode (&GlobalDeviceList, node, /*freeItem=>*/ 0);
 		// Do the notification while the global list is still locked
 		NotifyUpdate (E_DEVICE_REMOVED, devnode);
+		ithread_mutex_unlock (&DeviceListMutex);
 		talloc_free (devnode);
+		ithread_mutex_lock (&DeviceListMutex);
 	} else {
 		Log_Printf (LOG_WARNING, "RemoveDevice can't find Id=%s", 
 			    NN(deviceId));
