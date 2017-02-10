@@ -114,7 +114,8 @@ DIDLObject_Create (void* talloc_context,
 		if (o->cds_class == NULL)
 			o->cds_class = "";
 
-		char* s = ixmlElement_getAttribute (o->element, "searchable");
+		const char* s = ixmlElement_getAttribute (o->element,
+							  "searchable");
 		o->searchable = String_ToBoolean (s, false);
 
 		Log_Printf (LOG_DEBUG,
