@@ -133,7 +133,7 @@ XMLUtil_FindFirstElementValue (const IXML_Node* const node,
  * XMLUtil_GetDocumentString
  *****************************************************************************/
 char*
-XMLUtil_GetDocumentString (void* context, const IXML_Document* doc)
+XMLUtil_GetDocumentString (void* context, IXML_Document* doc)
 {
 	// TBD XXX
 	// TBD prepend <?xml version="1.0"?> if not already done ???

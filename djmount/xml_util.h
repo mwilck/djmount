@@ -138,7 +138,7 @@ XMLUtil_FindFirstElementValue (const IXML_Node* const node,
  * 	  The returned string should be freed using "talloc_free".
  *****************************************************************************/
 char*
-XMLUtil_GetDocumentString (void* talloc_context, IN const IXML_Document* doc);
+XMLUtil_GetDocumentString (void* talloc_context, IN IXML_Document* doc);
 
 
 /*****************************************************************************
