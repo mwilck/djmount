@@ -480,7 +480,8 @@ CommandLoop (void* arg)
 		char cmdline[100];
 		printf ("\n>> " ); 
 		fflush (stdout);
-		fgets (cmdline, sizeof (cmdline), stdin);
+		if (fgets (cmdline, sizeof (cmdline), stdin) == NULL)
+			break;
 		if (*cmdline)
 			process_command (cmdline);
 	}
