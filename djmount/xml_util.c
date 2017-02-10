@@ -43,7 +43,7 @@
 const char*
 XMLUtil_GetElementValue (IN const IXML_Element* element)
 {
-	char* res = NULL;
+	const char* res = NULL;
 	IXML_Node* child = ixmlNode_getFirstChild 
 		(discard_const_p (IXML_Node, XML_E2N (element)));
 	while (child && !res) {
