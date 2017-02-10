@@ -212,7 +212,7 @@ FileBuffer_Read (FileBuffer* file, char* buffer,
 		 * to return the exact number of bytes requested.
 		 */
 		do {
-			unsigned int read_size = size - n;
+			size_t read_size = size - n;
 			if (n > 0) {
 				Log_Printf (LOG_DEBUG, 
 					    "UpnpReadHttpGet loop ! url '%s' "
