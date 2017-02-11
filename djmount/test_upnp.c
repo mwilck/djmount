@@ -485,6 +485,7 @@ CommandLoop (void* arg)
 			process_command (cmdline);
 	}
 #endif
+	return NULL;
 }
 
 

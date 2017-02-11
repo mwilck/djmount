@@ -958,6 +958,7 @@ CheckSubscriptionsLoop (void* arg)
 		isleep (CHECK_SUBSCRIPTIONS_TIMEOUT);
 		VerifyTimeouts (CHECK_SUBSCRIPTIONS_TIMEOUT);
 	}
+	return NULL;
 }
 
 
