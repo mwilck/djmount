@@ -143,7 +143,7 @@ if test x"$with_external_talloc" = xyes; then
 	AC_MSG_RESULT([yes])
 	# Find the library. This macro handles the TALLOC_CFLAGS and _LIBS,
 	# the --with-talloc-prefix arg, and pkg-config (if any).
-	RT_PACKAGE_FIND([talloc], [], [-ltalloc], [talloc >= 4.0], 
+	RT_PACKAGE_FIND([talloc], [], [-ltalloc], [talloc >= 2.0], 
 	[
 /* those include are currently missing from "talloc.h" */
 #include <stdio.h>
