@@ -28,6 +28,7 @@
 
 
 #include <upnp/upnptools.h>
+#include <upnp/upnp.h>
 
 
 #ifdef __cplusplus
