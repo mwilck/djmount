@@ -13,9 +13,9 @@ AC_INIT(djmount, 0.71, r3mi@users.sourceforge.net)
 
 # share auxiliary files with sub-configure in "libupnp"
 AC_CONFIG_AUX_DIR(libupnp/config.aux)
-AC_CONFIG_MACRO_DIR(libupnp/m4)
 AC_CONFIG_MACRO_DIR(m4)
 AC_CONFIG_MACRO_DIR(gl/m4)
+AC_CONFIG_MACRO_DIR(libupnp/m4)
 
 AC_CONFIG_SRCDIR(djmount/djfs.c)
 

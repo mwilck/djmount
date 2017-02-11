@@ -9,6 +9,7 @@
 # Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
 #
 
+AUTOMAKE_OPTIONS = subdir-objects
 
 noinst_LIBRARIES	= libtalloc.a
 noinst_HEADERS		= talloc/talloc.h
