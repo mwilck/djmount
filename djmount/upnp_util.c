@@ -28,6 +28,7 @@
 #	include <config.h>
 #endif
 
+#include <string.h>
 #include "upnp_util.h"
 #include "log.h"
 #include "xml_util.h"
