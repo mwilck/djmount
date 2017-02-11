@@ -537,7 +537,7 @@ usage (FILE* stream, const char* progname)
      "    iocharset=<charset>    filenames encoding (default: environment)\n"
 #endif
      "    playlists              use playlists for AV files, instead of plain files\n"
-     "    search_history=<size>  number of remembered searches (default: %d)\n"
+     "    search_history=<size>  number of remembered searches (default: %lu)\n"
      "                           (set to 0 to disable search)\n"
      "    sloppy                 ignore unknown options (e.g., for /etc/fstab)\n"
      "\n", DEFAULT_SEARCH_HISTORY_SIZE);
