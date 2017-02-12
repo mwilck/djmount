@@ -1,3 +1,7 @@
+2017-02-11 Martin Wilck <mwilck@suse.com>
+
+	* Added two bug fixes from github.com/Boxee/djmount
+
 2006-11-19  Rémi Turboult  <r3mi@users.sourceforge.net>
 
 	* djmount/device_list.c (VerifyTimeouts): add a work around in case
