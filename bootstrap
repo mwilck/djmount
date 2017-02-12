@@ -12,9 +12,9 @@ rm -fr autom4te.cache
 #	autoconf
 
 # autoreconf will error out if this path is missing
-[ -f libupnp/config.aux/config.rpath ] || {
-   mkdir -p libupnp/config.aux
-   touch libupnp/config.aux/config.rpath
+[ -f config.aux/config.rpath ] || {
+   mkdir -p config.aux
+   touch config.aux/config.rpath
 }
 
 autoreconf --force --install -Wall -Wno-obsolete $* || exit 1

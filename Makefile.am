@@ -5,17 +5,11 @@
 # Copyright (C) 2005 Rémi Turboult <r3mi@users.sourceforge.net>
 #
 
-ACLOCAL_AMFLAGS = -I m4 -I gl/m4 -I libupnp/m4
+ACLOCAL_AMFLAGS = -I m4 -I gl/m4
 
 CLEANFILES	= IUpnpErrFile.txt IUpnpInfoFile.txt
 
 SUBDIRS 	= gl
-if INTERNAL_TALLOC
-    SUBDIRS 	+= talloc 
-endif
-if INTERNAL_LIBUPNP
-    SUBDIRS	+= libupnp
-endif
 SUBDIRS 	+= djmount
 
 EXTRA_DIST	= search_help.txt

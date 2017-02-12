@@ -19,16 +19,6 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-if INTERNAL_LIBUPNP
-
-    # Local install of UPnP headers, to find <upnp/*.h> even when
-    # they are not installed
-    UPNP_TMPINC		= @abs_builddir@/_upnp_temp_install
-
-    LIBUPNP_CFLAGS	+= -I$(UPNP_TMPINC)
-
-endif
-
 AM_CFLAGS		= -I$(top_srcdir)/gl \
 			  $(TALLOC_CFLAGS) $(LIBUPNP_CFLAGS) $(FUSE_CFLAGS) 
 
@@ -97,31 +87,6 @@ test_vfs_SOURCES	= $(COMMON_SRCS) test_vfs.c
 
 
 CLEANFILES		= IUpnpErrFile.txt IUpnpInfoFile.txt
-
-
-if INTERNAL_LIBUPNP
-
-    #
-    # Local install of UPnP headers, to find <upnp/*.h> even when
-    # they are not installed
-    #
-    UPNP_TMPHEADERS	= $(UPNP_TMPINC)/upnp/upnp.h \
-			  $(UPNP_TMPINC)/upnp/ithread.h \
-			  $(UPNP_TMPINC)/upnp/ixml.h
-
-    BUILT_SOURCES	+= $(UPNP_TMPHEADERS)
-
-$(UPNP_TMPHEADERS) :
-	-rm -fr $(UPNP_TMPINC)
-	$(MAKE) -C $(top_builddir)/libupnp install-data \
-		includedir=$(UPNP_TMPINC)
-
-
-clean-local:
-	-rm -fr $(UPNP_TMPINC)
-
-endif
-
 
 EXTRA_DIST		= test_charset.sh test_device.sh test_vfs.sh txt2h.pl
 
