@@ -20,14 +20,13 @@ config.log
 config.status
 configure
 cscope.*
-libupnp/config.aux/
+config.aux/
 libtool.m4
 ltoptions.m4
 ltsugar.m4
 ltversion.m4
 lt~obsolete.m4
 libtool
-libupnp.pc
 stamp-h1
 djmount/search_help.h
 djmount/djmount
