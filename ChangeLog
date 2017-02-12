@@ -1,5 +1,9 @@
 2017-02-11 Martin Wilck <mwilck@suse.com>
 
+	* .gitignore: added
+
+2017-02-11 Martin Wilck <mwilck@suse.com>
+
 	* Various fixes for compiler warnings
 
 2017-02-11 Martin Wilck <mwilck@suse.com>
